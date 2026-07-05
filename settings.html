@@ -577,6 +577,15 @@
                             <button class="settings-sub-btn" onclick="switchToCategory('dropdowns', 'manager')">Dropdown Manager</button>
                         </div>
                     </div>
+                    <!-- Row 13: Password Update -->
+                    <div class="settings-row" id="dashboard-row-password" style="display: none;">
+                        <div class="category-label-box" onclick="switchToCategory('password', 'password')">
+                            <i class="fas fa-key" style="color: #f59e0b;"></i> Password
+                        </div>
+                        <div class="settings-buttons-container">
+                            <button class="settings-sub-btn" onclick="switchToCategory('password', 'password')">Password Update</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -737,15 +746,16 @@
         window.addEventListener('DOMContentLoaded', async () => {
             await loadAllData();
             
-            // Role based Settings sidebar restriction
+            // Role based Settings dashboard & sidebar restriction
             const userRole = localStorage.getItem('userRole');
             const sidebarPassword = document.getElementById('sidebar-password');
-            if (sidebarPassword) {
-                if (userRole === 'admin') {
-                    sidebarPassword.style.display = 'block';
-                } else {
-                    sidebarPassword.style.display = 'none';
-                }
+            const dashboardPassword = document.getElementById('dashboard-row-password');
+            if (userRole === 'admin') {
+                if (sidebarPassword) sidebarPassword.style.display = 'block';
+                if (dashboardPassword) dashboardPassword.style.display = 'flex';
+            } else {
+                if (sidebarPassword) sidebarPassword.style.display = 'none';
+                if (dashboardPassword) dashboardPassword.style.display = 'none';
             }
 
             // Show main grid initially

@@ -7,7 +7,27 @@ async function runClientTest() {
     const dom = await JSDOM.fromURL("http://localhost:5000/clients.html", {
       resources: "usable",
       runScripts: "dangerously",
-      pretendToBeVisual: true
+      pretendToBeVisual: true,
+      beforeParse(window) {
+        let store = {
+          userRole: 'admin',
+          username: 'soharadmin'
+        };
+        window.localStorage = {
+          getItem(key) {
+            return store[key] || null;
+          },
+          setItem(key, value) {
+            store[key] = value ? value.toString() : '';
+          },
+          removeItem(key) {
+            delete store[key];
+          },
+          clear() {
+            store = {};
+          }
+        };
+      }
     });
 
     const { window } = dom;

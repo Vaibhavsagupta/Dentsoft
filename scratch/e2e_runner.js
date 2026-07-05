@@ -11,6 +11,26 @@ async function loadPage(url) {
     runScripts: "dangerously",
     pretendToBeVisual: true,
     beforeParse(window) {
+      // Mock localStorage for auth bypass
+      let store = {
+        userRole: 'admin',
+        username: 'soharadmin'
+      };
+      window.localStorage = {
+        getItem(key) {
+          return store[key] || null;
+        },
+        setItem(key, value) {
+          store[key] = value ? value.toString() : '';
+        },
+        removeItem(key) {
+          delete store[key];
+        },
+        clear() {
+          store = {};
+        }
+      };
+
       // Map Node global fetch to JSDOM window fetch
       window.fetch = globalThis.fetch.bind(globalThis);
       
@@ -508,6 +528,129 @@ async function runTests() {
     // ----------------------------------------------------
     console.log("\n[Test 10] Executing Final QA checks...");
     report.passed.push("10. Final QA and Console check (Passed without errors)");
+
+    // ----------------------------------------------------
+    // TEST 11: AUTHENTICATION AND PASSWORD UPDATE TEST
+    // ----------------------------------------------------
+    console.log("\n[Test 11] Executing Authentication & Password Update Test...");
+    
+    // Part A: Guest access redirection check
+    const guestDom = await JSDOM.fromURL("http://localhost:5000/settings.html", {
+      resources: "usable",
+      runScripts: "dangerously",
+      pretendToBeVisual: true,
+      beforeParse(w) {
+        w.fetch = globalThis.fetch.bind(globalThis);
+        w.onAuthRedirect = (url) => {
+          w.redirectedTo = url;
+        };
+        // Mock empty localStorage for guest
+        let store = {};
+        w.localStorage = {
+          getItem(key) { return store[key] || null; },
+          setItem(key, value) { store[key] = value ? value.toString() : ''; },
+          removeItem(key) { delete store[key]; },
+          clear() { store = {}; }
+        };
+      }
+    });
+    await new Promise(r => setTimeout(r, 1000));
+    console.log("Guest redirected to page:", guestDom.window.redirectedTo);
+    if (guestDom.window.redirectedTo === "login.html") {
+      console.log("[SUCCESS] Guest redirected to login.html correctly!");
+    } else {
+      throw new Error("Guest was not redirected to login.html!");
+    }
+    guestDom.window.close();
+
+    // Part B: Login API Endpoint authentication check
+    console.log("Verifying normal user login...");
+    const loginResNormal = await fetch("http://localhost:5000/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "sohardentallab", password: "sohardentallab" })
+    });
+    const normalUser = await loginResNormal.json();
+    if (loginResNormal.ok && normalUser.role === "user") {
+      console.log("[SUCCESS] Normal user login authenticated successfully!");
+    } else {
+      throw new Error("Normal user login failed!");
+    }
+
+    console.log("Verifying admin login...");
+    const loginResAdmin = await fetch("http://localhost:5000/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "soharadmin", password: "soharadmin" })
+    });
+    const adminUser = await loginResAdmin.json();
+    if (loginResAdmin.ok && adminUser.role === "admin") {
+      console.log("[SUCCESS] Admin login authenticated successfully!");
+    } else {
+      throw new Error("Admin login failed!");
+    }
+
+    // Part C: Password Update validation
+    console.log("Verifying password update validation...");
+    const updateResFail = await fetch("http://localhost:5000/api/admin/update-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ currentPwd: "wrongpassword", newPwd: "soharadminnew" })
+    });
+    if (!updateResFail.ok) {
+      console.log("[SUCCESS] Invalid current password rejected correctly!");
+    } else {
+      throw new Error("Password update accepted incorrect current password!");
+    }
+
+    console.log("Updating password to 'soharadminnew'...");
+    const updateResSuccess = await fetch("http://localhost:5000/api/admin/update-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ currentPwd: "soharadmin", newPwd: "soharadminnew" })
+    });
+    if (updateResSuccess.ok) {
+      console.log("[SUCCESS] Password updated successfully!");
+    } else {
+      const data = await updateResSuccess.json();
+      throw new Error("Password update failed: " + data.error);
+    }
+
+    const loginOldFail = await fetch("http://localhost:5000/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "soharadmin", password: "soharadmin" })
+    });
+    if (loginOldFail.status === 401) {
+      console.log("[SUCCESS] Old password rejected correctly!");
+    } else {
+      throw new Error("Old password is still working after update!");
+    }
+
+    const loginNewSuccess = await fetch("http://localhost:5000/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "soharadmin", password: "soharadminnew" })
+    });
+    if (loginNewSuccess.ok) {
+      console.log("[SUCCESS] Deployed admin login authenticated with new password!");
+    } else {
+      throw new Error("Login failed with the new admin password!");
+    }
+
+    console.log("Resetting admin password back to 'soharadmin'...");
+    const resetRes = await fetch("http://localhost:5000/api/admin/update-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ currentPwd: "soharadminnew", newPwd: "soharadmin" })
+    });
+    if (resetRes.ok) {
+      console.log("[SUCCESS] Password cleaned up successfully!");
+    } else {
+      throw new Error("Cleanup password reset failed!");
+    }
+
+    report.passed.push("11. Authentication & Password Update Test");
 
   } catch (err) {
     console.error("Test execution aborted with error:", err.message);

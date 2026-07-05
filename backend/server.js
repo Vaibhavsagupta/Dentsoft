@@ -2129,6 +2129,70 @@ app.post('/api/settings', async (req, res) => {
   }
 });
 
+// --- AUTHENTICATION ---
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password are required' });
+    }
+
+    if (username === 'sohardentallab') {
+      if (password === 'sohardentallab') {
+        return res.json({ role: 'user', username: 'sohardentallab' });
+      } else {
+        return res.status(401).json({ error: 'Invalid password' });
+      }
+    } else if (username === 'soharadmin') {
+      // Fetch stored admin password from database
+      const setting = await prisma.systemSetting.findUnique({
+        where: { key: 'admin_password' }
+      });
+      const dbPassword = setting ? setting.value : 'soharadmin'; // Fallback to default
+      
+      if (password === dbPassword) {
+        return res.json({ role: 'admin', username: 'soharadmin' });
+      } else {
+        return res.status(401).json({ error: 'Invalid password' });
+      }
+    } else {
+      return res.status(401).json({ error: 'Invalid username' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/admin/update-password', async (req, res) => {
+  try {
+    const { currentPwd, newPwd } = req.body;
+    if (!currentPwd || !newPwd) {
+      return res.status(400).json({ error: 'Current password and new password are required' });
+    }
+
+    // Fetch stored admin password
+    const setting = await prisma.systemSetting.findUnique({
+      where: { key: 'admin_password' }
+    });
+    const dbPassword = setting ? setting.value : 'soharadmin';
+
+    if (currentPwd !== dbPassword) {
+      return res.status(400).json({ error: 'Current password is incorrect' });
+    }
+
+    // Update database
+    await prisma.systemSetting.upsert({
+      where: { key: 'admin_password' },
+      update: { value: newPwd },
+      create: { key: 'admin_password', value: newPwd }
+    });
+
+    res.json({ success: true, message: 'Password updated successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // --- SETTING LOOKUPS ---
 app.get('/api/lookups', async (req, res) => {
   try {

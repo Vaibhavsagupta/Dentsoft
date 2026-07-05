@@ -958,15 +958,63 @@
             renderGenericClientTable(tableBody, clients);
         }
 
+        let currentPage = 1;
+        let itemsPerPage = 10;
+        let displayedClients = [];
+
+        function renderPaginationControls(totalItems) {
+            let container = document.getElementById('pagination-controls');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'pagination-controls';
+                container.style = 'display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; border-top: 1px solid #cbd5e1; background: #fff; margin-top: 15px; border-radius: 4px;';
+                const table = document.querySelector('#clients-table');
+                if (table && table.parentElement) {
+                    table.parentElement.appendChild(container);
+                }
+            }
+            
+            const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            
+            const startItem = Math.min((currentPage - 1) * itemsPerPage + 1, totalItems || 0);
+            const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+            
+            container.innerHTML = `
+                <div style="font-size: 13px; color: #64748b;">Showing ${startItem} to ${endItem} of ${totalItems} entries</div>
+                <div style="display: flex; gap: 5px;">
+                    <button type="button" onclick="changePage(-1)" ${currentPage === 1 ? 'disabled' : ''} style="padding: 5px 10px; border: 1px solid #cbd5e1; background: ${currentPage === 1 ? '#f1f5f9' : '#fff'}; color: #334155; border-radius: 4px; cursor: ${currentPage === 1 ? 'not-allowed' : 'pointer'};">Previous</button>
+                    <span style="padding: 5px 10px; font-size: 13px; font-weight: bold; align-self: center;">Page ${currentPage} of ${totalPages}</span>
+                    <button type="button" onclick="changePage(1)" ${currentPage === totalPages ? 'disabled' : ''} style="padding: 5px 10px; border: 1px solid #cbd5e1; background: ${currentPage === totalPages ? '#f1f5f9' : '#fff'}; color: #334155; border-radius: 4px; cursor: ${currentPage === totalPages ? 'not-allowed' : 'pointer'};">Next</button>
+                </div>
+            `;
+        }
+
+        window.changePage = function(delta) {
+            currentPage += delta;
+            renderClients(displayedClients);
+        };
+
         function renderClients(clients) {
+            displayedClients = clients;
             const tableBody = document.querySelector('#clients-table tbody');
             if (!tableBody) return;
             tableBody.innerHTML = '';
-            if (clients && clients.length > 0) {
-                clients.forEach((client, idx) => {
+            
+            const totalItems = clients.length;
+            const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const paginated = clients.slice(start, end);
+
+            if (paginated && paginated.length > 0) {
+                paginated.forEach((client, idx) => {
                     const row = document.createElement('tr');
+                    const displayIdx = start + idx + 1;
                     row.innerHTML = `
-                        <td>${idx + 1}</td>
+                        <td>${displayIdx}</td>
                         <td><a href="client_viewer.html?id=${client.id}" style="color:#3b82f6; text-decoration:none; font-weight:600;" title="View Profile">${client.name}</a></td>
                         <td style="display:flex; gap:10px; align-items:center;">
                             <a href="client_viewer.html?id=${client.id}" title="View Profile"><i class="fas fa-user-circle" style="color: #3b82f6; font-size: 16px;"></i></a>
@@ -983,6 +1031,8 @@
             } else {
                 tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No clients found</td></tr>';
             }
+            
+            renderPaginationControls(totalItems);
         }
 
         async function loadClients() {
@@ -993,6 +1043,7 @@
             try {
                 const response = await fetch(`${API_BASE}/clients`);
                 allClients = await response.json();
+                currentPage = 1;
                 renderClients(allClients);
             } catch (err) { 
                 console.error(err); 

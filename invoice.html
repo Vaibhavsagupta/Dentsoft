@@ -31,7 +31,7 @@
             min-height: 297mm;
             margin: 0 auto;
             background: #fff;
-            padding: calc(50px + 15mm);
+            padding: calc(50px + 5mm);
             position: relative;
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
             border: none !important;
@@ -516,8 +516,8 @@
                 <tr>
                     <th style="width: 3%;">#</th>
                     <th style="width: 7%;">Order #</th>
-                    <th style="width: 14%;" class="nowrap">Patient</th>
-                    <th style="width: 13%;" class="nowrap">Delivery Date</th>
+                    <th style="width: 14%;">Patient</th>
+                    <th style="width: 13%;">Delivery Date</th>
                     <th style="width: 14%;">Product</th>
                     <th style="width: 21%;">Teeth #</th>
                     <th style="width: 5%;" class="nowrap">Units</th>
@@ -736,8 +736,8 @@
                                 <tr>
                                     <td style="text-align:center;">${itemIndex++}</td>
                                     <td>${displayOrderNum}</td>
-                                    <td class="nowrap">${displayPatientName}</td>
-                                    <td style="text-align:center;" class="nowrap">${displayDate}</td>
+                                    <td>${displayPatientName}</td>
+                                    <td style="text-align:center;">${displayDate}</td>
                                     <td>
                                         ${job.productName || job.productType}
                                         ${(job.shade1 || job.shade2 || job.shade3) ? `<br/><small style="font-size:10px; color:#444;">Shade: ${[job.shade1, job.shade2, job.shade3].filter(s => s).join(' / ')}</small>` : ''}

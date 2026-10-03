@@ -1,0 +1,2519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="auth.js"></script>
+    <script src="searchable_select.js"></script>
+    <script src="global_datepicker.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1280, minimum-scale=0.1, maximum-scale=10.0, user-scalable=yes">
+    <title>Lab Command | Clients</title>
+    <link rel="stylesheet" href="styles.css?v=6.3.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="transitions.js?v=6.0.0"></script>
+    <style>
+        #clients-table {
+            border-collapse: collapse !important;
+            width: 940px !important;
+            max-width: 100% !important;
+        }
+        #clients-table th {
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+            font-size: 17px !important;
+            font-weight: 400 !important;
+            font-style: normal !important;
+            line-height: 18px !important;
+            color: #333;
+            padding: 2px 6px !important;
+            border: 1px solid #767676;
+            background: linear-gradient(to bottom, #eae4d3 0%, #dcd4be 100%) !important;
+            white-space: nowrap !important;
+            height: 28px !important;
+            box-sizing: border-box !important;
+        }
+        #clients-table td {
+            font-size: 12px !important;
+            padding: 1px 6px !important;
+            border: 1px solid #767676;
+            text-align: left;
+            white-space: nowrap !important;
+            height: 22px !important;
+            line-height: 22px !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+        }
+
+        body {
+            background-color: #ffffff !important;
+            font-family: Arial, sans-serif !important;
+        }
+
+        /* Sidebar Action Buttons Matching Screenshot */
+        aside {
+            width: 140px !important;
+            min-width: 140px !important;
+            max-width: 140px !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            gap: 2px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            background: transparent !important;
+        }
+        main {
+            padding: 0 !important;
+            margin: 0 !important;
+            flex: 1 !important;
+        }
+        .page-title h1 {
+            font-size: 22px !important;
+            font-family: Arial, sans-serif !important;
+            font-weight: 700 !important;
+            color: #222 !important;
+        }
+        
+        .client-sidebar-btn {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 100% !important;
+            min-height: 28px !important;
+            height: auto !important;
+            border-radius: 3px !important;
+            font-size: 13.5px !important;
+            line-height: 15px !important;
+            font-family: Arial, Helvetica, sans-serif !important;
+            font-weight: 600 !important;
+            text-decoration: none !important;
+            margin: 0 0 3px 0 !important;
+            box-sizing: border-box !important;
+            cursor: pointer !important;
+            background: linear-gradient(to bottom, #fafafa 0%, #d8d8d8 100%) !important;
+            border: 1px solid #ababab !important;
+            color: #333333 !important;
+            box-shadow: inset 0 1px 0 #ffffff !important;
+            outline: none !important;
+            padding: 5px 6px !important;
+            text-align: center !important;
+            white-space: normal !important;
+        }
+        .client-sidebar-btn:hover {
+            background: linear-gradient(to bottom, #ffffff 0%, #cecece 100%) !important;
+        }
+        .client-sidebar-btn.active-filter {
+            background: #ffffff !important;
+            border: 1px solid #ec4899 !important;
+            color: #ec4899 !important;
+            box-shadow: none !important;
+            font-weight: 600 !important;
+        }
+
+        /* Legacy Table Styles matching reference images */
+        .legacy-table {
+            border-collapse: collapse !important;
+            width: auto !important;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+            background: #fff !important;
+        }
+        .legacy-table th {
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+            font-size: 17px !important;
+            font-weight: 400 !important;
+            font-style: normal !important;
+            line-height: 18px !important;
+            color: #333 !important;
+            background: linear-gradient(to bottom, #ededed 0%, #d5d5d5 100%) !important;
+            padding: 1px 4px !important;
+            border: 1px solid #767676 !important;
+            text-align: left;
+            text-transform: none;
+            white-space: nowrap !important;
+            height: 28px !important;
+            box-sizing: border-box !important;
+        }
+        .legacy-table td {
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+            font-size: 17px !important;
+            line-height: 18px !important;
+            font-weight: 400 !important;
+            font-style: normal !important;
+            padding: 2px 4px !important;
+            border: 1px solid #767676 !important;
+            text-align: left;
+            color: #222 !important;
+            white-space: nowrap !important;
+            height: 24px !important;
+            box-sizing: border-box !important;
+            vertical-align: middle !important;
+        }
+        .legacy-table td a {
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+            font-size: 17px !important;
+            line-height: 18px !important;
+            font-weight: 400 !important;
+            color: #0056b3 !important;
+            text-decoration: none !important;
+        }
+        .legacy-table td a:hover {
+            text-decoration: underline !important;
+        }
+        .legacy-table td i {
+            font-family: "Font Awesome 6 Free", "FontAwesome" !important;
+            font-weight: 900 !important;
+            font-size: 14px !important;
+            color: #0056b3 !important;
+            vertical-align: middle !important;
+        }
+        
+        /* Specific column widths for 8-column tables */
+        .legacy-table-8col th:nth-child(1), .legacy-table-8col td:nth-child(1),
+        .legacy-table:not(.legacy-table-10col) th:nth-child(1), .legacy-table:not(.legacy-table-10col) td:nth-child(1) { width: 28px !important; min-width: 28px !important; text-align: left !important; }
+        .legacy-table-8col th:nth-child(2), .legacy-table-8col td:nth-child(2),
+        .legacy-table:not(.legacy-table-10col) th:nth-child(2), .legacy-table:not(.legacy-table-10col) td:nth-child(2) { width: 250px !important; min-width: 200px !important; text-align: left !important; }
+        .legacy-table-8col th:nth-child(3), .legacy-table-8col td:nth-child(3),
+        .legacy-table:not(.legacy-table-10col) th:nth-child(3), .legacy-table:not(.legacy-table-10col) td:nth-child(3) { width: 80px !important; min-width: 80px !important; text-align: center !important; }
+        .legacy-table-8col th:nth-child(4), .legacy-table-8col td:nth-child(4),
+        .legacy-table:not(.legacy-table-10col) th:nth-child(4), .legacy-table:not(.legacy-table-10col) td:nth-child(4) { width: 45px !important; min-width: 45px !important; text-align: left !important; }
+        .legacy-table-8col th:nth-child(5), .legacy-table-8col td:nth-child(5),
+        .legacy-table:not(.legacy-table-10col) th:nth-child(5), .legacy-table:not(.legacy-table-10col) td:nth-child(5) { width: 80px !important; min-width: 65px !important; text-align: left !important; }
+        .legacy-table-8col th:nth-child(6), .legacy-table-8col td:nth-child(6),
+        .legacy-table:not(.legacy-table-10col) th:nth-child(6), .legacy-table:not(.legacy-table-10col) td:nth-child(6) { width: 80px !important; min-width: 65px !important; text-align: left !important; }
+        .legacy-table-8col th:nth-child(7), .legacy-table-8col td:nth-child(7),
+        .legacy-table:not(.legacy-table-10col) th:nth-child(7), .legacy-table:not(.legacy-table-10col) td:nth-child(7) { width: 70px !important; min-width: 55px !important; text-align: left !important; }
+        .legacy-table-8col th:nth-child(8), .legacy-table-8col td:nth-child(8),
+        .legacy-table:not(.legacy-table-10col) th:nth-child(8), .legacy-table:not(.legacy-table-10col) td:nth-child(8) { width: 70px !important; min-width: 40px !important; text-align: left !important; }
+
+        /* Specific column widths for 10-column tables */
+        .legacy-table-10col th:nth-child(1), .legacy-table-10col td:nth-child(1) { width: 28px !important; min-width: 28px !important; text-align: left !important; }
+        .legacy-table-10col th:nth-child(2), .legacy-table-10col td:nth-child(2) { width: 240px !important; min-width: 200px !important; text-align: left !important; }
+        .legacy-table-10col th:nth-child(3), .legacy-table-10col td:nth-child(3) { width: 55px !important; min-width: 50px !important; text-align: right !important; }
+        .legacy-table-10col th:nth-child(4), .legacy-table-10col td:nth-child(4) { width: 35px !important; min-width: 30px !important; text-align: left !important; }
+        .legacy-table-10col th:nth-child(5), .legacy-table-10col td:nth-child(5) { width: 80px !important; min-width: 80px !important; text-align: center !important; }
+        .legacy-table-10col th:nth-child(6), .legacy-table-10col td:nth-child(6) { width: 45px !important; min-width: 45px !important; text-align: left !important; }
+        .legacy-table-10col th:nth-child(7), .legacy-table-10col td:nth-child(7) { width: 80px !important; min-width: 65px !important; text-align: left !important; }
+        .legacy-table-10col th:nth-child(8), .legacy-table-10col td:nth-child(8) { width: 80px !important; min-width: 65px !important; text-align: left !important; }
+        .legacy-table-10col th:nth-child(9), .legacy-table-10col td:nth-child(9) { width: 70px !important; min-width: 55px !important; text-align: left !important; }
+        .legacy-table-10col th:nth-child(10), .legacy-table-10col td:nth-child(10) { width: 70px !important; min-width: 40px !important; text-align: left !important; }
+        
+        /* Action buttons in grid */
+        .action-btn-group {
+            display: inline-flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            gap: 4px !important;
+            align-items: center !important;
+            justify-content: center !important;
+            white-space: nowrap !important;
+        }
+        .action-icon-link {
+            color: #0070c0 !important;
+            font-size: 13px !important;
+            text-decoration: none !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 0 1px !important;
+            cursor: pointer !important;
+            line-height: 1 !important;
+        }
+        .action-icon-link:hover {
+            color: #004c80 !important;
+        }
+
+        /* Bootstrap-style Pagination matching Image 1 */
+        .bootstrap-pagination {
+            display: inline-flex;
+            padding-left: 0;
+            margin: 12px 0 15px 0;
+            border-radius: 4px;
+            user-select: none;
+            font-family: Arial, sans-serif;
+        }
+        .bootstrap-pagination button, .bootstrap-pagination a {
+            position: relative;
+            float: left;
+            padding: 5px 11px;
+            margin-left: -1px;
+            line-height: 1.42857143;
+            color: #337ab7;
+            text-decoration: none;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            font-size: 13.5px;
+            cursor: pointer;
+            font-family: Arial, sans-serif;
+            outline: none;
+            box-sizing: border-box;
+        }
+        .bootstrap-pagination button:first-child, .bootstrap-pagination a:first-child {
+            margin-left: 0;
+            border-top-left-radius: 4px;
+            border-bottom-left-radius: 4px;
+        }
+        .bootstrap-pagination button:last-child, .bootstrap-pagination a:last-child {
+            border-top-right-radius: 4px;
+            border-bottom-right-radius: 4px;
+        }
+        .bootstrap-pagination button:hover:not(.active):not(:disabled), .bootstrap-pagination a:hover:not(.active):not(.disabled) {
+            background-color: #eeeeee;
+            border-color: #ddd;
+            color: #23527c;
+        }
+        .bootstrap-pagination button.active, .bootstrap-pagination a.active {
+            z-index: 2;
+            color: #ffffff !important;
+            cursor: default;
+            background-color: #337ab7 !important;
+            border-color: #337ab7 !important;
+        }
+        .bootstrap-pagination button:disabled, .bootstrap-pagination a.disabled {
+            color: #777;
+            cursor: not-allowed;
+            background-color: #fff;
+            border-color: #ddd;
+        }
+    </style>
+</head>
+<body>
+    <header style="background: linear-gradient(to bottom, #f5f5f5 0%, #e1e1e1 100%); border-bottom: 1px solid #999; height: 46px; display: flex; justify-content: space-between; align-items: flex-end; padding: 0 12px; font-family: Arial, sans-serif; user-select: none; position: relative;">
+        <!-- Left Section: Logo & Navigation Tabs -->
+        <div style="display: flex; align-items: flex-end; gap: 8px; height: 100%;">
+            <a href="index.html" style="display: flex; align-items: center; gap: 6px; margin-bottom: 5px; margin-right: 10px; text-decoration: none;">
+                <img src="logo.jpeg" alt="Logo" style="height: 30px; width: 30px; object-fit: contain;">
+                <span style="white-space: nowrap; color: #1e293b; font-weight: bold; font-size: 13px; font-family: Arial, sans-serif;">Dentsoft</span>
+            </a>
+
+            <nav style="display: flex; align-items: flex-end; height: 100%;">
+                <!-- Home Tab -->
+                <a href="index.html" style="color: #333; border-right: 1px solid #ccc; padding: 3px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-decoration: none; font-size: 11px; height: calc(100% - 4px);">
+                    <i class="fa-solid fa-house" style="font-size: 13px; color: #555; margin-bottom: 2px;"></i>
+                    <span>Home</span>
+                </a>
+
+                <!-- Clients Tab (Active) -->
+                <a href="clients.html" style="background: #ffffff; border: 1px solid #aaa; border-bottom: 1px solid #ffffff; font-weight: bold; color: #ec4899; border-radius: 3px 3px 0 0; padding: 3px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-decoration: none; font-size: 11px; margin-bottom: -1px; height: calc(100% - 2px);">
+                    <i class="fa-solid fa-user-group" style="font-size: 13px; color: #ec4899; margin-bottom: 2px;"></i>
+                    <span>Clients</span>
+                </a>
+
+                <!-- Orders Tab -->
+                <a href="orders.html" style="color: #333; border-right: 1px solid #ccc; padding: 3px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-decoration: none; font-size: 11px; height: calc(100% - 4px);">
+                    <i class="fa-solid fa-folder-closed" style="font-size: 13px; color: #555; margin-bottom: 2px;"></i>
+                    <span>Orders</span>
+                </a>
+
+                <!-- Shipments Tab -->
+                <a href="shipments.html" style="color: #333; border-right: 1px solid #ccc; padding: 3px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-decoration: none; font-size: 11px; height: calc(100% - 4px);">
+                    <i class="fa-solid fa-plane" style="font-size: 13px; color: #555; margin-bottom: 2px;"></i>
+                    <span>Shipments</span>
+                </a>
+
+                <!-- Accounts Tab -->
+                <a href="accounts.html" style="color: #333; padding: 3px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-decoration: none; font-size: 11px; height: calc(100% - 4px);">
+                    <i class="fa-solid fa-file-invoice-dollar" style="font-size: 13px; color: #555; margin-bottom: 2px;"></i>
+                    <span>Accounts</span>
+                </a>
+            </nav>
+        </div>
+
+        <!-- Right Section: Office, Reports & Lab Dropdown -->
+        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 6px;">
+            <a href="office.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #333; font-size: 11px;">
+                <i class="fa-solid fa-book-open" style="font-size: 13px; color: #555; margin-bottom: 2px;"></i>
+                <span>Office</span>
+            </a>
+
+            <a href="reports.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #333; font-size: 11px;">
+                <i class="fa-solid fa-chart-column" style="font-size: 13px; color: #555; margin-bottom: 2px;"></i>
+                <span>Reports</span>
+            </a>
+
+            <div style="position: relative;">
+                <button onclick="toggleHeaderLabDropdown(event)" style="background: linear-gradient(to bottom, #b8b8b8 0%, #999999 100%); border: 1px solid #666; color: #ffffff; font-size: 11px; font-weight: bold; font-family: Arial, sans-serif; padding: 4px 10px; border-radius: 2px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.4);">
+                    <span>SOHAR DENTAL LA...</span>
+                    <span style="font-size: 8px;">▼</span>
+                </button>
+
+                <div id="header-lab-dropdown-menu" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 4px; background: #ffffff; border: 1px solid #999999; box-shadow: 0 4px 12px rgba(0,0,0,0.25); z-index: 999999; min-width: 145px; font-size: 12px; font-family: Arial, sans-serif; border-radius: 2px;">
+                    <a href="javascript:void(0)" style="display: block; padding: 6px 12px; color: #0056b3; text-decoration: none; font-size: 12px;">sohardentallab</a>
+                    <div style="border-bottom: 1px solid #e5e7eb; margin: 2px 0;"></div>
+                    <a href="settings.html" style="display: block; padding: 6px 12px; color: #0056b3; text-decoration: none; font-size: 12px;">Settings</a>
+                    <a href="javascript:void(0)" onclick="alert('No new messages')" style="display: block; padding: 6px 12px; color: #0056b3; text-decoration: none; font-size: 12px;">Messages</a>
+                    <div style="border-bottom: 1px solid #e5e7eb; margin: 2px 0;"></div>
+                    <a href="javascript:void(0)" onclick="if(window.logout) window.logout(); else window.location.href='login.html';" style="display: block; padding: 6px 12px; color: #0056b3; text-decoration: none; font-size: 12px;">Logout</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-container" style="display:flex; flex-direction:column; width: 100%; max-width: 100%; min-height: calc(100vh - 60px); padding: 8px 12px; box-sizing: border-box; font-family: Arial, sans-serif;">
+        <h1 style="font-size: 22px; font-weight: bold; color: #111; margin: 4px 0 8px 0; font-family: Arial, sans-serif;">Clients</h1>
+
+        <div style="display: flex; gap: 8px; align-items: flex-start;">
+            <!-- Left Sidebar Navigation Buttons -->
+            <aside style="width: 140px; min-width: 140px; max-width: 140px; flex-shrink: 0; background: transparent; padding: 0; display: flex; flex-direction: column; gap: 3px; font-family: Arial, sans-serif; box-sizing: border-box;">
+                <button type="button" class="btn-action client-sidebar-btn active-filter" data-section="quick-search" onclick="showSection('quick-search')">Quick Search</button>
+                <button type="button" class="btn-action client-sidebar-btn" data-section="details" onclick="showSection('details')">Details</button>
+                <button type="button" class="btn-action client-sidebar-btn" data-section="orders" onclick="showSection('orders')">Orders</button>
+                <button type="button" class="btn-action client-sidebar-btn" data-section="shipments" onclick="showSection('shipments')">Shipments</button>
+                <button type="button" class="btn-action client-sidebar-btn" data-section="bills" onclick="showSection('bills')">Bills</button>
+                <button type="button" class="btn-action client-sidebar-btn" data-section="collections" onclick="showSection('collections')">Collections</button>
+                <button type="button" class="btn-action client-sidebar-btn" data-section="new-clients" onclick="showSection('new-clients')">New Clients</button>
+                <button type="button" class="btn-action client-sidebar-btn" data-section="messages" onclick="showSection('messages')">Messages</button>
+                <button type="button" class="btn-action client-sidebar-btn" data-section="documents" onclick="showSection('documents')">Documents</button>
+            </aside>
+
+            <!-- Main Content Area -->
+            <main class="fade-in" style="flex: 1; min-width: 0; padding: 0; box-sizing: border-box;">
+                <div class="section-content" id="section-quick-search" style="display:block; padding: 0;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px; height: 26px;">
+                        <div style="position: relative; width: 220px; height: 24px; display: flex; align-items: center;">
+                            <input type="text" id="main-quick-search" placeholder="Name /Code / Cell/ Email" style="width: 100%; height: 24px; min-height: 24px; padding: 2px 24px 2px 6px; border: 1px solid #7a7a7a; border-radius: 2px; font-size: 13px; line-height: 16px; font-family: Arial, sans-serif; outline: none; box-sizing: border-box; background: #fff;" oninput="searchClients('main-quick-search')">
+                            <button type="button" style="position: absolute; right: 0; top: 0; bottom: 0; width: 22px; background: transparent; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center;" onclick="searchClients('main-quick-search')">
+                                <i class="fa-solid fa-magnifying-glass" style="color: #444; font-size: 12px;"></i>
+                            </button>
+                        </div>
+                        <a href="javascript:void(0)" onclick="showAddClientModal()" style="color: #0056b3; font-size: 14px; font-weight: bold; text-decoration: none; display: flex; align-items: center; gap: 4px; font-family: Arial, sans-serif;">
+                            <span style="font-weight: bold; font-size: 16px; line-height: 1;">+</span> <span>New Client</span>
+                        </a>
+                    </div>
+                    <div style="overflow-x: auto; background: #fff;">
+                        <table class="legacy-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 34px; text-align: left;">Sr</th>
+                                    <th style="text-align: left;">Name</th>
+                                    <th style="width: 85px; text-align: center;">Actions</th>
+                                    <th style="width: 60px; text-align: left;">Code</th>
+                                    <th style="text-align: left;">Office Phone</th>
+                                    <th style="text-align: left;">Cell Phone</th>
+                                    <th style="text-align: left;">City</th>
+                                    <th style="text-align: left;">email</th>
+                                </tr>
+                            </thead>
+                            <tbody id="quick-search-results-body">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="quick-search-pagination-container"></div>
+                </div>
+
+            <!-- Payment Section -->
+            <div class="card section-content" id="section-payment" style="display:none; max-width: 800px; margin: 0 auto;">
+                <div class="card-header" style="background:#fff; border-bottom:1px solid #eee; padding:20px;">
+                    <h2 style="margin: 0; font-size: 20px; color: #333; font-weight: 600;">Payment</h2>
+                </div>
+                <div style="padding: 25px;">
+                    <div style="margin-bottom: 25px;">
+                        <label style="display:block; font-size: 13px; color: #666; margin-bottom: 5px;">Client</label>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <span id="pay-client-name" style="font-size: 18px; font-weight: 700; color: #111;">-</span>
+                            <i class="fas fa-info-circle" style="color: #3b82f6; cursor: pointer;"></i>
+                        </div>
+                    </div>
+
+                    <form id="payment-form">
+                        <input type="hidden" id="pay-client-id">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                            <div>
+                                <label style="display:block; font-size: 13px; color: #666; margin-bottom: 5px;">Amount</label>
+                                <input type="number" id="pay-amount" value="0" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; font-size: 14px;">
+                            </div>
+                            <div>
+                                <label style="display:block; font-size: 13px; color: #666; margin-bottom: 5px;">Payment Date</label>
+                                <input type="date" id="pay-date" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; font-size: 14px;">
+                            </div>
+                            <div>
+                                <label style="display:block; font-size: 13px; color: #666; margin-bottom: 5px;">Receipt #</label>
+                                <input type="text" id="pay-receipt" readonly style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; background:#f9fafb; font-size: 14px;">
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                            <div>
+                                <label style="display:block; font-size: 13px; color: #666; margin-bottom: 5px;">Payment Mode</label>
+                                <select id="pay-mode" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; font-size: 14px;">
+                                    <option value="Cash">Cash</option>
+                                    <option value="Cheque">Cheque</option>
+                                    <option value="Bank Transfer">Bank Transfer</option>
+                                    <option value="Online">Online</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="display:block; font-size: 13px; color: #666; margin-bottom: 5px;">Cheque/Ref #</label>
+                                <input type="text" id="pay-ref" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; font-size: 14px;">
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 25px;">
+                            <label style="display:block; font-size: 13px; color: #666; margin-bottom: 5px;">Notes</label>
+                            <input type="text" id="pay-notes" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; font-size: 14px;">
+                        </div>
+
+                        <!-- Info Box -->
+                        <div style="border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; font-size: 15px; line-height: 1.6; color: #333;">
+                            <div style="font-weight: 700; margin-bottom: 10px;">Balance : <span id="pay-balance" style="color: #000;">0</span></div>
+                            <div id="pay-last-invoice" style="margin-bottom: 10px;">Last Invoice : # - <br>for OMR - on -</div>
+                            <div id="pay-last-payment">Last Payment : # - <br>OMR - on -</div>
+                        </div>
+
+                        <div style="border: 1px solid #aaa; padding: 10px; margin-bottom: 25px; display: flex; align-items: center;">
+                            <span style="font-weight: 700; flex: 0.3;">Total Applied</span>
+                            <span id="pay-total-applied" style="flex: 1; font-weight: 700;">0</span>
+                        </div>
+
+                        <div style="display: flex; justify-content: flex-end; gap: 15px;">
+                            <button type="submit" class="btn-action" style="padding: 12px 30px; background: #fff; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; color: #3b82f6; font-weight: 500; cursor: pointer;">Save Receipt</button>
+                            <button type="button" class="btn-action" style="padding: 12px 30px; background: #fff; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; color: #3b82f6; font-weight: 500; cursor: pointer;" onclick="showSection('quick-search')">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="section-content" id="section-details" style="display:none; padding: 0;">
+                <div style="border: 1px solid #ccc; width: 330px; padding: 6px 10px; background: #fff; margin-bottom: 4px; box-sizing: border-box;">
+                    <div style="font-family: Arial, sans-serif; font-size: 13px; font-weight: normal; color: #222; margin-bottom: 4px;">Advanced Client Search</div>
+                    <div id="adv-search-criteria-container" style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 4px;">
+                        <!-- Dynamic filter rows -->
+                    </div>
+                    <div>
+                        <a href="javascript:void(0)" onclick="addClientFilterRow()" style="color: #0056b3; font-size: 11px; text-decoration: none; font-family: Arial, sans-serif;">+Add Search Criterion</a>
+                    </div>
+                </div>
+                <div style="margin-bottom: 6px; font-family: Arial, sans-serif; font-size: 11px; color: #000; display: flex; align-items: center; gap: 4px;">
+                    <span>.</span>
+                    <a href="javascript:void(0)" onclick="performAdvancedSearch()" style="color: #0056b3; text-decoration: underline; font-size: 12px;">Search</a>
+                    <a href="javascript:void(0)" onclick="showAddClientModal()" style="color: #0056b3; text-decoration: underline; font-size: 12px; margin-left: 10px;">+ New Client</a>
+                </div>
+                <div id="details-empty-state" style="font-family: Arial, sans-serif; font-size: 13px; color: #333; line-height: 1.4; margin-top: 4px;">
+                    No Client records found for current search criterion.<br>
+                    Click New Client to add a new Client or broaden your search criterion
+                </div>
+                <div id="details-table-container" style="display: none; overflow-x: auto; background: #fff;">
+                    <table id="clients-table" class="legacy-table legacy-table-8col">
+                        <thead>
+                            <tr>
+                                <th>Sr</th>
+                                <th>Name</th>
+                                <th>Actions</th>
+                                <th>Code</th>
+                                <th>Office Phone</th>
+                                <th>Cell Phone</th>
+                                <th>City</th>
+                                <th>email</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clients-table-tbody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="section-content" id="section-orders" style="display:none; padding: 0;">
+                <div style="border: 1px solid #ccc; padding: 4px 8px; background: #eee; margin-bottom: 2px; width: 680px; max-width: 100%; box-sizing: border-box; line-height: 1.35;">
+                    <div style="font-family: Arial, sans-serif; font-size: 13px; font-weight: normal; color: #000; margin-bottom: 1px;">Orders</div>
+                    <div style="font-family: Arial, sans-serif; font-size: 13px; font-weight: normal; color: #000; margin-bottom: 2px;">Order Date</div>
+                    <div style="display: flex; align-items: center; gap: 4px; font-family: Arial, sans-serif; font-size: 13px; margin-bottom: 2px;">
+                        <select id="order-filter-recent" style="padding:1px 2px; border:1px solid #767676; border-radius:0px; font-size:12px; height:20px; font-family: Arial, sans-serif; width: 150px; background: #fff;" onchange="updateOrderDateRange()">
+                            <option value="custom">Custom</option>
+                            <option value="recent" selected>Recent</option>
+                            <option value="today">Today</option>
+                            <option value="yesterday">Yesterday</option>
+                            <option value="this-week">This week from Sunday</option>
+                            <option value="month-to-date">Month To Date</option>
+                            <option value="last-7-days">Last 7 Days</option>
+                            <option value="last-full-week">Last Full Week</option>
+                            <option value="last-full-month">Last Full Month</option>
+                            <option value="last-30-days">Last 30 Days</option>
+                            <option value="year-to-date">Year To Date</option>
+                            <option value="financial-year-to-date">Financial Year To Date</option>
+                            <option value="last-6-months">Last 6 Months</option>
+                            <option value="last-12-months">Last 12 Months</option>
+                            <option value="all-dates-to-yesterday">All dates to yesterday</option>
+                            <option value="all-dates-to-today">All dates to today</option>
+                            <option value="upcoming">Upcoming</option>
+                            <option value="all">All</option>
+                        </select>
+                        <div style="display: inline-flex; align-items: center;">
+                            <input type="text" id="order-start-date" style="padding:1px 4px; border:1px solid #767676; border-radius:0px; font-size:12px; height:20px; outline:none; font-family: Arial, sans-serif; width: 90px; background: #fff; box-sizing: border-box;" onchange="handleManualDateChange('order')">
+                            <button type="button" onclick="openUniversalDatePicker('order-start-date', 'order-filter-recent', () => handleManualDateChange('order'))" style="height:20px; padding:0 4px; border:1px solid #767676; border-left:none; background:#f4f4f4; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;" title="Pick start date">
+                                <i class="fa-solid fa-calendar-days" style="font-size:10px; color:#333;"></i>
+                            </button>
+                        </div>
+                        <div style="display: inline-flex; align-items: center;">
+                            <input type="text" id="order-end-date" style="padding:1px 4px; border:1px solid #767676; border-radius:0px; font-size:12px; height:20px; outline:none; font-family: Arial, sans-serif; width: 90px; background: #fff; box-sizing: border-box;" onchange="handleManualDateChange('order')">
+                            <button type="button" onclick="openUniversalDatePicker('order-end-date', 'order-filter-recent', () => handleManualDateChange('order'))" style="height:20px; padding:0 4px; border:1px solid #767676; border-left:none; background:#f4f4f4; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;" title="Pick end date">
+                                <i class="fa-solid fa-calendar-days" style="font-size:10px; color:#333;"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="order-client-filter-container" style="margin-bottom: 2px; font-family: Arial, sans-serif; font-size: 12px; display: none;">
+                    </div>
+                    <div id="order-add-client-filter-link-container">
+                        <a href="javascript:void(0)" onclick="addSecClientFilter('order')" style="color:#0056b3; font-size:11px; text-decoration:none; font-family: Arial, sans-serif;">Add Client Filter</a>
+                    </div>
+                    <div style="margin-top: 2px; font-family: Arial, sans-serif; font-size: 11px; color: #000; display: flex; align-items: center; gap: 4px;">
+                        <span>.</span>
+                        <a href="javascript:void(0)" onclick="loadOrdersSummary()" style="color:#0056b3; text-decoration:underline; font-size:12px;">Search</a>
+                        <a href="javascript:void(0)" onclick="showAddClientModal()" style="color:#0056b3; text-decoration:underline; font-size:12px; margin-left: 10px;">+ New Client</a>
+                    </div>
+                </div>
+                <div style="overflow-x: auto; background: #fff;">
+                    <table class="legacy-table legacy-table-10col">
+                        <thead>
+                            <tr>
+                                <th>Sr</th>
+                                <th>Name</th>
+                                <th>Value</th>
+                                <th>Num</th>
+                                <th>Actions</th>
+                                <th>Code</th>
+                                <th>Office Phone</th>
+                                <th>Cell Phone</th>
+                                <th>City</th>
+                                <th>email</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-summary-body">
+                            <tr><td colspan="10" style="text-align: center; padding: 20px; color: #94a3b8;">Loading orders summary...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="section-content" id="section-shipments" style="display:none; padding: 0;">
+                <div style="border: 1px solid #ccc; padding: 4px 8px; background: #eee; margin-bottom: 2px; width: 680px; max-width: 100%; box-sizing: border-box; line-height: 1.35;">
+                    <div style="font-family: Arial, sans-serif; font-size: 13px; font-weight: normal; color: #000; margin-bottom: 1px;">Shipments</div>
+                    <div style="font-family: Arial, sans-serif; font-size: 13px; font-weight: normal; color: #000; margin-bottom: 2px;">Shipment Date</div>
+                    <div style="display: flex; align-items: center; gap: 4px; font-family: Arial, sans-serif; font-size: 13px; margin-bottom: 2px;">
+                        <select id="shipment-filter-recent" style="padding:1px 2px; border:1px solid #767676; border-radius:0px; font-size:12px; height:20px; font-family: Arial, sans-serif; width: 115px; background: #fff;" onchange="updateShipmentDateRange()">
+                            <option value="custom">Custom</option>
+                            <option value="recent" selected>Recent</option>
+                            <option value="today">Today</option>
+                            <option value="yesterday">Yesterday</option>
+                            <option value="this-week">This week from Sunday</option>
+                            <option value="month-to-date">Month To Date</option>
+                            <option value="last-7-days">Last 7 Days</option>
+                            <option value="last-full-week">Last Full Week</option>
+                            <option value="last-full-month">Last Full Month</option>
+                            <option value="last-30-days">Last 30 Days</option>
+                            <option value="year-to-date">Year To Date</option>
+                            <option value="financial-year-to-date">Financial Year To Date</option>
+                            <option value="last-6-months">Last 6 Months</option>
+                            <option value="last-12-months">Last 12 Months</option>
+                            <option value="all-dates-to-yesterday">All dates to yesterday</option>
+                            <option value="all-dates-to-today">All dates to today</option>
+                            <option value="upcoming">Upcoming</option>
+                            <option value="all">All</option>
+                        </select>
+                        <div style="display: inline-flex; align-items: center;">
+                            <input type="text" id="shipment-start-date" style="padding:1px 4px; border:1px solid #767676; border-radius:0px; font-size:12px; height:20px; outline:none; font-family: Arial, sans-serif; width: 90px; background: #fff; box-sizing: border-box;" onchange="handleManualDateChange('shipment')">
+                            <button type="button" onclick="openUniversalDatePicker('shipment-start-date', 'shipment-filter-recent', () => handleManualDateChange('shipment'))" style="height:20px; padding:0 4px; border:1px solid #767676; border-left:none; background:#f4f4f4; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;" title="Pick start date">
+                                <i class="fa-solid fa-calendar-days" style="font-size:10px; color:#333;"></i>
+                            </button>
+                        </div>
+                        <div style="display: inline-flex; align-items: center;">
+                            <input type="text" id="shipment-end-date" style="padding:1px 4px; border:1px solid #767676; border-radius:0px; font-size:12px; height:20px; outline:none; font-family: Arial, sans-serif; width: 90px; background: #fff; box-sizing: border-box;" onchange="handleManualDateChange('shipment')">
+                            <button type="button" onclick="openUniversalDatePicker('shipment-end-date', 'shipment-filter-recent', () => handleManualDateChange('shipment'))" style="height:20px; padding:0 4px; border:1px solid #767676; border-left:none; background:#f4f4f4; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;" title="Pick end date">
+                                <i class="fa-solid fa-calendar-days" style="font-size:10px; color:#333;"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="shipment-client-filter-container" style="margin-bottom: 2px; font-family: Arial, sans-serif; font-size: 12px; display: none;">
+                    </div>
+                    <div id="shipment-add-client-filter-link-container">
+                        <a href="javascript:void(0)" onclick="addSecClientFilter('shipment')" style="color:#0056b3; font-size:11px; text-decoration:none; font-family: Arial, sans-serif;">Add Client Filter</a>
+                    </div>
+                    <div style="margin-top: 2px; font-family: Arial, sans-serif; font-size: 11px; color: #000; display: flex; align-items: center; gap: 4px;">
+                        <span>.</span>
+                        <a href="javascript:void(0)" onclick="loadShipmentsSummary()" style="color:#0056b3; text-decoration:underline; font-size:12px;">Search</a>
+                        <a href="javascript:void(0)" onclick="showAddClientModal()" style="color:#0056b3; text-decoration:underline; font-size:12px; margin-left: 10px;">+ New Client</a>
+                    </div>
+                </div>
+                <div style="overflow-x: auto; background: #fff;">
+                    <table class="legacy-table legacy-table-10col">
+                        <thead>
+                            <tr>
+                                <th>Sr</th>
+                                <th>Name</th>
+                                <th>Value</th>
+                                <th>Num</th>
+                                <th>Actions</th>
+                                <th>Code</th>
+                                <th>Office Phone</th>
+                                <th>Cell Phone</th>
+                                <th>City</th>
+                                <th>email</th>
+                            </tr>
+                        </thead>
+                        <tbody id="shipments-summary-body">
+                            <tr><td colspan="10" style="text-align: center; padding: 20px; color: #94a3b8;">Loading shipments summary...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="section-content" id="section-bills" style="display:none; padding: 0;">
+                <div style="border: 1px solid #ccc; padding: 4px 8px; background: #eee; margin-bottom: 2px; width: 680px; max-width: 100%; box-sizing: border-box; line-height: 1.35;">
+                    <div style="font-family: Arial, sans-serif; font-size: 13px; font-weight: normal; color: #000; margin-bottom: 1px;">Bills</div>
+                    <div style="font-family: Arial, sans-serif; font-size: 13px; font-weight: normal; color: #000; margin-bottom: 2px;">Invoice Date</div>
+                    <div style="display: flex; align-items: center; gap: 4px; font-family: Arial, sans-serif; font-size: 13px; margin-bottom: 2px;">
+                        <select id="bill-filter-recent" style="padding:1px 2px; border:1px solid #767676; border-radius:0px; font-size:12px; height:20px; font-family: Arial, sans-serif; width: 115px; background: #fff;" onchange="updateBillDateRange()">
+                            <option value="custom">Custom</option>
+                            <option value="recent" selected>Recent</option>
+                            <option value="today">Today</option>
+                            <option value="yesterday">Yesterday</option>
+                            <option value="this-week">This week from Sunday</option>
+                            <option value="month-to-date">Month To Date</option>
+                            <option value="last-7-days">Last 7 Days</option>
+                            <option value="last-full-week">Last Full Week</option>
+                            <option value="last-full-month">Last Full Month</option>
+                            <option value="last-30-days">Last 30 Days</option>
+                            <option value="year-to-date">Year To Date</option>
+                            <option value="financial-year-to-date">Financial Year To Date</option>
+                            <option value="last-6-months">Last 6 Months</option>
+                            <option value="last-12-months">Last 12 Months</option>
+                            <option value="all-dates-to-yesterday">All dates to yesterday</option>
+                            <option value="all-dates-to-today">All dates to today</option>
+                            <option value="upcoming">Upcoming</option>
+                            <option value="all">All</option>
+                        </select>
+                        <div style="display: inline-flex; align-items: center;">
+                            <input type="text" id="bill-start-date" style="padding:1px 4px; border:1px solid #767676; border-radius:0px; font-size:12px; height:20px; outline:none; font-family: Arial, sans-serif; width: 90px; background: #fff; box-sizing: border-box;" onchange="handleManualDateChange('bill')">
+                            <button type="button" onclick="openUniversalDatePicker('bill-start-date', 'bill-filter-recent', () => handleManualDateChange('bill'))" style="height:20px; padding:0 4px; border:1px solid #767676; border-left:none; background:#f4f4f4; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;" title="Pick start date">
+                                <i class="fa-solid fa-calendar-days" style="font-size:10px; color:#333;"></i>
+                            </button>
+                        </div>
+                        <div style="display: inline-flex; align-items: center;">
+                            <input type="text" id="bill-end-date" style="padding:1px 4px; border:1px solid #767676; border-radius:0px; font-size:12px; height:20px; outline:none; font-family: Arial, sans-serif; width: 90px; background: #fff; box-sizing: border-box;" onchange="handleManualDateChange('bill')">
+                            <button type="button" onclick="openUniversalDatePicker('bill-end-date', 'bill-filter-recent', () => handleManualDateChange('bill'))" style="height:20px; padding:0 4px; border:1px solid #767676; border-left:none; background:#f4f4f4; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;" title="Pick end date">
+                                <i class="fa-solid fa-calendar-days" style="font-size:10px; color:#333;"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="bill-client-filter-container" style="margin-bottom: 2px; font-family: Arial, sans-serif; font-size: 12px; display: none;">
+                    </div>
+                    <div id="bill-add-client-filter-link-container">
+                        <a href="javascript:void(0)" onclick="addSecClientFilter('bill')" style="color:#0056b3; font-size:11px; text-decoration:none; font-family: Arial, sans-serif;">Add Client Filter</a>
+                    </div>
+                    <div style="margin-top: 2px; font-family: Arial, sans-serif; font-size: 11px; color: #000; display: flex; align-items: center; gap: 4px;">
+                        <span>.</span>
+                        <a href="javascript:void(0)" onclick="loadBillsSummary()" style="color:#0056b3; text-decoration:underline; font-size:12px;">Search</a>
+                        <a href="javascript:void(0)" onclick="showAddClientModal()" style="color:#0056b3; text-decoration:underline; font-size:12px; margin-left: 10px;">+ New Client</a>
+                    </div>
+                </div>
+                <div style="overflow-x: auto; background: #fff;">
+                    <table class="legacy-table legacy-table-10col">
+                        <thead>
+                            <tr>
+                                <th>Sr</th>
+                                <th>Name</th>
+                                <th>Value</th>
+                                <th>Num</th>
+                                <th>Actions</th>
+                                <th>Code</th>
+                                <th>Office Phone</th>
+                                <th>Cell Phone</th>
+                                <th>City</th>
+                                <th>email</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bills-summary-body">
+                            <tr><td colspan="10" style="text-align: center; padding: 20px; color: #94a3b8;">Loading bills summary...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="section-content" id="section-collections" style="display:none; padding: 0;">
+                <div style="border: 1px solid #ccc; padding: 4px 8px; background: #eee; margin-bottom: 2px; width: 680px; max-width: 100%; box-sizing: border-box; line-height: 1.35;">
+                    <div style="font-family: Arial, sans-serif; font-size: 13px; font-weight: normal; color: #000; margin-bottom: 1px;">Collections</div>
+                    <div style="font-family: Arial, sans-serif; font-size: 13px; font-weight: normal; color: #000; margin-bottom: 2px;">Payment Date</div>
+                    <div style="display: flex; align-items: center; gap: 4px; font-family: Arial, sans-serif; font-size: 13px; margin-bottom: 2px;">
+                        <select id="collection-filter-recent" style="padding:1px 2px; border:1px solid #767676; border-radius:0px; font-size:12px; height:20px; font-family: Arial, sans-serif; width: 115px; background: #fff;" onchange="updateCollectionDateRange()">
+                            <option value="custom">Custom</option>
+                            <option value="recent" selected>Recent</option>
+                            <option value="today">Today</option>
+                            <option value="yesterday">Yesterday</option>
+                            <option value="this-week">This week from Sunday</option>
+                            <option value="month-to-date">Month To Date</option>
+                            <option value="last-7-days">Last 7 Days</option>
+                            <option value="last-full-week">Last Full Week</option>
+                            <option value="last-full-month">Last Full Month</option>
+                            <option value="last-30-days">Last 30 Days</option>
+                            <option value="year-to-date">Year To Date</option>
+                            <option value="financial-year-to-date">Financial Year To Date</option>
+                            <option value="last-6-months">Last 6 Months</option>
+                            <option value="last-12-months">Last 12 Months</option>
+                            <option value="all-dates-to-yesterday">All dates to yesterday</option>
+                            <option value="all-dates-to-today">All dates to today</option>
+                            <option value="upcoming">Upcoming</option>
+                            <option value="all">All</option>
+                        </select>
+                        <div style="display: inline-flex; align-items: center;">
+                            <input type="text" id="collection-start-date" style="padding:1px 4px; border:1px solid #767676; border-radius:0px; font-size:12px; height:20px; outline:none; font-family: Arial, sans-serif; width: 90px; background: #fff; box-sizing: border-box;" onchange="handleManualDateChange('collection')">
+                            <button type="button" onclick="openUniversalDatePicker('collection-start-date', 'collection-filter-recent', () => handleManualDateChange('collection'))" style="height:20px; padding:0 4px; border:1px solid #767676; border-left:none; background:#f4f4f4; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;" title="Pick start date">
+                                <i class="fa-solid fa-calendar-days" style="font-size:10px; color:#333;"></i>
+                            </button>
+                        </div>
+                        <div style="display: inline-flex; align-items: center;">
+                            <input type="text" id="collection-end-date" style="padding:1px 4px; border:1px solid #767676; border-radius:0px; font-size:12px; height:20px; outline:none; font-family: Arial, sans-serif; width: 90px; background: #fff; box-sizing: border-box;" onchange="handleManualDateChange('collection')">
+                            <button type="button" onclick="openUniversalDatePicker('collection-end-date', 'collection-filter-recent', () => handleManualDateChange('collection'))" style="height:20px; padding:0 4px; border:1px solid #767676; border-left:none; background:#f4f4f4; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;" title="Pick end date">
+                                <i class="fa-solid fa-calendar-days" style="font-size:10px; color:#333;"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="collection-client-filter-container" style="margin-bottom: 2px; font-family: Arial, sans-serif; font-size: 12px; display: none;">
+                    </div>
+                    <div id="collection-add-client-filter-link-container">
+                        <a href="javascript:void(0)" onclick="addSecClientFilter('collection')" style="color:#0056b3; font-size:11px; text-decoration:none; font-family: Arial, sans-serif;">Add Client Filter</a>
+                    </div>
+                    <div style="margin-top: 2px; font-family: Arial, sans-serif; font-size: 11px; color: #000; display: flex; align-items: center; gap: 4px;">
+                        <span>.</span>
+                        <a href="javascript:void(0)" onclick="loadCollectionsSummary()" style="color:#0056b3; text-decoration:underline; font-size:12px;">Search</a>
+                        <a href="javascript:void(0)" onclick="showAddClientModal()" style="color:#0056b3; text-decoration:underline; font-size:12px; margin-left: 10px;">+ New Client</a>
+                    </div>
+                </div>
+                <div style="overflow-x: auto; background: #fff;">
+                    <table class="legacy-table legacy-table-10col">
+                        <thead>
+                            <tr>
+                                <th>Sr</th>
+                                <th>Name</th>
+                                <th>Value</th>
+                                <th>Num</th>
+                                <th>Actions</th>
+                                <th>Code</th>
+                                <th>Office Phone</th>
+                                <th>Cell Phone</th>
+                                <th>City</th>
+                                <th>email</th>
+                            </tr>
+                        </thead>
+                        <tbody id="collections-summary-body">
+                            <tr><td colspan="10" style="text-align: center; padding: 20px; color: #94a3b8;">Loading collections summary...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="section-content" id="section-new-clients" style="display:none; padding: 0;">
+                <div style="border: 1px solid #ccc; padding: 4px 8px; background: #eee; margin-bottom: 2px; width: 680px; max-width: 100%; box-sizing: border-box; line-height: 1.35;">
+                    <div style="font-family: Arial, sans-serif; font-size: 13px; font-weight: normal; color: #000; margin-bottom: 1px;">New Clients</div>
+                    <div style="font-family: Arial, sans-serif; font-size: 13px; font-weight: normal; color: #000; margin-bottom: 2px;">Reg Date</div>
+                    <div style="display: flex; align-items: center; gap: 4px; font-family: Arial, sans-serif; font-size: 13px; margin-bottom: 2px;">
+                        <select id="new-client-filter-recent" style="padding:1px 2px; border:1px solid #767676; border-radius:0px; font-size:12px; height:20px; font-family: Arial, sans-serif; width: 115px; background: #fff;" onchange="updateNewClientDateRange()">
+                            <option value="custom">Custom</option>
+                            <option value="recent" selected>Recent</option>
+                            <option value="today">Today</option>
+                            <option value="yesterday">Yesterday</option>
+                            <option value="this-week">This week from Sunday</option>
+                            <option value="month-to-date">Month To Date</option>
+                            <option value="last-7-days">Last 7 Days</option>
+                            <option value="last-full-week">Last Full Week</option>
+                            <option value="last-full-month">Last Full Month</option>
+                            <option value="last-30-days">Last 30 Days</option>
+                            <option value="year-to-date">Year To Date</option>
+                            <option value="financial-year-to-date">Financial Year To Date</option>
+                            <option value="last-6-months">Last 6 Months</option>
+                            <option value="last-12-months">Last 12 Months</option>
+                            <option value="all-dates-to-yesterday">All dates to yesterday</option>
+                            <option value="all-dates-to-today">All dates to today</option>
+                            <option value="upcoming">Upcoming</option>
+                            <option value="all">All</option>
+                        </select>
+                        <div style="display: inline-flex; align-items: center;">
+                            <input type="text" id="new-client-start-date" style="padding:1px 4px; border:1px solid #767676; border-radius:0px; font-size:12px; height:20px; outline:none; font-family: Arial, sans-serif; width: 90px; background: #fff; box-sizing: border-box;" onchange="handleManualDateChange('new-client')">
+                            <button type="button" onclick="openUniversalDatePicker('new-client-start-date', 'new-client-filter-recent', () => handleManualDateChange('new-client'))" style="height:20px; padding:0 4px; border:1px solid #767676; border-left:none; background:#f4f4f4; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;" title="Pick start date">
+                                <i class="fa-solid fa-calendar-days" style="font-size:10px; color:#333;"></i>
+                            </button>
+                        </div>
+                        <div style="display: inline-flex; align-items: center;">
+                            <input type="text" id="new-client-end-date" style="padding:1px 4px; border:1px solid #767676; border-radius:0px; font-size:12px; height:20px; outline:none; font-family: Arial, sans-serif; width: 90px; background: #fff; box-sizing: border-box;" onchange="handleManualDateChange('new-client')">
+                            <button type="button" onclick="openUniversalDatePicker('new-client-end-date', 'new-client-filter-recent', () => handleManualDateChange('new-client'))" style="height:20px; padding:0 4px; border:1px solid #767676; border-left:none; background:#f4f4f4; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;" title="Pick end date">
+                                <i class="fa-solid fa-calendar-days" style="font-size:10px; color:#333;"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="new-client-client-filter-container" style="margin-bottom: 2px; font-family: Arial, sans-serif; font-size: 12px; display: none;">
+                    </div>
+                    <div id="new-client-add-client-filter-link-container">
+                        <a href="javascript:void(0)" onclick="addSecClientFilter('new-client')" style="color:#0056b3; font-size:11px; text-decoration:none; font-family: Arial, sans-serif;">Add Client Filter</a>
+                    </div>
+                    <div style="margin-top: 2px; font-family: Arial, sans-serif; font-size: 11px; color: #000; display: flex; align-items: center; gap: 4px;">
+                        <span>.</span>
+                        <a href="javascript:void(0)" onclick="loadNewClientsSummary()" style="color:#0056b3; text-decoration:underline; font-size:12px;">Search</a>
+                        <a href="javascript:void(0)" onclick="showAddClientModal()" style="color:#0056b3; text-decoration:underline; font-size:12px; margin-left: 10px;">+ New Client</a>
+                    </div>
+                </div>
+                <div style="overflow-x: auto; background: #fff;">
+                    <table class="legacy-table legacy-table-8col">
+                        <thead>
+                            <tr>
+                                <th>Sr</th>
+                                <th>Name</th>
+                                <th>Actions</th>
+                                <th>Code</th>
+                                <th>Office Phone</th>
+                                <th>Cell Phone</th>
+                                <th>City</th>
+                                <th>email</th>
+                            </tr>
+                        </thead>
+                        <tbody id="new-clients-summary-body">
+                            <tr><td colspan="8" style="text-align: center; padding: 20px; color: #94a3b8;">Loading new clients...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card section-content" id="section-messages" style="display:none;">
+                <div class="card-header"><h2>Messages</h2></div>
+                <p style="color: var(--text-muted); padding: 20px;">No messages to display.</p>
+            </div>
+
+            <div class="card section-content" id="section-documents" style="display:none;">
+                <div class="card-header"><h2>Documents</h2></div>
+                <p style="color: var(--text-muted); padding: 20px;">No documents uploaded.</p>
+            </div>
+        </main>
+    </div>
+
+    <div id="add-client-modal" class="modal-overlay" onclick="if(event.target===this) closeModal()" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:999999; align-items:center; justify-content:center; box-sizing:border-box; padding:15px;">
+        <div class="card modal-content" style="max-width:950px; width:100%; max-height:92vh; margin:auto; overflow-y:auto; overflow-x:hidden; background:#fff; border-radius:8px; box-shadow:0 20px 40px rgba(0,0,0,0.3);">
+            <div class="card-header" style="background:#fff; border-bottom:1px solid #eee; padding:15px 25px; display:flex; justify-content:space-between; align-items:center;">
+                <h2 id="modal-title" style="color:var(--primary-blue); font-size:20px; font-weight:700; margin:0;">New Client</h2>
+                <button type="button" onclick="closeModal()" style="background:none; border:none; font-size:28px; cursor:pointer; color:#999; transition: color 0.2s;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#999'">×</button>
+            </div>
+            <form id="add-client-form" style="padding:20px; font-size:13px;">
+                <div style="display:grid; grid-template-columns: 0.8fr 1.5fr 1fr 1.2fr; gap:15px; margin-bottom:15px; box-sizing: border-box;">
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label style="display:block; margin-bottom:4px; font-weight:600;">Salutation</label>
+                        <select id="nc-salutation" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; box-sizing: border-box;">
+                            <option value=""></option>
+                            <option>Dr.</option>
+                            <option>Mr.</option>
+                            <option>Ms.</option>
+                            <option>Mrs.</option>
+                            <option>Prof.</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label style="display:block; margin-bottom:4px; font-weight:600;">Name *</label>
+                        <input type="text" id="nc-name" required style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; box-sizing: border-box;">
+                    </div>
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label style="display:block; margin-bottom:4px; font-weight:600;">Contact Person</label>
+                        <input type="text" id="nc-contact" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; box-sizing: border-box;">
+                    </div>
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label style="display:block; margin-bottom:4px; font-weight:600;">Doctor Name</label>
+                        <select id="nc-doctor" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; box-sizing: border-box;" onchange="handleDoctorChange(this)">
+                            <option value="">-- Select Doctor --</option>
+                            <option value="__add_new__" style="font-weight:bold; color:#3b82f6;">+ Add New Doctor...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 0.8fr 1.5fr 1fr 1.2fr; gap:15px; margin-bottom:20px; box-sizing: border-box;">
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label style="display:block; margin-bottom:4px; font-weight:600;">Code</label>
+                        <input type="text" id="nc-code" readonly style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; background:#f9fafb; box-sizing: border-box;">
+                    </div>
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label style="display:block; margin-bottom:4px; font-weight:600;">Reg. #</label>
+                        <input type="text" id="nc-reg" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; box-sizing: border-box;">
+                    </div>
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label style="display:block; margin-bottom:4px; font-weight:600;">Working Hours</label>
+                        <input type="text" id="nc-hours" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; box-sizing: border-box;">
+                    </div>
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label style="display:block; margin-bottom:4px; font-weight:600;">Sales Manager</label>
+                        <select id="nc-manager" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; box-sizing: border-box;">
+                            <option>Select ...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 3fr 2fr; gap:40px; border-top: 1px solid #eee; padding-top:20px;">
+                    <div>
+                        <div style="display:flex; gap:2px; margin-bottom:15px;">
+                            <button type="button" style="background:var(--accent-pink); color:white; border:none; padding:8px 20px; border-radius:4px 0 0 4px; font-weight:600;">Primary Address</button>
+                            <button type="button" style="background:#f3f4f6; border:1px solid #e5e7eb; padding:8px 20px; border-radius:0 4px 4px 0; font-weight:600; color:#4b5563;">Locations</button>
+                        </div>
+                        <div class="form-group" style="margin-bottom:10px;">
+                            <label style="display:block; margin-bottom:4px; font-weight:600;">Address Line 1</label>
+                            <input type="text" id="nc-address1" placeholder="Building/Street" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:4px; box-sizing: border-box;">
+                        </div>
+                        <div class="form-group" style="margin-bottom:10px;">
+                            <label style="display:block; margin-bottom:4px; font-weight:600;">Address Line 2</label>
+                            <input type="text" id="nc-address2" placeholder="Locality/Landmark" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:4px; box-sizing: border-box;">
+                        </div>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:20px;">
+                            <div>
+                                <label style="display:block; margin-bottom:4px; font-weight:600;">Area</label>
+                                <input type="text" id="nc-area" placeholder="Area" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:4px; box-sizing: border-box;">
+                            </div>
+                            <div>
+                                <label style="display:block; margin-bottom:4px; font-weight:600;">City</label>
+                                <input type="text" id="nc-city" placeholder="City" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:4px; box-sizing: border-box;">
+                            </div>
+                            <div>
+                                <label style="display:block; margin-bottom:4px; font-weight:600;">Pin Code</label>
+                                <input type="text" id="nc-pincode" placeholder="Pin Code" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:4px; box-sizing: border-box;">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom:15px;">
+                            <label style="display:block; margin-bottom:5px; font-weight:600;">Office Phone</label>
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                                <input type="text" id="nc-phone1" oninput="this.value = this.value.replace(/[^0-9]/g, '')" style="padding:10px; border:1px solid #ccc; border-radius:4px;">
+                                <input type="text" id="nc-phone2" oninput="this.value = this.value.replace(/[^0-9]/g, '')" style="padding:10px; border:1px solid #ccc; border-radius:4px;">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom:15px;">
+                            <label style="display:block; margin-bottom:5px; font-weight:600;">Cell Phone</label>
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                                <input type="text" id="nc-cell1" oninput="this.value = this.value.replace(/[^0-9]/g, '')" style="padding:10px; border:1px solid #ccc; border-radius:4px;">
+                                <input type="text" id="nc-cell2" oninput="this.value = this.value.replace(/[^0-9]/g, '')" style="padding:10px; border:1px solid #ccc; border-radius:4px;">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom:15px;">
+                            <label style="display:block; margin-bottom:5px; font-weight:600;">Email</label>
+                            <div style="display:flex; gap:10px;">
+                                <input type="email" id="nc-email" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:4px;">
+                                <button type="button" class="btn-action primary" style="padding:0 15px; background:var(--accent-pink); border:none; border-radius:4px; color:white;"><i class="fas fa-plus"></i></button>
+                            </div>
+                        </div>
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color:#4b5563;">
+                            <input type="checkbox" style="width:16px; height:16px;"> Send Welcome Message
+                        </label>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; align-content: start;">
+                        <div class="form-group">
+                            <label style="display:block; margin-bottom:5px; font-weight:600;">Delivery Method</label>
+                            <select id="nc-delivery" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                                <option value=""></option>
+                                <option>LOGISTICS TEAM</option>
+                                <option>Courier</option>
+                                <option>Delivery Boy</option>
+                                <option>Doctors Pickup</option>
+                                <option>Mail</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label style="display:block; margin-bottom:5px; font-weight:600;">Route</label>
+                            <select id="nc-route" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                                <option value="Default">Default</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label style="display:block; margin-bottom:5px; font-weight:600;">Default Delivery Agent</label>
+                            <select id="nc-delivery-agent" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                                <option value=""></option>
+                                <option>SADDAM</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label style="display:block; margin-bottom:5px; font-weight:600;">Collection Centre</label>
+                            <select id="nc-collection-centre" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                                <option value=""></option>
+                                <option>Main Lab</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="grid-column: span 2; border-top:1px solid #f3f4f6; padding-top:10px;">
+                            <label style="display:block; margin-bottom:8px; font-weight:600;">Regular Visits</label>
+                            <div style="display:flex; gap:15px; align-items:center; flex-wrap: wrap;">
+                                <div style="display:flex; align-items:center; gap:5px;">
+                                    <input type="checkbox" id="visit-enabled" onchange="toggleClientsModalRegularVisits()"> 
+                                    <input type="time" id="visit-time" style="padding:4px; border:1px solid #ccc; border-radius:4px;" disabled>
+                                </div>
+                                <div id="modal-visit-days-wrap" style="display:flex; gap:8px; font-size:12px; opacity: 0.4; pointer-events: none;">
+                                    <label><input type="checkbox" class="visit-day" value="Su" disabled> Su</label>
+                                    <label><input type="checkbox" class="visit-day" value="Mo" disabled> Mo</label>
+                                    <label><input type="checkbox" class="visit-day" value="Tu" disabled> Tu</label>
+                                    <label><input type="checkbox" class="visit-day" value="We" disabled> We</label>
+                                    <label><input type="checkbox" class="visit-day" value="Th" disabled> Th</label>
+                                    <label><input type="checkbox" class="visit-day" value="Fr" disabled> Fr</label>
+                                    <label><input type="checkbox" class="visit-day" value="Sa" disabled> Sa</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label style="display:block; margin-bottom:5px; font-weight:600;">Price Band</label>
+                            <select id="nc-priceband" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                                <option value=""></option>
+                                <option value="Favorite Clients">Favorite Clients</option>
+                                <option value="International">International</option>
+                                <option value="Laboratory">Laboratory</option>
+                                <option value="Out of State">Out of State</option>
+                                <option value="PFM-7">PFM-7</option>
+                                <option value="Regular">Regular</option>
+                                <option value="RPD 3+1">RPD 3+1</option>
+                                <option value="Sensitive">Sensitive</option>
+                                <option value="ZIRCON 8">ZIRCON 8</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label style="display:block; margin-bottom:5px; font-weight:600;">Tax ID</label>
+                            <input type="text" id="nc-taxid" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                        </div>
+                        <div class="form-group" style="grid-column: span 2; display:flex; gap:30px; margin: 5px 0;">
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                                <input type="checkbox" id="nc-tax-exemption" style="width:16px; height:16px;"> Tax Exemption
+                            </label>
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                                <input type="checkbox" id="nc-is-dental-lab" style="width:16px; height:16px;"> This is a Dental Lab
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label style="display:block; margin-bottom:5px; font-weight:600;">Credit Limit</label>
+                            <input type="number" id="nc-credit" value="0" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display:block; margin-bottom:5px; font-weight:600;">Payment Terms (Days)</label>
+                            <input type="number" id="nc-terms" value="0" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                        </div>
+                        <div class="form-group" style="grid-column: span 2; border-top:1px solid #f3f4f6; padding-top:10px;">
+                            <label style="display:block; margin-bottom:5px; font-weight:600;">Opening Balance</label>
+                            <div style="display:flex; gap:20px; align-items:center;">
+                                <input type="number" id="nc-openbal" value="0" style="width:120px; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                                <div style="display:flex; gap:15px;">
+                                    <label style="display:flex; align-items:center; gap:5px; cursor:pointer;"><input type="radio" name="baltype" value="Dr" checked> Dr</label>
+                                    <label style="display:flex; align-items:center; gap:5px; cursor:pointer;"><input type="radio" name="baltype" value="Cr"> Cr</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group" style="grid-column: span 2; display:flex; align-items:center; gap:15px; border-top:1px solid #f3f4f6; padding-top:10px;">
+                            <label style="font-weight:600;">Bill To:</label>
+                            <span id="nc-bill-to-display" style="color:#3b82f6; font-weight:700; cursor:pointer; text-decoration:underline;">Self</span>
+                        </div>
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label style="display:block; margin-bottom:5px; font-weight:600;">Categories</label>
+                            <select id="nc-categories" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                                <option value="">Select associated category</option>
+                                <option value="Favorite">Favorite</option>
+                                <option value="Price Conscious">Price Conscious</option>
+                                <option value="Regular">Regular</option>
+                                <option value="VIP">VIP</option>
+                                <option value="Balance Amount">Balance Amount</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label style="display:block; margin-bottom:5px; font-weight:600;">Notes</label>
+                            <textarea id="nc-notes" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:4px; height:60px; resize: none;"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div style="display:flex; gap:10px; align-items:center; margin-top:30px; border-top:1px solid #ddd; padding-top:20px;">
+                    <button id="btn-delete-client" type="button" class="btn-action" style="background:none; border:1px solid #ec4899; color:#ec4899; padding:8px 15px; border-radius:4px;" onclick="deleteClient()"><i class="fas fa-trash-alt"></i> Delete</button>
+                    <div style="flex:1;"></div>
+                    <button type="submit" class="btn-action" style="background:#3b82f6; color:white; border:none; padding:8px 25px; border-radius:4px; font-weight:600; display:flex; align-items:center; gap:5px;"><i class="fas fa-check"></i> Save</button>
+                    <button type="button" class="btn-action" style="background:none; color:#3b82f6; border:none; font-weight:600; display:flex; align-items:center; gap:5px;" onclick="closeModal()"><i class="fas fa-undo"></i> Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>    <script>
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const API_BASE = (window.location.protocol === 'file:' || isLocalhost) ? 'http://localhost:5000/api' : window.location.origin + '/api';
+        let allClients = [];
+        let editingClientId = null;
+
+        function toDisplayDate(d) {
+            if (!d) return '';
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = String(d.getFullYear()).slice(-2);
+            return `${day}/${month}/${year}`;
+        }
+
+        function parseDateForApi(str) {
+            if (!str) return '';
+            str = str.trim();
+            if (str.includes('-')) return str;
+            const parts = str.split('/');
+            if (parts.length === 3) {
+                let y = parts[2];
+                if (y.length === 2) y = '20' + y;
+                const m = parts[1].padStart(2, '0');
+                const d = parts[0].padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            }
+            return str;
+        }
+
+        function handleManualDateChange(prefix) {
+            const select = document.getElementById(prefix + '-filter-recent');
+            if (select) select.value = 'custom';
+            if (prefix === 'order') loadOrdersSummary();
+            else if (prefix === 'shipment') loadShipmentsSummary();
+            else if (prefix === 'bill') loadBillsSummary();
+            else if (prefix === 'collection') loadCollectionsSummary();
+            else if (prefix === 'new-client') loadNewClientsSummary();
+        }
+
+        function calculateDateRange(recentValue) {
+            const now = new Date();
+            let start = new Date();
+            let end = new Date();
+
+            if (recentValue === 'recent' || recentValue === 'today') {
+                start = new Date();
+                end = new Date();
+            } else if (recentValue === 'yesterday') {
+                start.setDate(now.getDate() - 1);
+                end.setDate(now.getDate() - 1);
+            } else if (recentValue === 'this-week') {
+                const dayOfWeek = now.getDay();
+                start.setDate(now.getDate() - dayOfWeek);
+                end = new Date();
+            } else if (recentValue === 'month-to-date') {
+                start = new Date(now.getFullYear(), now.getMonth(), 1);
+                end = new Date();
+            } else if (recentValue === 'last-7-days') {
+                start.setDate(now.getDate() - 6);
+                end = new Date();
+            } else if (recentValue === 'last-full-week') {
+                const dayOfWeek = now.getDay();
+                start.setDate(now.getDate() - dayOfWeek - 7);
+                end.setDate(now.getDate() - dayOfWeek - 1);
+            } else if (recentValue === 'last-full-month') {
+                start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                end = new Date(now.getFullYear(), now.getMonth(), 0);
+            } else if (recentValue === 'last-30-days') {
+                start.setDate(now.getDate() - 29);
+                end = new Date();
+            } else if (recentValue === 'year-to-date') {
+                start = new Date(now.getFullYear(), 0, 1);
+                end = new Date();
+            } else if (recentValue === 'financial-year-to-date') {
+                const fiscalStartMonth = 3;
+                let fiscalYear = now.getFullYear();
+                if (now.getMonth() < fiscalStartMonth) fiscalYear--;
+                start = new Date(fiscalYear, fiscalStartMonth, 1);
+                end = new Date();
+            } else if (recentValue === 'last-6-months') {
+                start.setMonth(now.getMonth() - 6);
+                end = new Date();
+            } else if (recentValue === 'last-12-months') {
+                start.setFullYear(now.getFullYear() - 1);
+                end = new Date();
+            } else if (recentValue === 'all-dates-to-yesterday') {
+                start = null;
+                end = new Date();
+                end.setDate(now.getDate() - 1);
+            } else if (recentValue === 'all-dates-to-today') {
+                start = null;
+                end = new Date();
+            } else if (recentValue === 'upcoming') {
+                start = new Date();
+                end = null;
+            } else if (recentValue === 'all') {
+                start = null;
+                end = null;
+            }
+
+            return { start, end };
+        }
+
+        function updateOrderDateRange() {
+            const recent = document.getElementById('order-filter-recent').value;
+            const startInput = document.getElementById('order-start-date');
+            const endInput = document.getElementById('order-end-date');
+            
+            if (recent === 'custom') return;
+            const range = calculateDateRange(recent);
+            startInput.value = toDisplayDate(range.start);
+            endInput.value = toDisplayDate(range.end);
+            try { localStorage.setItem('clients_orders_range', recent); } catch(e) {}
+            loadOrdersSummary();
+        }
+
+        async function loadOrdersSummary() {
+            const startDate = document.getElementById('order-start-date').value;
+            const endDate = document.getElementById('order-end-date').value;
+            const tableBody = document.getElementById('orders-summary-body');
+            if (!tableBody) return;
+            
+            tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px; color: #94a3b8;"><i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i>Loading orders summary...</td></tr>';
+
+            try {
+                const queryStart = parseDateForApi(startDate) || '1970-01-01';
+                const queryEnd = parseDateForApi(endDate) || new Date().toISOString().split('T')[0];
+                let url = `${API_BASE}/orders/summary?startDate=${queryStart}&endDate=${queryEnd}`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('API Error: ' + response.statusText);
+                let data = await response.json();
+                
+                const criteria = getSectionFilterCriteria('order');
+                if (criteria.length > 0) {
+                    data = data.filter(item => {
+                        const fullClient = (allClients || []).find(c => c.id === item.id) || {};
+                        return criteria.every(crit => {
+                            const val = String(fullClient[crit.field] || item[crit.field] || item.name || '').toLowerCase();
+                            return val.includes(crit.val);
+                        });
+                    });
+                }
+                renderOrdersSummary(data);
+            } catch (err) {
+                console.error(err);
+                tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px; color: #ef4444;">Error fetching data.</td></tr>';
+            }
+        }
+
+        function renderOrdersSummary(summary) {
+            const tableBody = document.getElementById('orders-summary-body');
+            if (!tableBody) return;
+            tableBody.innerHTML = '';
+            
+            if (summary && summary.length > 0) {
+                summary.forEach((s, idx) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td style="padding: 1px 4px; text-align: left;">${idx + 1}</td>
+                        <td style="padding: 1px 4px;"><a href="client_viewer.html?id=${s.id}" style="color: #0056b3; text-decoration: underline; font-weight: normal; font-family: Arial, sans-serif; font-size: 12px;">${(s.name || '').toUpperCase()}</a></td>
+                        <td style="padding: 1px 4px; text-align: right; font-weight: normal;">${parseFloat(s.value || 0).toFixed(2)}</td>
+                        <td style="padding: 1px 4px; text-align: left; font-weight: normal;">${s.num || 0}</td>
+                        <td style="padding: 1px 4px; text-align: center; white-space: nowrap;" onclick="event.stopPropagation()">
+                            <div class="action-btn-group">
+                                <a href="new-order.html?clientId=${s.id}" class="action-icon-link" title="New Order"><i class="fa-solid fa-rectangle-list"></i></a>
+                                <a href="javascript:void(0)" onclick="initPayment(${s.id})" class="action-icon-link" title="New Payment"><i class="fa-solid fa-money-bill-1"></i></a>
+                                <a href="client_viewer.html?id=${s.id}" class="action-icon-link" title="Profile"><i class="fa-solid fa-users"></i></a>
+                                <a href="javascript:void(0)" onclick="editClient(${s.id}, event)" class="action-icon-link" title="Edit Record"><i class="fa-solid fa-user"></i></a>
+                            </div>
+                        </td>
+                        <td style="padding: 1px 4px;"><a href="javascript:void(0)" onclick="editClient(${s.id}, event)" style="color: #0056b3; text-decoration: none; font-family: Arial, sans-serif; font-size: 12px;">${s.code || ''}</a></td>
+                        <td style="padding: 1px 4px;">${s.phone || ''}</td>
+                        <td style="padding: 1px 4px;">${s.cellPhone || ''}</td>
+                        <td style="padding: 1px 4px;">${(s.city || '').toUpperCase()}</td>
+                        <td style="padding: 1px 4px;">${s.email || ''}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } else {
+                tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px; color: #94a3b8;">No orders found for this period.</td></tr>';
+            }
+        }
+
+        // Shared Client Filter dropdown population
+        function populateClientFilterDropdown(selectId) {
+            const select = document.getElementById(selectId);
+            if (!select) return;
+            select.innerHTML = '<option value="">Select Client</option>';
+            
+            const sortedClients = [...allClients].sort((a, b) => a.name.localeCompare(b.name));
+            sortedClients.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = `${c.name} (${c.code || ''})`;
+                select.appendChild(opt);
+            });
+        }
+
+        function addOrderClientFilter() {
+            populateClientFilterDropdown('order-client-filter-select');
+            document.getElementById('order-client-filter-container').style.display = 'flex';
+            document.getElementById('order-add-client-filter-link-container').style.display = 'none';
+        }
+
+        function removeOrderClientFilter() {
+            document.getElementById('order-client-filter-container').style.display = 'none';
+            document.getElementById('order-client-filter-select').value = '';
+            document.getElementById('order-add-client-filter-link-container').style.display = 'block';
+            loadOrdersSummary();
+        }
+
+        function addShipmentClientFilter() {
+            populateClientFilterDropdown('shipment-client-filter-select');
+            document.getElementById('shipment-client-filter-container').style.display = 'flex';
+            document.getElementById('shipment-add-client-filter-link-container').style.display = 'none';
+        }
+
+        function removeShipmentClientFilter() {
+            document.getElementById('shipment-client-filter-container').style.display = 'none';
+            document.getElementById('shipment-client-filter-select').value = '';
+            document.getElementById('shipment-add-client-filter-link-container').style.display = 'block';
+            loadShipmentsSummary();
+        }
+
+        // Shipments date filters & loaders
+        function updateShipmentDateRange() {
+            const recent = document.getElementById('shipment-filter-recent').value;
+            const startInput = document.getElementById('shipment-start-date');
+            const endInput = document.getElementById('shipment-end-date');
+            
+            if (recent === 'custom') return;
+            const range = calculateDateRange(recent);
+            startInput.value = toDisplayDate(range.start);
+            endInput.value = toDisplayDate(range.end);
+            try { localStorage.setItem('clients_shipments_range', recent); } catch(e) {}
+            loadShipmentsSummary();
+        }
+
+        async function loadShipmentsSummary() {
+            const startDate = document.getElementById('shipment-start-date').value;
+            const endDate = document.getElementById('shipment-end-date').value;
+            const tableBody = document.getElementById('shipments-summary-body');
+            if (!tableBody) return;
+            
+            tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px; color: #94a3b8;"><i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i>Loading shipments summary...</td></tr>';
+            
+            try {
+                const queryStart = parseDateForApi(startDate) || '1970-01-01';
+                const queryEnd = parseDateForApi(endDate) || new Date().toISOString().split('T')[0];
+                let url = `${API_BASE}/shipments/summary?startDate=${queryStart}&endDate=${queryEnd}`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('API Error: ' + response.statusText);
+                let data = await response.json();
+
+                const criteria = getSectionFilterCriteria('shipment');
+                if (criteria.length > 0) {
+                    data = data.filter(item => {
+                        const fullClient = (allClients || []).find(c => c.id === item.id) || {};
+                        return criteria.every(crit => {
+                            const val = String(fullClient[crit.field] || item[crit.field] || item.name || '').toLowerCase();
+                            return val.includes(crit.val);
+                        });
+                    });
+                }
+                renderShipmentsSummary(data);
+            } catch (err) {
+                console.error(err);
+                tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px; color: #ef4444;">Error fetching data.</td></tr>';
+            }
+        }
+
+        function renderShipmentsSummary(summary) {
+            const tableBody = document.getElementById('shipments-summary-body');
+            if (!tableBody) return;
+            tableBody.innerHTML = '';
+            
+            if (summary && summary.length > 0) {
+                summary.forEach((s, idx) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td style="padding: 1px 4px; text-align: left;">${idx + 1}</td>
+                        <td style="padding: 1px 4px;"><a href="client_viewer.html?id=${s.id}" style="color: #0056b3; text-decoration: underline; font-weight: normal; font-family: Arial, sans-serif; font-size: 12px;">${(s.name || '').toUpperCase()}</a></td>
+                        <td style="padding: 1px 4px; text-align: right; font-weight: normal;">${parseFloat(s.value || 0).toFixed(2)}</td>
+                        <td style="padding: 1px 4px; text-align: left; font-weight: normal;">${s.num || 0}</td>
+                        <td style="padding: 1px 4px; text-align: center; white-space: nowrap;" onclick="event.stopPropagation()">
+                            <div class="action-btn-group">
+                                <a href="new-order.html?clientId=${s.id}" class="action-icon-link" title="New Order"><i class="fa-solid fa-rectangle-list"></i></a>
+                                <a href="javascript:void(0)" onclick="initPayment(${s.id})" class="action-icon-link" title="New Payment"><i class="fa-solid fa-money-bill-1"></i></a>
+                                <a href="client_viewer.html?id=${s.id}" class="action-icon-link" title="Profile"><i class="fa-solid fa-users"></i></a>
+                                <a href="javascript:void(0)" onclick="editClient(${s.id}, event)" class="action-icon-link" title="Edit Record"><i class="fa-solid fa-user"></i></a>
+                            </div>
+                        </td>
+                        <td style="padding: 1px 4px;"><a href="javascript:void(0)" onclick="editClient(${s.id}, event)" style="color: #0056b3; text-decoration: none; font-family: Arial, sans-serif; font-size: 12px;">${s.code || ''}</a></td>
+                        <td style="padding: 1px 4px;">${s.phone || ''}</td>
+                        <td style="padding: 1px 4px;">${s.cellPhone || ''}</td>
+                        <td style="padding: 1px 4px;">${(s.city || '').toUpperCase()}</td>
+                        <td style="padding: 1px 4px;">${s.email || ''}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } else {
+                tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px; color: #94a3b8;">No shipments found for this period.</td></tr>';
+            }
+        }
+
+        // Bills Summary
+        function addBillClientFilter() {
+            populateClientFilterDropdown('bill-client-filter-select');
+            document.getElementById('bill-client-filter-container').style.display = 'flex';
+            document.getElementById('bill-add-client-filter-link-container').style.display = 'none';
+        }
+
+        function removeBillClientFilter() {
+            document.getElementById('bill-client-filter-container').style.display = 'none';
+            document.getElementById('bill-client-filter-select').value = '';
+            document.getElementById('bill-add-client-filter-link-container').style.display = 'block';
+            loadBillsSummary();
+        }
+
+        function updateBillDateRange() {
+            const recent = document.getElementById('bill-filter-recent').value;
+            const startInput = document.getElementById('bill-start-date');
+            const endInput = document.getElementById('bill-end-date');
+            if (recent === 'custom') return;
+            const range = calculateDateRange(recent);
+            startInput.value = toDisplayDate(range.start);
+            endInput.value = toDisplayDate(range.end);
+            try { localStorage.setItem('clients_bills_range', recent); } catch(e) {}
+            loadBillsSummary();
+        }
+
+        async function loadBillsSummary() {
+            const startDate = document.getElementById('bill-start-date').value;
+            const endDate = document.getElementById('bill-end-date').value;
+            const tableBody = document.getElementById('bills-summary-body');
+            if (!tableBody) return;
+
+            tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px; color: #94a3b8;"><i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i>Loading bills summary...</td></tr>';
+
+            try {
+                const queryStart = parseDateForApi(startDate) || '1970-01-01';
+                const queryEnd = parseDateForApi(endDate) || new Date().toISOString().split('T')[0];
+                let url = `${API_BASE}/invoices/summary?startDate=${queryStart}&endDate=${queryEnd}`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('API Error: ' + response.statusText);
+                let data = await response.json();
+
+                const criteria = getSectionFilterCriteria('bill');
+                if (criteria.length > 0) {
+                    data = data.filter(item => {
+                        const fullClient = (allClients || []).find(c => c.id === item.id) || {};
+                        return criteria.every(crit => {
+                            const val = String(fullClient[crit.field] || item[crit.field] || item.name || '').toLowerCase();
+                            return val.includes(crit.val);
+                        });
+                    });
+                }
+                renderBillsSummary(data);
+            } catch (err) {
+                console.error(err);
+                tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px; color: #ef4444;">Error fetching data.</td></tr>';
+            }
+        }
+
+        function renderBillsSummary(summary) {
+            const tableBody = document.getElementById('bills-summary-body');
+            if (!tableBody) return;
+            tableBody.innerHTML = '';
+
+            if (summary && summary.length > 0) {
+                summary.forEach((s, idx) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td style="padding: 1px 4px; text-align: left;">${idx + 1}</td>
+                        <td style="padding: 1px 4px;"><a href="client_viewer.html?id=${s.id}" style="color: #0056b3; text-decoration: underline; font-weight: normal; font-family: Arial, sans-serif; font-size: 12px;">${(s.name || '').toUpperCase()}</a></td>
+                        <td style="padding: 1px 4px; text-align: right; font-weight: normal;">${parseFloat(s.value || 0).toFixed(2)}</td>
+                        <td style="padding: 1px 4px; text-align: left; font-weight: normal;">${s.num || 0}</td>
+                        <td style="padding: 1px 4px; text-align: center; white-space: nowrap;" onclick="event.stopPropagation()">
+                            <div class="action-btn-group">
+                                <a href="new-order.html?clientId=${s.id}" class="action-icon-link" title="New Order"><i class="fa-solid fa-rectangle-list"></i></a>
+                                <a href="javascript:void(0)" onclick="initPayment(${s.id})" class="action-icon-link" title="New Payment"><i class="fa-solid fa-money-bill-1"></i></a>
+                                <a href="client_viewer.html?id=${s.id}" class="action-icon-link" title="Profile"><i class="fa-solid fa-users"></i></a>
+                                <a href="javascript:void(0)" onclick="editClient(${s.id}, event)" class="action-icon-link" title="Edit Record"><i class="fa-solid fa-user"></i></a>
+                            </div>
+                        </td>
+                        <td style="padding: 1px 4px;"><a href="javascript:void(0)" onclick="editClient(${s.id}, event)" style="color: #0056b3; text-decoration: none; font-family: Arial, sans-serif; font-size: 12px;">${s.code || ''}</a></td>
+                        <td style="padding: 1px 4px;">${s.phone || ''}</td>
+                        <td style="padding: 1px 4px;">${s.cellPhone || ''}</td>
+                        <td style="padding: 1px 4px;">${(s.city || '').toUpperCase()}</td>
+                        <td style="padding: 1px 4px;">${s.email || ''}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } else {
+                tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px; color: #94a3b8;">No bills found for this period.</td></tr>';
+            }
+        }
+
+        // Collections Summary
+        function addCollectionClientFilter() {
+            populateClientFilterDropdown('collection-client-filter-select');
+            document.getElementById('collection-client-filter-container').style.display = 'flex';
+            document.getElementById('collection-add-client-filter-link-container').style.display = 'none';
+        }
+
+        function removeCollectionClientFilter() {
+            document.getElementById('collection-client-filter-container').style.display = 'none';
+            document.getElementById('collection-client-filter-select').value = '';
+            document.getElementById('collection-add-client-filter-link-container').style.display = 'block';
+            loadCollectionsSummary();
+        }
+
+        function updateCollectionDateRange() {
+            const recent = document.getElementById('collection-filter-recent').value;
+            const startInput = document.getElementById('collection-start-date');
+            const endInput = document.getElementById('collection-end-date');
+            if (recent === 'custom') return;
+            const range = calculateDateRange(recent);
+            startInput.value = toDisplayDate(range.start);
+            endInput.value = toDisplayDate(range.end);
+            try { localStorage.setItem('clients_collections_range', recent); } catch(e) {}
+            loadCollectionsSummary();
+        }
+
+        async function loadCollectionsSummary() {
+            const startDate = document.getElementById('collection-start-date').value;
+            const endDate = document.getElementById('collection-end-date').value;
+            const tableBody = document.getElementById('collections-summary-body');
+            if (!tableBody) return;
+
+            tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px; color: #94a3b8;"><i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i>Loading collections summary...</td></tr>';
+
+            try {
+                const queryStart = parseDateForApi(startDate) || '1970-01-01';
+                const queryEnd = parseDateForApi(endDate) || new Date().toISOString().split('T')[0];
+                let url = `${API_BASE}/receipts/summary?startDate=${queryStart}&endDate=${queryEnd}`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('API Error: ' + response.statusText);
+                let data = await response.json();
+
+                const criteria = getSectionFilterCriteria('collection');
+                if (criteria.length > 0) {
+                    data = data.filter(item => {
+                        const fullClient = (allClients || []).find(c => c.id === item.id) || {};
+                        return criteria.every(crit => {
+                            const val = String(fullClient[crit.field] || item[crit.field] || item.name || '').toLowerCase();
+                            return val.includes(crit.val);
+                        });
+                    });
+                }
+                renderCollectionsSummary(data);
+            } catch (err) {
+                console.error(err);
+                tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px; color: #ef4444;">Error fetching data.</td></tr>';
+            }
+        }
+
+        function renderCollectionsSummary(summary) {
+            const tableBody = document.getElementById('collections-summary-body');
+            if (!tableBody) return;
+            tableBody.innerHTML = '';
+
+            if (summary && summary.length > 0) {
+                summary.forEach((s, idx) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td style="padding: 1px 4px; text-align: left;">${idx + 1}</td>
+                        <td style="padding: 1px 4px;"><a href="client_viewer.html?id=${s.id}" style="color: #0056b3; text-decoration: underline; font-weight: normal; font-family: Arial, sans-serif; font-size: 12px;">${(s.name || '').toUpperCase()}</a></td>
+                        <td style="padding: 1px 4px; text-align: right; font-weight: normal;">${parseFloat(s.value || 0).toFixed(2)}</td>
+                        <td style="padding: 1px 4px; text-align: left; font-weight: normal;">${s.num || 0}</td>
+                        <td style="padding: 1px 4px; text-align: center; white-space: nowrap;" onclick="event.stopPropagation()">
+                            <div class="action-btn-group">
+                                <a href="new-order.html?clientId=${s.id}" class="action-icon-link" title="New Order"><i class="fa-solid fa-rectangle-list"></i></a>
+                                <a href="javascript:void(0)" onclick="initPayment(${s.id})" class="action-icon-link" title="New Payment"><i class="fa-solid fa-money-bill-1"></i></a>
+                                <a href="client_viewer.html?id=${s.id}" class="action-icon-link" title="Profile"><i class="fa-solid fa-users"></i></a>
+                                <a href="javascript:void(0)" onclick="editClient(${s.id}, event)" class="action-icon-link" title="Edit Record"><i class="fa-solid fa-user"></i></a>
+                            </div>
+                        </td>
+                        <td style="padding: 1px 4px;"><a href="javascript:void(0)" onclick="editClient(${s.id}, event)" style="color: #0056b3; text-decoration: none; font-family: Arial, sans-serif; font-size: 12px;">${s.code || ''}</a></td>
+                        <td style="padding: 1px 4px;">${s.phone || ''}</td>
+                        <td style="padding: 1px 4px;">${s.cellPhone || ''}</td>
+                        <td style="padding: 1px 4px;">${(s.city || '').toUpperCase()}</td>
+                        <td style="padding: 1px 4px;">${s.email || ''}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } else {
+                tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px; color: #94a3b8;">No collections found for this period.</td></tr>';
+            }
+        }
+
+        // New Clients Summary
+        function addNewClientClientFilter() {
+            populateClientFilterDropdown('new-client-client-filter-select');
+            document.getElementById('new-client-client-filter-container').style.display = 'flex';
+            document.getElementById('new-client-add-client-filter-link-container').style.display = 'none';
+        }
+
+        function removeNewClientClientFilter() {
+            document.getElementById('new-client-client-filter-container').style.display = 'none';
+            document.getElementById('new-client-client-filter-select').value = '';
+            document.getElementById('new-client-add-client-filter-link-container').style.display = 'block';
+            loadNewClientsSummary();
+        }
+
+        function updateNewClientDateRange() {
+            const recent = document.getElementById('new-client-filter-recent').value;
+            const startInput = document.getElementById('new-client-start-date');
+            const endInput = document.getElementById('new-client-end-date');
+            if (recent === 'custom') return;
+            const range = calculateDateRange(recent);
+            startInput.value = toDisplayDate(range.start);
+            endInput.value = toDisplayDate(range.end);
+            try { localStorage.setItem('clients_newclients_range', recent); } catch(e) {}
+            loadNewClientsSummary();
+        }
+
+        async function loadNewClientsSummary() {
+            const startDateStr = document.getElementById('new-client-start-date').value;
+            const endDateStr = document.getElementById('new-client-end-date').value;
+            const tableBody = document.getElementById('new-clients-summary-body');
+            if (!tableBody) return;
+
+            const apiStart = parseDateForApi(startDateStr);
+            const apiEnd = parseDateForApi(endDateStr);
+
+            let start = null;
+            if (apiStart) {
+                start = new Date(apiStart);
+                start.setHours(0, 0, 0, 0);
+            }
+            let end = null;
+            if (apiEnd) {
+                end = new Date(apiEnd);
+                end.setHours(23, 59, 59, 999);
+            }
+
+            tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #94a3b8;"><i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i>Loading new clients...</td></tr>';
+
+            if (!allClients || allClients.length === 0) {
+                try {
+                    const response = await fetch(`${API_BASE}/clients`);
+                    allClients = await response.json();
+                } catch (err) {
+                    console.error(err);
+                    tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #ef4444;">Error fetching clients.</td></tr>';
+                    return;
+                }
+            }
+
+            const criteria = getSectionFilterCriteria('new-client');
+            const filtered = allClients.filter(c => {
+                if (criteria.length > 0) {
+                    const match = criteria.every(crit => {
+                        const val = String(c[crit.field] || c.name || '').toLowerCase();
+                        return val.includes(crit.val);
+                    });
+                    if (!match) return false;
+                }
+                if (!c.createdAt) return true;
+                const regDate = new Date(c.createdAt);
+                if (start && regDate < start) return false;
+                if (end && regDate > end) return false;
+                return true;
+            });
+
+            renderNewClientsSummary(filtered);
+        }
+
+        function renderNewClientsSummary(clients) {
+            const tableBody = document.getElementById('new-clients-summary-body');
+            if (!tableBody) return;
+            tableBody.innerHTML = '';
+
+            if (clients && clients.length > 0) {
+                clients.forEach((c, idx) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td style="padding: 1px 4px; text-align: left;">${idx + 1}</td>
+                        <td style="padding: 1px 4px;"><a href="client_viewer.html?id=${c.id}" style="color: #0056b3; text-decoration: underline; font-weight: normal; font-family: Arial, sans-serif; font-size: 12px;">${(c.name || '').toUpperCase()}</a></td>
+                        <td style="padding: 1px 4px; text-align: center;" onclick="event.stopPropagation()">
+                            <div class="action-btn-group">
+                                <a href="new-order.html?clientId=${c.id}" class="action-icon-link" title="New Order"><i class="fa-solid fa-rectangle-list"></i></a>
+                                <a href="javascript:void(0)" onclick="initPayment(${c.id})" class="action-icon-link" title="New Payment"><i class="fa-solid fa-money-bill-1"></i></a>
+                                <a href="client_viewer.html?id=${c.id}" class="action-icon-link" title="Profile"><i class="fa-solid fa-users"></i></a>
+                                <a href="javascript:void(0)" onclick="editClient(${c.id}, event)" class="action-icon-link" title="Edit Record"><i class="fa-solid fa-user"></i></a>
+                            </div>
+                        </td>
+                        <td style="padding: 1px 4px;"><a href="javascript:void(0)" onclick="editClient(${c.id}, event)" style="color: #0056b3; text-decoration: none; font-family: Arial, sans-serif; font-size: 12px;">${c.code || ''}</a></td>
+                        <td style="padding: 1px 4px;">${c.phone || ''}</td>
+                        <td style="padding: 1px 4px;">${c.cellPhone || ''}</td>
+                        <td style="padding: 1px 4px;">${(c.city || '').toUpperCase()}</td>
+                        <td style="padding: 1px 4px;">${c.email || ''}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } else {
+                tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #94a3b8;">No new clients found for this period.</td></tr>';
+            }
+        }
+
+        const CLIENT_FILTER_OPTIONS = [
+            { value: 'name', label: 'Name' },
+            { value: 'contactPerson', label: 'Contact Person' },
+            { value: 'code', label: 'Code' },
+            { value: 'registrationDate', label: 'Registration Date' },
+            { value: 'address', label: 'Street Address' },
+            { value: 'city', label: 'City' },
+            { value: 'pinCode', label: 'Pin Code' },
+            { value: 'phone', label: 'Office Phone' },
+            { value: 'cellPhone', label: 'Cell' },
+            { value: 'resPhone', label: 'Res Phone' },
+            { value: 'email', label: 'Email' },
+            { value: 'creditLimit', label: 'Credit Limit' },
+            { value: 'paymentTerms', label: 'PaymentTerms' },
+            { value: 'notes', label: 'Notes' },
+            { value: 'category', label: 'Category' },
+            { value: 'priceBand', label: 'Price Band' },
+            { value: 'deliveryMethod', label: 'Delivery Method' },
+            { value: 'salutation', label: 'Salutation' }
+        ];
+
+        function addSecClientFilter(prefix) {
+            const container = document.getElementById(`${prefix}-client-filter-container`);
+            if (container) {
+                container.style.display = 'block';
+                if (container.children.length === 0) {
+                    addSecCriterionRow(prefix);
+                }
+            }
+            const link = document.getElementById(`${prefix}-add-client-filter-link-container`);
+            if (link) link.style.display = 'none';
+        }
+
+        function addSecCriterionRow(prefix) {
+            const container = document.getElementById(`${prefix}-client-filter-container`);
+            if (!container) return;
+
+            const row = document.createElement('div');
+            row.className = `${prefix}-criterion-row sec-filter-row`;
+            row.style.cssText = 'display:flex; align-items:center; gap:4px; margin-bottom:2px; font-family:Arial, sans-serif;';
+
+            let optionsHtml = `<option value="">Select Criterion</option>`;
+            CLIENT_FILTER_OPTIONS.forEach(opt => {
+                optionsHtml += `<option value="${opt.value}">${opt.label}</option>`;
+            });
+
+            row.innerHTML = `
+                <select class="sec-criterion-select" style="padding:1px 2px; border:1px solid #767676; font-size:12px; font-family:Arial, sans-serif; background:#fff; height:20px; width:140px; outline:none;" onchange="handleSecCriterionChange(this)">
+                    ${optionsHtml}
+                </select>
+                <button type="button" onclick="removeSecCriterionRow(this, '${prefix}')" style="background:#fff; border:1px solid #767676; color:#000; font-weight:bold; font-size:12px; width:18px; height:20px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; padding:0; border-radius:0px;" title="Remove Criterion">-</button>
+                <input type="text" class="sec-criterion-val" style="display:none; padding:1px 3px; border:1px solid #767676; font-size:12px; font-family:Arial, sans-serif; width:130px; height:20px; outline:none;">
+                <a href="javascript:void(0)" onclick="clearSecCriterionRows('${prefix}')" style="color:#0056b3; font-size:11px; text-decoration:none; font-family:Arial, sans-serif; margin-left:4px;">Clear Criteria</a>
+            `;
+
+            container.appendChild(row);
+        }
+
+        function handleSecCriterionChange(selectEl) {
+            const inputEl = selectEl.parentElement.querySelector('.sec-criterion-val');
+            if (inputEl) {
+                if (selectEl.value) {
+                    inputEl.style.display = 'inline-block';
+                    inputEl.focus();
+                } else {
+                    inputEl.style.display = 'none';
+                }
+            }
+        }
+
+        function removeSecCriterionRow(btn, prefix) {
+            const row = btn.parentElement;
+            row.remove();
+            const container = document.getElementById(`${prefix}-client-filter-container`);
+            if (container && container.children.length === 0) {
+                container.style.display = 'none';
+                const link = document.getElementById(`${prefix}-add-client-filter-link-container`);
+                if (link) link.style.display = 'block';
+            }
+        }
+
+        function clearSecCriterionRows(prefix) {
+            const container = document.getElementById(`${prefix}-client-filter-container`);
+            if (container) {
+                container.innerHTML = '';
+                addSecCriterionRow(prefix);
+            }
+        }
+
+        function getSectionFilterCriteria(prefix) {
+            const rows = document.querySelectorAll(`.${prefix}-criterion-row`);
+            const criteria = [];
+            rows.forEach(r => {
+                const field = r.querySelector('.sec-criterion-select')?.value;
+                const val = r.querySelector('.sec-criterion-val')?.value.trim().toLowerCase();
+                if (field && val) {
+                    criteria.push({ field, val });
+                }
+            });
+            return criteria;
+        }
+
+        function addClientFilterRow() {
+            const container = document.getElementById('adv-search-criteria-container');
+            if (!container) return;
+
+            const row = document.createElement('div');
+            row.className = 'client-filter-row';
+            row.style.cssText = 'display:flex; align-items:center; gap:4px; margin-bottom:2px;';
+
+            let optionsHtml = `<option value="">Select Criterion</option>`;
+            CLIENT_FILTER_OPTIONS.forEach(opt => {
+                optionsHtml += `<option value="${opt.value}">${opt.label}</option>`;
+            });
+
+            row.innerHTML = `
+                <select class="filter-criterion-select" style="padding:1px 2px; border:1px solid #767676; font-size:12px; font-family:Arial, sans-serif; background:#fff; width:140px; height:20px; outline:none;" onchange="handleCriterionChange(this)">
+                    ${optionsHtml}
+                </select>
+                <button type="button" onclick="removeClientFilterRow(this)" style="background:#fff; border:1px solid #767676; color:#000; font-weight:bold; font-size:12px; width:18px; height:20px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; padding:0; border-radius:0px;" title="Remove Criterion">-</button>
+                <input type="text" class="filter-val-input" style="display:none; padding:1px 3px; border:1px solid #767676; font-size:12px; font-family:Arial, sans-serif; width:130px; height:20px; outline:none;" onkeydown="if(event.key==='Enter'){event.preventDefault();performAdvancedSearch();}">
+            `;
+
+            container.appendChild(row);
+        }
+
+        function handleCriterionChange(selectEl) {
+            const inputEl = selectEl.parentElement.querySelector('.filter-val-input');
+            if (inputEl) {
+                if (selectEl.value) {
+                    inputEl.style.display = 'inline-block';
+                    inputEl.focus();
+                } else {
+                    inputEl.style.display = 'none';
+                }
+            }
+        }
+
+        function removeClientFilterRow(btn) {
+            const row = btn.parentElement;
+            const container = document.getElementById('adv-search-criteria-container');
+            row.remove();
+            if (container && container.children.length === 0) {
+                addClientFilterRow();
+            }
+        }
+
+        function clearClientFilterRows() {
+            const container = document.getElementById('adv-search-criteria-container');
+            if (container) container.innerHTML = '';
+            addClientFilterRow();
+            const emptyState = document.getElementById('details-empty-state');
+            const tableContainer = document.getElementById('details-table-container');
+            if (emptyState) emptyState.style.display = 'block';
+            if (tableContainer) tableContainer.style.display = 'none';
+        }
+
+        function performAdvancedSearch() {
+            const rows = document.querySelectorAll('.client-filter-row');
+            const criteria = [];
+            rows.forEach(r => {
+                const field = r.querySelector('.filter-criterion-select')?.value;
+                const val = r.querySelector('.filter-val-input')?.value.trim().toLowerCase();
+                if (field && val) {
+                    criteria.push({ field, val });
+                }
+            });
+
+            const emptyState = document.getElementById('details-empty-state');
+            const tableContainer = document.getElementById('details-table-container');
+
+            if (criteria.length === 0) {
+                if (emptyState) emptyState.style.display = 'block';
+                if (tableContainer) tableContainer.style.display = 'none';
+                return;
+            }
+
+            let results = allClients || [];
+            if (criteria.length > 0) {
+                results = results.filter(c => {
+                    return criteria.every(crit => {
+                        let clientVal = '';
+                        if (crit.field === 'name') clientVal = c.name || '';
+                        else if (crit.field === 'contactPerson') clientVal = c.contactPerson || '';
+                        else if (crit.field === 'code') clientVal = c.code || '';
+                        else if (crit.field === 'registrationDate' || crit.field === 'createdAt') clientVal = c.createdAt || c.registrationDate || '';
+                        else if (crit.field === 'address') clientVal = (c.address || '') + ' ' + (c.address1 || '') + ' ' + (c.address2 || '');
+                        else if (crit.field === 'city') clientVal = c.city || '';
+                        else if (crit.field === 'pinCode') clientVal = c.pinCode || '';
+                        else if (crit.field === 'phone') clientVal = c.phone || '';
+                        else if (crit.field === 'cellPhone') clientVal = c.cellPhone || '';
+                        else if (crit.field === 'resPhone' || crit.field === 'phone2') clientVal = c.phone2 || c.resPhone || '';
+                        else if (crit.field === 'email') clientVal = c.email || '';
+                        else if (crit.field === 'creditLimit') clientVal = String(c.creditLimit || '');
+                        else if (crit.field === 'paymentTerms' || crit.field === 'paymentTermsDays') clientVal = String(c.paymentTermsDays || c.paymentTerms || '');
+                        else if (crit.field === 'notes') clientVal = c.notes || '';
+                        else if (crit.field === 'category' || crit.field === 'categories') clientVal = c.category || c.categories || '';
+                        else if (crit.field === 'priceBand') clientVal = c.priceBand || '';
+                        else if (crit.field === 'deliveryMethod') clientVal = c.deliveryMethod || '';
+                        else if (crit.field === 'salutation') clientVal = c.salutation || '';
+                        else clientVal = String(c[crit.field] || c.description || c.name || '');
+
+                        return clientVal.toLowerCase().includes(crit.val);
+                    });
+                });
+            }
+
+            if (results.length === 0) {
+                if (emptyState) emptyState.style.display = 'block';
+                if (tableContainer) tableContainer.style.display = 'none';
+            } else {
+                if (emptyState) emptyState.style.display = 'none';
+                if (tableContainer) tableContainer.style.display = 'block';
+                renderClientsTable(results);
+            }
+        }
+
+        function renderClientsTable(clients) {
+            const tbody = document.getElementById('clients-table-tbody') || document.querySelector('#clients-table tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            if (clients && clients.length > 0) {
+                clients.forEach((c, idx) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="padding: 1px 4px; text-align: left;">${idx + 1}</td>
+                        <td style="padding: 1px 4px;"><a href="client_viewer.html?id=${c.id}" style="color: #0056b3; text-decoration: underline; font-weight: normal; font-family: Arial, sans-serif; font-size: 12px;">${(c.name || '').toUpperCase()}</a></td>
+                        <td style="padding: 1px 4px; text-align: center;" onclick="event.stopPropagation()">
+                            <div class="action-btn-group">
+                                <a href="new-order.html?clientId=${c.id}" class="action-icon-link" title="New Order"><i class="fa-solid fa-rectangle-list"></i></a>
+                                <a href="javascript:void(0)" onclick="initPayment(${c.id})" class="action-icon-link" title="New Payment"><i class="fa-solid fa-money-bill-1"></i></a>
+                                <a href="client_viewer.html?id=${c.id}" class="action-icon-link" title="Profile"><i class="fa-solid fa-users"></i></a>
+                                <a href="javascript:void(0)" onclick="editClient(${c.id}, event)" class="action-icon-link" title="Edit Record"><i class="fa-solid fa-user"></i></a>
+                            </div>
+                        </td>
+                        <td style="padding: 1px 4px;"><a href="javascript:void(0)" onclick="editClient(${c.id}, event)" style="color: #0056b3; text-decoration: none; font-family: Arial, sans-serif; font-size: 12px;">${c.code || ''}</a></td>
+                        <td style="padding: 1px 4px;">${c.phone || ''}</td>
+                        <td style="padding: 1px 4px;">${c.cellPhone || ''}</td>
+                        <td style="padding: 1px 4px;">${(c.city || '').toUpperCase()}</td>
+                        <td style="padding: 1px 4px;">${c.email || ''}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #94a3b8;">No matching clients found.</td></tr>';
+            }
+        }
+
+        async function showSection(name, clientId = null) {
+            document.querySelectorAll('.section-content').forEach(el => el.style.display = 'none');
+            const target = document.getElementById('section-' + name);
+            if (target) target.style.display = 'block';
+            
+            document.querySelectorAll('aside .btn-action').forEach(btn => {
+                btn.classList.remove('active-filter');
+                if (btn.getAttribute('data-section') === name) {
+                    btn.classList.add('active-filter');
+                }
+            });
+
+            if (name === 'details') {
+                const container = document.getElementById('adv-search-criteria-container');
+                if (container && container.children.length === 0) {
+                    addClientFilterRow();
+                }
+                const emptyState = document.getElementById('details-empty-state');
+                const tableContainer = document.getElementById('details-table-container');
+                if (emptyState) emptyState.style.display = 'block';
+                if (tableContainer) tableContainer.style.display = 'none';
+            } else if (name === 'quick-search') {
+                const searchInput = document.getElementById('main-quick-search');
+                if (searchInput) {
+                    searchInput.focus();
+                    searchClients('main-quick-search');
+                }
+            } else if (name === 'shipments') {
+                const s = document.getElementById('shipment-filter-recent');
+                if (s) s.value = localStorage.getItem('clients_shipments_range') || 'recent';
+                updateShipmentDateRange();
+            } else if (name === 'bills') {
+                const s = document.getElementById('bill-filter-recent');
+                if (s) s.value = localStorage.getItem('clients_bills_range') || 'recent';
+                updateBillDateRange();
+            } else if (name === 'collections') {
+                const s = document.getElementById('collection-filter-recent');
+                if (s) s.value = localStorage.getItem('clients_collections_range') || 'recent';
+                updateCollectionDateRange();
+            } else if (name === 'new-clients') {
+                const s = document.getElementById('new-client-filter-recent');
+                if (s) s.value = localStorage.getItem('clients_newclients_range') || 'recent';
+                updateNewClientDateRange();
+            } else if (name === 'orders') {
+                const s = document.getElementById('order-filter-recent');
+                if (s) s.value = localStorage.getItem('clients_orders_range') || 'recent';
+                updateOrderDateRange();
+            }
+        }
+
+        async function loadClientOrders(clientId) {
+            const tableBody = document.getElementById('client-orders-results-body');
+            tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: #94a3b8;">Loading orders...</td></tr>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/orders?clientId=${clientId}`);
+                const orders = await response.json();
+                renderClientOrders(orders);
+            } catch (err) {
+                console.error('Error loading client orders:', err);
+                tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: #ef4444;">Error loading orders.</td></tr>';
+            }
+        }
+
+        function renderClientOrders(orders) {
+            const tableBody = document.getElementById('client-orders-results-body');
+            if (!tableBody) return;
+            tableBody.innerHTML = '';
+            
+            if (orders && orders.length > 0) {
+                orders.forEach(order => {
+                    const row = document.createElement('tr');
+                    row.style.borderBottom = '1px solid #f1f5f9';
+                    row.innerHTML = `
+                        <td style="padding: 12px 10px;">${order.id}</td>
+                        <td style="padding: 12px 10px;">${new Date(order.receivedDate).toLocaleDateString('en-GB')}</td>
+                        <td style="padding: 12px 10px;">${order.patientName || '-'}</td>
+                        <td style="padding: 12px 10px;">${order.productName || '-'}</td>
+                        <td style="padding: 12px 10px;"><span style="padding: 4px 8px; border-radius: 4px; font-size: 11px; background: #f3f4f6;">${order.status}</span></td>
+                        <td style="padding: 12px 10px; text-align: right; font-weight: 600;">${order.totalAmount || '0.00'}</td>
+                        <td style="padding: 12px 10px; text-align: center;">
+                            <a href="order_viewer.html?id=${order.id}" title="View"><i class="fas fa-eye" style="color: #64748b;"></i></a>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } else {
+                tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: #94a3b8;">No orders found for this client.</td></tr>';
+            }
+        }
+
+        async function initPayment(clientId) {
+            const client = allClients.find(c => c.id == clientId);
+            if (!client) return;
+
+            document.getElementById('pay-client-id').value = clientId;
+            document.getElementById('pay-client-name').textContent = client.name;
+            document.getElementById('pay-date').valueAsDate = new Date();
+            document.getElementById('pay-amount').value = 0;
+            document.getElementById('pay-total-applied').textContent = '0';
+            
+            // Show payment section
+            showSection('payment');
+            
+            // Fetch Next Unique Receipt Number and Financial Summary in parallel
+            try {
+                const [receiptRes, summaryRes] = await Promise.all([
+                    fetch(`${API_BASE}/receipts/next-number`),
+                    fetch(`${API_BASE}/clients/${clientId}/financial-summary`)
+                ]);
+                
+                const receiptData = await receiptRes.json();
+                const summary = await summaryRes.json();
+                
+                document.getElementById('pay-receipt').value = receiptData.receiptNumber;
+                document.getElementById('pay-balance').textContent = summary.balance || '0';
+                
+                if (summary.lastInvoice) {
+                    document.getElementById('pay-last-invoice').innerHTML = `Last Invoice : # ${summary.lastInvoice.invoiceNumber}<br>for OMR ${summary.lastInvoice.netAmount} on ${new Date(summary.lastInvoice.invoiceDate).toLocaleDateString('en-GB')}`;
+                } else {
+                    document.getElementById('pay-last-invoice').innerHTML = 'Last Invoice : # - <br>for OMR - on -';
+                }
+                
+                if (summary.lastPayment) {
+                    document.getElementById('pay-last-payment').innerHTML = `Last Payment : # ${summary.lastPayment.receiptNumber}<br>OMR ${summary.lastPayment.amount} on ${new Date(summary.lastPayment.receiptDate).toLocaleDateString('en-GB')}`;
+                } else {
+                    document.getElementById('pay-last-payment').innerHTML = 'Last Payment : # - <br>OMR - on -';
+                }
+            } catch (err) {
+                console.error('Error fetching payment data:', err);
+            }
+        }
+
+        document.getElementById('pay-amount').oninput = (e) => {
+            document.getElementById('pay-total-applied').textContent = e.target.value || '0';
+        };
+
+        document.getElementById('payment-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const clientId = document.getElementById('pay-client-id').value;
+            const data = {
+                clientId: parseInt(clientId),
+                amount: parseFloat(document.getElementById('pay-amount').value),
+                receiptDate: new Date(document.getElementById('pay-date').value),
+                paymentMode: document.getElementById('pay-mode').value,
+                reference: document.getElementById('pay-ref').value,
+                notes: document.getElementById('pay-notes').value,
+                isAdvance: true // Simplified for now
+            };
+
+            try {
+                const res = await fetch(`${API_BASE}/receipts`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    alert('Payment saved successfully!');
+                    showSection('quick-search');
+                } else {
+                    alert('Error saving payment');
+                }
+            } catch (err) {
+                console.error('Error saving payment:', err);
+            }
+        };
+
+        function showAddClientModal() {
+            window.location.href = 'edit_client.html';
+        }
+        window.openAddClientModal = showAddClientModal;
+        window.showAddClientModal = showAddClientModal;
+
+        function editClient(id) {
+            if (id) {
+                window.location.href = `edit_client.html?id=${id}`;
+            } else {
+                window.location.href = 'edit_client.html';
+            }
+        }
+        window.editClient = editClient;
+
+        function closeModal() {
+            const modal = document.getElementById('add-client-modal');
+            if (modal) {
+                modal.style.display = 'none';
+                modal.setAttribute('style', 'display: none !important;');
+            }
+            editingClientId = null;
+        }
+        window.closeModal = closeModal;
+
+        function searchClients(sourceId) {
+            const sourceInput = document.getElementById(sourceId);
+            if (!sourceInput) return;
+            const query = sourceInput.value.toLowerCase();
+            
+            // Sync all search boxes (Optional: keeping them independent or synced as per logic)
+            const filtered = allClients.filter(c => 
+                (c.name || '').toLowerCase().includes(query) ||
+                (c.code || '').toLowerCase().includes(query) ||
+                (c.cellPhone || '').toLowerCase().includes(query) ||
+                (c.email || '').toLowerCase().includes(query)
+            );
+            
+            // Route to correct renderer
+            if (sourceId === 'main-quick-search') {
+                renderQuickSearchResults(filtered);
+            } else if (sourceId === 'shipment-view-search') {
+                renderShipmentSearchResults(filtered);
+            } else if (sourceId === 'bill-view-search') {
+                renderBillSearchResults(filtered);
+            } else {
+                renderClients(filtered);
+            }
+        }
+
+
+
+        function renderShipmentSearchResults(clients) {
+            const tableBody = document.getElementById('shipment-search-results-body');
+            renderGenericClientTable(tableBody, clients);
+        }
+
+        function renderBillSearchResults(clients) {
+            const tableBody = document.getElementById('bill-search-results-body');
+            renderGenericClientTable(tableBody, clients);
+        }
+
+        function renderGenericClientTable(tableBody, clients) {
+            if (!tableBody) return;
+            tableBody.innerHTML = '';
+            if (clients && clients.length > 0) {
+                clients.forEach((client, idx) => {
+                    const row = document.createElement('tr');
+                    
+                    row.innerHTML = `
+                        <td style="padding: 2px 5px; text-align: left;">${idx + 1}</td>
+                        <td style="padding: 2px 5px;"><a href="client_viewer.html?id=${client.id}" style="color: #0056b3; text-decoration: underline; font-weight: normal; font-family: Arial, sans-serif; font-size: 12px;">${(client.name || '').toUpperCase()}</a></td>
+                        <td style="padding: 2px 5px; text-align: center;" onclick="event.stopPropagation()">
+                            <div class="action-btn-group">
+                                <a href="new-order.html?clientId=${client.id}" class="action-icon-link" title="New Order"><i class="fa-solid fa-rectangle-list"></i></a>
+                                <a href="javascript:void(0)" onclick="initPayment(${client.id})" class="action-icon-link" title="New Payment"><i class="fa-solid fa-money-bill-1"></i></a>
+                                <a href="client_viewer.html?id=${client.id}" class="action-icon-link" title="Profile"><i class="fa-solid fa-users"></i></a>
+                                <a href="javascript:void(0)" onclick="editClient(${client.id}, event)" class="action-icon-link" title="Edit Record"><i class="fa-solid fa-user"></i></a>
+                            </div>
+                        </td>
+                        <td style="padding: 2px 5px;"><a href="javascript:void(0)" onclick="editClient(${client.id}, event)" style="color: #0056b3; text-decoration: none; font-family: Arial, sans-serif; font-size: 12px;">${client.code || ''}</a></td>
+                        <td style="padding: 2px 5px;">${client.phone || ''}</td>
+                        <td style="padding: 2px 5px;">${client.cellPhone || ''}</td>
+                        <td style="padding: 2px 5px;">${(client.city || '').toUpperCase()}</td>
+                        <td style="padding: 2px 5px;">${client.email || ''}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } else {
+                tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #94a3b8;">No clients found</td></tr>';
+            }
+        }
+
+        let quickSearchCurrentPage = 1;
+        const quickSearchItemsPerPage = 50;
+        let currentQuickSearchClients = [];
+
+        function renderQuickSearchResults(clients) {
+            currentQuickSearchClients = clients || [];
+            quickSearchCurrentPage = 1;
+            renderQuickSearchPage(1);
+        }
+
+        function renderQuickSearchPage(page = 1) {
+            quickSearchCurrentPage = page;
+            const tableBody = document.getElementById('quick-search-results-body');
+            if (!tableBody) return;
+            tableBody.innerHTML = '';
+
+            const totalItems = currentQuickSearchClients.length;
+            const totalPages = Math.ceil(totalItems / quickSearchItemsPerPage) || 1;
+            if (quickSearchCurrentPage > totalPages) quickSearchCurrentPage = totalPages;
+            if (quickSearchCurrentPage < 1) quickSearchCurrentPage = 1;
+
+            const start = (quickSearchCurrentPage - 1) * quickSearchItemsPerPage;
+            const end = start + quickSearchItemsPerPage;
+            const paginated = currentQuickSearchClients.slice(start, end);
+
+            if (paginated && paginated.length > 0) {
+                paginated.forEach((client, idx) => {
+                    const row = document.createElement('tr');
+                    const displayIdx = start + idx + 1;
+                    row.innerHTML = `
+                        <td style="padding: 2px 5px; text-align: left;">${displayIdx}</td>
+                        <td style="padding: 2px 5px;"><a href="client_viewer.html?id=${client.id}" style="color: #0056b3; text-decoration: underline; font-weight: normal; font-family: Arial, sans-serif; font-size: 12px;">${(client.name || '').toUpperCase()}</a></td>
+                        <td style="padding: 2px 5px; text-align: center;" onclick="event.stopPropagation()">
+                            <div class="action-btn-group">
+                                <a href="new-order.html?clientId=${client.id}" class="action-icon-link" title="New Order"><i class="fa-solid fa-rectangle-list"></i></a>
+                                <a href="javascript:void(0)" onclick="initPayment(${client.id})" class="action-icon-link" title="New Payment"><i class="fa-solid fa-money-bill-1"></i></a>
+                                <a href="client_viewer.html?id=${client.id}" class="action-icon-link" title="Profile"><i class="fa-solid fa-users"></i></a>
+                                <a href="javascript:void(0)" onclick="editClient(${client.id}, event)" class="action-icon-link" title="Edit Record"><i class="fa-solid fa-user"></i></a>
+                            </div>
+                        </td>
+                        <td style="padding: 2px 5px;"><a href="javascript:void(0)" onclick="editClient(${client.id}, event)" style="color: #0056b3; text-decoration: none; font-family: Arial, sans-serif; font-size: 12px;">${client.code || ''}</a></td>
+                        <td style="padding: 2px 5px;">${client.phone || ''}</td>
+                        <td style="padding: 2px 5px;">${client.cellPhone || ''}</td>
+                        <td style="padding: 2px 5px;">${(client.city || '').toUpperCase()}</td>
+                        <td style="padding: 2px 5px;">${client.email || ''}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } else {
+                tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #94a3b8;">No clients found</td></tr>';
+            }
+
+            renderQuickSearchPagination(totalItems, totalPages);
+        }
+
+        function renderQuickSearchPagination(totalItems, totalPages) {
+            const container = document.getElementById('quick-search-pagination-container');
+            if (!container) return;
+
+            if (totalItems === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let html = '<div class="bootstrap-pagination">';
+
+            // Previous Button «
+            if (quickSearchCurrentPage === 1) {
+                html += `<button type="button" disabled class="disabled">&laquo;</button>`;
+            } else {
+                html += `<button type="button" onclick="changeQuickSearchPage(${quickSearchCurrentPage - 1})">&laquo;</button>`;
+            }
+
+            // Page numbers
+            for (let p = 1; p <= totalPages; p++) {
+                if (p === quickSearchCurrentPage) {
+                    html += `<button type="button" class="active">${p}</button>`;
+                } else {
+                    html += `<button type="button" onclick="changeQuickSearchPage(${p})">${p}</button>`;
+                }
+            }
+
+            // Next Button »
+            if (quickSearchCurrentPage === totalPages) {
+                html += `<button type="button" disabled class="disabled">&raquo;</button>`;
+            } else {
+                html += `<button type="button" onclick="changeQuickSearchPage(${quickSearchCurrentPage + 1})">&raquo;</button>`;
+            }
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        window.changeQuickSearchPage = function(page) {
+            renderQuickSearchPage(page);
+        };
+
+        let currentPage = 1;
+        let itemsPerPage = 10;
+        let displayedClients = [];
+
+        function renderPaginationControls(totalItems) {
+            let container = document.getElementById('pagination-controls');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'pagination-controls';
+                container.style = 'display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; border-top: 1px solid #cbd5e1; background: #fff; margin-top: 15px; border-radius: 4px;';
+                const table = document.querySelector('#clients-table');
+                if (table && table.parentElement) {
+                    table.parentElement.appendChild(container);
+                }
+            }
+            
+            const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            
+            const startItem = Math.min((currentPage - 1) * itemsPerPage + 1, totalItems || 0);
+            const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+            
+            container.innerHTML = `
+                <div style="font-size: 13px; color: #64748b;">Showing ${startItem} to ${endItem} of ${totalItems} entries</div>
+                <div style="display: flex; gap: 5px;">
+                    <button type="button" onclick="changePage(-1)" ${currentPage === 1 ? 'disabled' : ''} style="padding: 5px 10px; border: 1px solid #cbd5e1; background: ${currentPage === 1 ? '#f1f5f9' : '#fff'}; color: #334155; border-radius: 4px; cursor: ${currentPage === 1 ? 'not-allowed' : 'pointer'};">Previous</button>
+                    <span style="padding: 5px 10px; font-size: 13px; font-weight: bold; align-self: center;">Page ${currentPage} of ${totalPages}</span>
+                    <button type="button" onclick="changePage(1)" ${currentPage === totalPages ? 'disabled' : ''} style="padding: 5px 10px; border: 1px solid #cbd5e1; background: ${currentPage === totalPages ? '#f1f5f9' : '#fff'}; color: #334155; border-radius: 4px; cursor: ${currentPage === totalPages ? 'not-allowed' : 'pointer'};">Next</button>
+                </div>
+            `;
+        }
+
+        window.changePage = function(delta) {
+            currentPage += delta;
+            renderClients(displayedClients);
+        };
+
+        function renderClients(clients) {
+            displayedClients = clients;
+            const tableBody = document.querySelector('#clients-table tbody');
+            if (!tableBody) return;
+            tableBody.innerHTML = '';
+            
+            const totalItems = clients.length;
+            const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const paginated = clients.slice(start, end);
+
+            if (paginated && paginated.length > 0) {
+                paginated.forEach((client, idx) => {
+                    const row = document.createElement('tr');
+                    const displayIdx = start + idx + 1;
+                    row.innerHTML = `
+                        <td style="padding: 1px 4px; text-align: left;">${displayIdx}</td>
+                        <td style="padding: 1px 4px;"><a href="client_viewer.html?id=${client.id}" style="color: #0056b3; text-decoration: underline; font-weight: normal; font-family: Arial, sans-serif; font-size: 12px;">${(client.name || '').toUpperCase()}</a></td>
+                        <td style="padding: 1px 4px; text-align: center;" onclick="event.stopPropagation()">
+                            <div class="action-btn-group">
+                                <a href="new-order.html?clientId=${client.id}" class="action-icon-link" title="New Order"><i class="fa-solid fa-rectangle-list"></i></a>
+                                <a href="javascript:void(0)" onclick="initPayment(${client.id})" class="action-icon-link" title="New Payment"><i class="fa-solid fa-money-bill-1"></i></a>
+                                <a href="client_viewer.html?id=${client.id}" class="action-icon-link" title="Profile"><i class="fa-solid fa-users"></i></a>
+                                <a href="javascript:void(0)" onclick="editClient(${client.id}, event)" class="action-icon-link" title="Edit Record"><i class="fa-solid fa-user"></i></a>
+                            </div>
+                        </td>
+                        <td style="padding: 1px 4px;"><a href="javascript:void(0)" onclick="editClient(${client.id}, event)" style="color: #0056b3; text-decoration: none; font-family: Arial, sans-serif; font-size: 12px;">${client.code || ''}</a></td>
+                        <td style="padding: 1px 4px;">${client.phone || ''}</td>
+                        <td style="padding: 1px 4px;">${client.cellPhone || ''}</td>
+                        <td style="padding: 1px 4px;">${(client.city || '').toUpperCase()}</td>
+                        <td style="padding: 1px 4px;">${client.email || ''}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } else {
+                tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #94a3b8;">No clients found</td></tr>';
+            }
+            
+            renderPaginationControls(totalItems);
+        }
+
+        async function loadClients() {
+            const tableBody = document.querySelector('#clients-table tbody');
+            const quickTableBody = document.getElementById('quick-search-results-body');
+            if (tableBody) {
+                tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #94a3b8;">Enter search criteria to view records</td></tr>';
+            }
+            if (quickTableBody) {
+                quickTableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 20px;"><i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i>Loading clients...</td></tr>';
+            }
+            try {
+                const response = await fetch(`${API_BASE}/clients?simple=true`);
+                allClients = await response.json();
+                currentPage = 1;
+                const pagControls = document.getElementById('pagination-controls');
+                if (pagControls) pagControls.innerHTML = '';
+                
+                searchClients('main-quick-search');
+            } catch (err) { 
+                console.error(err); 
+                if (tableBody) {
+                    tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #dc2626; padding: 20px;">Failed to load clients.</td></tr>';
+                }
+                if (quickTableBody) {
+                    quickTableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #dc2626; padding: 20px;"><i class="fas fa-exclamation-triangle" style="margin-right: 8px;"></i>Failed to load clients.</td></tr>';
+                }
+            }
+        }
+
+        document.getElementById('add-client-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const nameInput = document.getElementById('nc-name');
+            const nameVal = nameInput ? nameInput.value.trim() : '';
+            if (!nameVal) {
+                alert('Please enter Client Name.');
+                return;
+            }
+
+            const data = {
+                name: nameVal,
+                code: document.getElementById('nc-code') ? document.getElementById('nc-code').value.trim() : '',
+                city: document.getElementById('nc-city') ? document.getElementById('nc-city').value.trim() : '',
+                phone: document.getElementById('nc-phone1') ? document.getElementById('nc-phone1').value.trim() : '',
+                cellPhone: document.getElementById('nc-cell1') ? document.getElementById('nc-cell1').value.trim() : '',
+                email: document.getElementById('nc-email') ? document.getElementById('nc-email').value.trim() : ''
+            };
+
+            try {
+                const url = editingClientId ? `${API_BASE}/clients/${editingClientId}` : `${API_BASE}/clients`;
+                const method = editingClientId ? 'PUT' : 'POST';
+                const res = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    closeModal();
+                    await loadClients();
+                    alert(editingClientId ? 'Client details updated successfully!' : 'Client saved successfully!');
+                } else {
+                    const errData = await res.json().catch(() => ({}));
+                    alert('Failed to save client: ' + (errData.error || res.statusText));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error saving client: ' + err.message);
+            }
+        };
+
+        async function deleteClient() {
+            if (!editingClientId || !confirm('Delete this client?')) return;
+            try {
+                const res = await fetch(`${API_BASE}/clients/${editingClientId}`, { method: 'DELETE' });
+                if (res.ok) { closeModal(); loadClients(); }
+            } catch (err) { console.error(err); }
+        }
+
+        function toggleClientsModalRegularVisits() {
+            const isEnabled = document.getElementById('visit-enabled') ? document.getElementById('visit-enabled').checked : false;
+            const timeInput = document.getElementById('visit-time');
+            const dayCheckboxes = document.querySelectorAll('#modal-visit-days-wrap .visit-day');
+            const daysWrap = document.getElementById('modal-visit-days-wrap');
+            
+            if (timeInput) {
+                timeInput.disabled = !isEnabled;
+                timeInput.style.backgroundColor = isEnabled ? '#ffffff' : '#f0f0f0';
+                timeInput.style.cursor = isEnabled ? 'text' : 'not-allowed';
+            }
+            
+            dayCheckboxes.forEach(cb => {
+                cb.disabled = !isEnabled;
+                cb.style.cursor = isEnabled ? 'pointer' : 'not-allowed';
+            });
+
+            if (daysWrap) {
+                daysWrap.style.opacity = isEnabled ? '1' : '0.4';
+                daysWrap.style.pointerEvents = isEnabled ? 'auto' : 'none';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadClients();
+            showSection('quick-search');
+            if (window.populateDropdown) {
+                window.populateDropdown('payment_mode', 'pay-mode', 'Cash');
+            }
+            const params = new URLSearchParams(window.location.search);
+            const editId = params.get('editClientId') || params.get('editId') || params.get('edit');
+            if (editId) {
+                editClient(editId);
+            } else if (params.get('action') === 'new' || params.get('new') === 'true') {
+                openAddClientModal();
+            }
+        });
+    </script>
+</body>
+</html>

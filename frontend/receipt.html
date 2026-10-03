@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="auth.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1280, minimum-scale=0.1, maximum-scale=10.0, user-scalable=yes">
+    <title>ClientReceipt</title>
+    <!-- Use html2pdf.js for high-quality PDF generation -->
+    <script src="html2pdf.bundle.min.js"></script>
+    <style>
+        @page { 
+            size: A4 portrait; 
+            margin: 0; 
+        }
+        
+        * { 
+            box-sizing: border-box; 
+            -webkit-print-color-adjust: exact !important; 
+            print-color-adjust: exact !important;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px 0;
+            background: #525659;
+            color: #000;
+            font-family: Arial, Helvetica, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .receipt-container {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto 30px auto;
+            background: #ffffff;
+            padding: 24mm 18mm 20mm 18mm;
+            position: relative;
+            box-shadow: 0 0 15px rgba(0,0,0,0.35);
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Header */
+        .header-section {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 25px;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .header-logo {
+            width: 76px;
+            flex-shrink: 0;
+            margin-right: 14px;
+        }
+
+        .header-logo img {
+            width: 72px;
+            height: auto;
+            object-fit: contain;
+            display: block;
+        }
+
+        .header-main {
+            flex: 1;
+            padding-top: 2px;
+        }
+
+        .lab-name {
+            font-size: 15.5px;
+            font-weight: bold;
+            margin: 0 0 3px 0;
+            letter-spacing: 0;
+            color: #000;
+            text-transform: uppercase;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .header-sub {
+            display: flex;
+            justify-content: flex-start;
+            align-items: flex-start;
+            font-size: 11px;
+            line-height: 1.3;
+            color: #000;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .header-sub-left {
+            width: 230px;
+        }
+
+        .header-sub-right {
+            margin-left: 25px;
+            white-space: nowrap;
+        }
+
+        /* Title */
+        .receipt-title {
+            text-align: center;
+            font-size: 16.5px;
+            font-weight: bold;
+            margin: 22px 0 32px 0;
+            color: #000;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        /* Meta Info */
+        .meta-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 22px;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #000;
+        }
+
+        .doctor-name {
+            font-weight: bold;
+            font-size: 12.5px;
+            line-height: 1.3;
+        }
+
+        .client-address {
+            font-size: 11.5px;
+            line-height: 1.3;
+            text-transform: uppercase;
+        }
+
+        .date-line {
+            font-size: 12px;
+            line-height: 1.3;
+            margin-top: 1px;
+        }
+
+        .date-line b {
+            font-weight: bold;
+        }
+
+        .doc-no-line {
+            font-size: 12.5px;
+            text-align: right;
+            white-space: nowrap;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .doc-no-line b {
+            font-weight: bold;
+        }
+
+        /* Statement Body */
+        .statement-text {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 13.5px;
+            line-height: 1.35;
+            margin: 0 0 14px 0;
+            color: #000;
+        }
+
+        .statement-text b {
+            font-weight: bold;
+        }
+
+        /* Amount Badge Box */
+        .amount-badge-wrap {
+            margin-bottom: 16px;
+        }
+
+        .amount-badge {
+            display: inline-block;
+            border: 1px solid #000;
+            padding: 1px 4px;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 11.5px;
+            font-weight: bold;
+            color: #000;
+            line-height: 1.2;
+        }
+
+        /* Settlement Table */
+        .settlement-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 10.5px;
+            border: 1px solid #000;
+        }
+
+        .settlement-table th, 
+        .settlement-table td {
+            border: 1px solid #000;
+            padding: 1px 4px;
+            color: #000;
+            line-height: 1.25;
+        }
+
+        .settlement-table thead .title-th {
+            font-weight: bold;
+            text-align: left;
+            font-size: 10.5px;
+            padding: 1px 4px;
+            background: #fff;
+            font-family: 'Times New Roman', Times, serif;
+        }
+
+        .settlement-table thead .col-th th {
+            font-weight: normal;
+            font-size: 10.5px;
+            background: #fff;
+            font-family: 'Times New Roman', Times, serif;
+        }
+
+        .settlement-table tbody td {
+            font-size: 10.5px;
+            font-family: 'Times New Roman', Times, serif;
+        }
+
+        /* Actions floating bar */
+        .actions-bar {
+            position: fixed;
+            top: 15px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 10000;
+        }
+
+        .btn-action {
+            background: #0056b3;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            font-family: Arial, sans-serif;
+        }
+
+        .btn-action:hover {
+            background: #004085;
+        }
+
+        .btn-print {
+            background: #28a745;
+        }
+
+        .btn-print:hover {
+            background: #218838;
+        }
+
+        @media print {
+            body {
+                background: #fff !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .actions-bar {
+                display: none !important;
+            }
+            .receipt-container {
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 15mm 15mm !important;
+                width: 100% !important;
+                min-height: auto !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="actions-bar">
+        <button class="btn-action btn-print" onclick="window.print()">Print</button>
+        <button class="btn-action" onclick="downloadReceiptPDF()">Download PDF</button>
+    </div>
+
+    <div id="receipts-wrapper">
+        <div style="text-align:center; padding: 50px; color: #fff; font-family: Arial;">
+            Loading receipt...
+        </div>
+    </div>
+
+    <script>
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const API_BASE = (window.location.protocol === 'file:' || isLocalhost) ? 'http://localhost:5000/api' : window.location.origin + '/api';
+        const urlParams = new URLSearchParams(window.location.search);
+
+        function numberToWords(num) {
+            const a = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+            const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+            const n = Math.floor(num);
+            if (n === 0) return 'Zero';
+
+            function inWords(n) {
+                if (n < 20) return a[n];
+                if (n < 100) return b[Math.floor(n / 10)] + (n % 10 !== 0 ? ' ' + a[n % 10] : '');
+                if (n < 1000) return a[Math.floor(n / 100)] + ' Hundred' + (n % 100 !== 0 ? ' ' + inWords(n % 100) : '');
+                if (n < 100000) return inWords(Math.floor(n / 1000)) + ' Thousand' + (n % 1000 !== 0 ? ' ' + inWords(n % 1000) : '');
+                if (n < 10000000) return inWords(Math.floor(n / 100000)) + ' Lakh' + (n % 100000 !== 0 ? ' ' + inWords(n % 100000) : '');
+                return inWords(Math.floor(n / 10000000)) + ' Crore' + (n % 10000000 !== 0 ? ' ' + inWords(n % 10000000) : '');
+            }
+
+            return inWords(n).trim();
+        }
+
+        function formatDateToDDMMYY(dateInput) {
+            if (!dateInput) return '';
+            const d = new Date(dateInput);
+            if (isNaN(d.getTime())) return '';
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = String(d.getFullYear()).slice(-2);
+            return `${day}/${month}/${year}`;
+        }
+
+        let currentReceiptDocNo = 'Receipt';
+
+        async function renderReceipt(receiptId) {
+            const res = await fetch(`${API_BASE}/receipts/${receiptId}`);
+            if (!res.ok) throw new Error("Receipt not found");
+            const receipt = await res.json();
+
+            const docNo = receipt.receiptNumber || String(receipt.id).padStart(5, '0');
+            currentReceiptDocNo = docNo;
+            document.title = `ClientReceipt-${docNo}.pdf`;
+
+            const client = receipt.client || {};
+            let clientName = client.name || 'UNKNOWN';
+            const clientAddress = client.address || 'AL ZULFA,SOHAR';
+            const receiptDateStr = formatDateToDDMMYY(receipt.receiptDate || receipt.createdAt || new Date());
+
+            const amount = parseFloat(receipt.amount || 0);
+            const appliedAmount = parseFloat(receipt.appliedAmount !== undefined ? receipt.appliedAmount : receipt.amount || 0);
+            const paymentMode = receipt.paymentMode || 'Cash';
+
+            const amountInWords = numberToWords(amount);
+            const amountFormatted = amount.toFixed(2);
+
+            // Display name format with Dr.
+            let displayName = clientName;
+            if (!displayName.toUpperCase().startsWith('DR.') && !displayName.toUpperCase().startsWith('DR ')) {
+                displayName = 'Dr. ' + displayName;
+            }
+
+            // Fetch matched invoices
+            let invoices = [];
+            const clientId = receipt.clientId || client.id;
+            if (clientId) {
+                try {
+                    const invRes = await fetch(`${API_BASE}/invoices?clientId=${clientId}`);
+                    if (invRes.ok) {
+                        const invData = await invRes.json();
+                        invoices = Array.isArray(invData) ? invData : (invData.data || []);
+                    }
+                } catch (e) {
+                    console.error("Error loading client invoices:", e);
+                }
+            }
+
+            let remainingToAdjust = appliedAmount;
+            const matchedInvoices = [];
+            const sortedInvoices = [...invoices].sort((a, b) => new Date(a.invoiceDate || a.createdAt) - new Date(b.invoiceDate || b.createdAt));
+
+            for (const inv of sortedInvoices) {
+                if (remainingToAdjust <= 0) break;
+                const netAmt = parseFloat(inv.netAmount || 0);
+                const adjustedAmt = Math.min(remainingToAdjust, netAmt);
+                if (adjustedAmt > 0) {
+                    const paidAmt = parseFloat(inv.paidAmount || adjustedAmt);
+                    const balAmt = parseFloat(inv.balanceAmount !== undefined ? inv.balanceAmount : Math.max(0, netAmt - paidAmt));
+                    matchedInvoices.push({
+                        id: inv.id,
+                        invoiceNumber: inv.invoiceNumber || inv.id,
+                        invoiceDate: formatDateToDDMMYY(inv.invoiceDate || inv.date),
+                        netAmount: netAmt.toFixed(2),
+                        adjusted: adjustedAmt.toFixed(2),
+                        totalPaid: paidAmt.toFixed(2),
+                        balance: balAmt.toFixed(2)
+                    });
+                    remainingToAdjust -= adjustedAmt;
+                }
+            }
+
+            let tableRowsHtml = '';
+            if (matchedInvoices.length > 0) {
+                tableRowsHtml = matchedInvoices.map((row, idx) => `
+                    <tr>
+                        <td style="text-align: left; width: 22px;">${idx + 1}</td>
+                        <td style="text-align: left; width: 100px;">Invoice</td>
+                        <td style="text-align: right; width: 85px;">${row.invoiceNumber}</td>
+                        <td style="text-align: right; width: 85px;">${row.invoiceDate}</td>
+                        <td style="text-align: right; width: 95px;">${row.netAmount}</td>
+                        <td style="text-align: right; width: 80px;">${row.adjusted}</td>
+                        <td style="text-align: right; width: 85px;">${row.totalPaid}</td>
+                        <td style="text-align: right; width: 85px;">${row.balance}</td>
+                    </tr>
+                `).join('');
+            } else {
+                tableRowsHtml = `
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 6px; color: #666;">No settlement details</td>
+                    </tr>
+                `;
+            }
+
+            const container = document.createElement('div');
+            container.className = 'receipt-container';
+            container.id = 'receipt-page';
+            container.innerHTML = `
+                <!-- Header -->
+                <div class="header-section">
+                    <div class="header-logo">
+                        <img src="logo.jpeg" alt="Logo" onerror="this.style.display='none'">
+                    </div>
+                    <div class="header-main">
+                        <div class="lab-name">SOHAR DENTAL LABORATORY</div>
+                        <div class="header-sub">
+                            <div class="header-sub-left">
+                                AL HAMBAR, C.R.NO. 3203549,<br>
+                                MOH NO. 1771,<br>
+                                WEST SOHAR Pin - 311
+                            </div>
+                            <div class="header-sub-right">
+                                Phone : +96899622728<br>
+                                email : sohardental@gmail.com
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Receipt Title -->
+                <div class="receipt-title">Receipt</div>
+
+                <!-- Meta Section -->
+                <div class="meta-section">
+                    <div class="meta-left">
+                        <div class="doctor-name">${displayName}</div>
+                        <div class="client-address">${clientAddress}</div>
+                        <div class="date-line"><b>Date</b> ${receiptDateStr}</div>
+                    </div>
+                    <div class="meta-right">
+                        <div class="doc-no-line"><b>Doc #.</b> ${docNo}</div>
+                    </div>
+                </div>
+
+                <!-- Statement Text -->
+                <div class="statement-text">
+                    Received with thanks from <b>${displayName}</b> a sum of <b>OMR ${amountInWords}</b> by <b>${paymentMode}</b> towards professional charges.
+                </div>
+
+                <!-- Amount Badge -->
+                <div class="amount-badge-wrap">
+                    <div class="amount-badge">OMR ${amountFormatted}</div>
+                </div>
+
+                <!-- Settlement Details Table -->
+                <table class="settlement-table">
+                    <thead>
+                        <tr>
+                            <th colspan="8" class="title-th">Settlement Details</th>
+                        </tr>
+                        <tr class="col-th">
+                            <th style="text-align: left; width: 22px;">Sr</th>
+                            <th style="text-align: left; width: 100px;">Type</th>
+                            <th style="text-align: right; width: 85px;">Doc. #</th>
+                            <th style="text-align: right; width: 85px;">Trans. Date</th>
+                            <th style="text-align: right; width: 95px;">Trans. Amount</th>
+                            <th style="text-align: right; width: 80px;">Applied</th>
+                            <th style="text-align: right; width: 85px;">Total Paid</th>
+                            <th style="text-align: right; width: 85px;">Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRowsHtml}
+                    </tbody>
+                </table>
+            `;
+
+            return container;
+        }
+
+        async function downloadReceiptPDF() {
+            const element = document.getElementById('receipt-page');
+            if (!element) return;
+
+            const opt = {
+                margin: 0,
+                filename: `ClientReceipt-${currentReceiptDocNo}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            try {
+                await html2pdf().set(opt).from(element).save();
+            } catch (err) {
+                console.error("PDF generation error:", err);
+            }
+        }
+
+        async function init() {
+            const idsParam = urlParams.get('ids') || urlParams.get('id');
+            const wrapper = document.getElementById('receipts-wrapper');
+
+            if (!idsParam) {
+                wrapper.innerHTML = '<div style="text-align:center; padding: 50px; color:#fff; font-family:Arial;">No Receipt ID provided.</div>';
+                return;
+            }
+
+            const ids = idsParam.split(',').map(s => s.trim()).filter(Boolean);
+            wrapper.innerHTML = '';
+
+            for (const id of ids) {
+                try {
+                    const container = await renderReceipt(id);
+                    wrapper.appendChild(container);
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+
+            if (wrapper.children.length === 0) {
+                wrapper.innerHTML = `<div style="text-align:center; padding: 50px; color:#ff6b6b; font-family:Arial;">Error loading receipt(s).</div>`;
+                return;
+            }
+
+            if (urlParams.get('download') === 'true') {
+                setTimeout(downloadReceiptPDF, 500);
+            } else if (urlParams.get('print') === 'true') {
+                setTimeout(() => window.print(), 600);
+            }
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

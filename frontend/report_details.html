@@ -1,0 +1,2206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="auth.js"></script>
+    <script src="searchable_select.js?v=6.2.0"></script>
+    <script src="global_datepicker.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1280, minimum-scale=0.1, maximum-scale=10.0, user-scalable=yes">
+    <title>Report Viewer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: #ffffff;
+            color: #000000;
+            padding: 12px 30px;
+        }
+
+        /* Top Header Area */
+        .top-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .report-main-title {
+            font-size: 15px;
+            font-weight: bold;
+            color: #000066;
+            font-family: Arial, sans-serif;
+        }
+        .btn-close-report {
+            border: 1px solid #707070;
+            background: #ffffff;
+            color: #000066;
+            padding: 1px 6px;
+            font-size: 12px;
+            font-family: Arial, sans-serif;
+            cursor: pointer;
+            border-radius: 2px;
+            box-shadow: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .btn-close-report:hover {
+            background: #f0f0f0;
+        }
+
+        /* Orders Filter Container Box (Image 2 style) */
+        .orders-filter-box {
+            border: 1px solid #707070;
+            padding: 6px 10px;
+            background: #ffffff;
+            margin-bottom: 10px;
+            font-size: 12px;
+            color: #000;
+        }
+        .orders-filter-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 4px;
+            flex-wrap: wrap;
+        }
+        .orders-filter-select {
+            border: 1px solid #707070;
+            padding: 1px 4px;
+            font-size: 12px;
+            font-family: Arial, sans-serif;
+            height: 22px;
+            background: #fff;
+        }
+        .orders-filter-input {
+            width: 100%;
+            border: 1px solid #707070;
+            padding: 2px 6px;
+            font-size: 13px;
+            font-family: Arial, sans-serif;
+            height: 24px;
+            margin: 3px 0;
+        }
+        .filter-link {
+            color: #0056b3;
+            text-decoration: underline;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        /* Generic Date Filter Area for Classic Reports */
+        .filter-section {
+            margin-bottom: 8px;
+        }
+        .filter-label {
+            font-size: 13px;
+            color: #000066;
+            font-family: 'Times New Roman', Georgia, serif;
+            margin-bottom: 2px;
+            display: block;
+        }
+        .filter-controls {
+            display: flex;
+            align-items: center;
+            gap: 0px;
+            margin-bottom: 2px;
+        }
+        .filter-select {
+            border: 1px solid #000066;
+            padding: 1px 4px;
+            font-size: 12px;
+            font-family: Arial, sans-serif;
+            color: #000066;
+            background: #fff;
+            height: 21px;
+            cursor: pointer;
+            min-width: 85px;
+        }
+        .filter-date-input {
+            border: 1px solid #000066;
+            border-left: none;
+            padding: 1px 6px;
+            font-size: 12px;
+            font-family: Arial, sans-serif;
+            color: #000;
+            width: 120px;
+            height: 21px;
+        }
+        .btn-view-report {
+            border: 1px solid #000066;
+            background: #ffffff;
+            color: #000066;
+            padding: 1px 8px;
+            font-size: 12px;
+            font-family: 'Times New Roman', Georgia, serif;
+            cursor: pointer;
+            display: block;
+            margin-top: 2px;
+        }
+
+        /* Classic Report Toolbar Bar */
+        .toolbar-container {
+            background: linear-gradient(to bottom, #eae9de 0%, #d8d6c5 100%);
+            border-top: 1px solid #a0a0a0;
+            border-bottom: 1px solid #a0a0a0;
+            padding: 2px 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            color: #333;
+            margin-bottom: 10px;
+            user-select: none;
+            flex-wrap: wrap;
+        }
+        .tb-group {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .tb-btn {
+            background: linear-gradient(to bottom, #ffffff 0%, #e6e6e6 100%);
+            border: 1px solid #707070;
+            padding: 2px 8px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #0056b3;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 22px;
+            border-radius: 2px;
+        }
+        .tb-btn:hover {
+            background: #e0e0e0;
+        }
+        .tb-btn-icon {
+            background: transparent;
+            border: none;
+            padding: 2px 3px;
+            cursor: pointer;
+            font-size: 11px;
+            color: #555;
+            height: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .tb-btn-icon:hover {
+            color: #000;
+        }
+        .tb-page-input {
+            width: 28px;
+            height: 18px;
+            text-align: center;
+            border: 1px solid #707070;
+            font-size: 11px;
+            padding: 0 2px;
+        }
+        .tb-search-input {
+            width: 90px;
+            height: 18px;
+            border: 1px solid #707070;
+            padding: 0 4px;
+            font-size: 11px;
+        }
+        .tb-select {
+            height: 18px;
+            border: 1px solid #707070;
+            font-size: 11px;
+            background: #fff;
+            padding: 0 2px;
+        }
+        .tb-divider {
+            width: 1px;
+            height: 16px;
+            background: #a0a0a0;
+            margin: 0 3px;
+        }
+
+        /* Center Report Title */
+        .report-sub-title {
+            text-align: center;
+            font-size: 13px;
+            font-weight: bold;
+            font-family: Arial, sans-serif;
+            color: #000000;
+            margin-bottom: 10px;
+            width: auto;
+            max-width: 920px;
+            box-sizing: border-box;
+        }
+
+        /* Data Table */
+        .report-table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            box-sizing: border-box;
+        }
+        .report-table {
+            width: auto;
+            min-width: 820px;
+            max-width: 920px;
+            border-collapse: collapse;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 11.5px;
+        }
+        .report-table th {
+            border: 1px solid #d4d0c8;
+            padding: 3px 6px;
+            text-align: left;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+            font-size: 17px !important;
+            font-weight: 400 !important;
+            font-style: normal !important;
+            line-height: 18px !important;
+            background: #ffffff;
+            color: #000000;
+            white-space: nowrap;
+        }
+        .report-table td {
+            border: 1px solid #d4d0c8;
+            padding: 3px 6px;
+            color: #000000;
+            font-size: 11.5px;
+            vertical-align: top;
+            background: #ffffff;
+        }
+        .report-table.with-grid th, .report-table.with-grid td {
+            border: 1px solid #d4d0c8;
+            background: #fff;
+        }
+        .report-table.with-grid th {
+            background: #ffffff;
+        }
+        .report-table tr:nth-child(even) {
+            background-color: #ffffff;
+        }
+        .cell-blue-link {
+            color: #0056b3;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        .cell-blue-text {
+            color: #0056b3;
+        }
+        .cell-orange-text {
+            color: #d97706;
+        }
+        .no-data-msg {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-style: italic;
+        }
+        .act-btn {
+            width: 22px;
+            height: 20px;
+            border: 1px solid #0056b3;
+            background: #fff;
+            color: #0056b3;
+            border-radius: 2px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 11px;
+            padding: 0;
+            transition: all 0.15s ease-in-out;
+        }
+        .act-btn:hover {
+            background: #0056b3;
+            color: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Header -->
+    <div class="top-header" style="margin-bottom: 2px;">
+        <span class="report-main-title" id="main-title">Orders List</span>
+        <button class="btn-close-report" onclick="window.close()"><span id="btn-close-report-text">Close Report</span></button>
+    </div>
+
+    <!-- Status Filter Row (For Orders) -->
+    <div id="status-filter-row" style="margin-bottom: 4px; font-size: 12px; color: #000066; font-family: 'Times New Roman', Georgia, serif; display: flex; align-items: center; gap: 8px;">
+        <span>Status</span>
+        <select class="filter-select" id="order-status-select" onchange="onStatusDropdownChange(this.value)" style="min-width: 145px; height: 21px; font-family: Arial, sans-serif; font-size: 12px; color: #000; padding: 1px 4px; border: 1px solid #000066;">
+            <option value="All">All</option>
+            <option value="New">New</option>
+            <option value="In Production">In Production</option>
+            <option value="Complete">Complete</option>
+            <option value="Hold">Hold</option>
+            <option value="Try In">Try In</option>
+            <option value="Delivered">Delivered</option>
+        </select>
+    </div>
+
+    <!-- Generic Date Filter Section -->
+    <div class="filter-section" id="generic-filter-box">
+        <label class="filter-label" id="date-label">Order Date</label>
+        <div class="filter-controls">
+            <select class="filter-select" id="date-range-select" onchange="handleRangeChange()">
+                <option value="All Time" selected>All Time</option>
+                <option value="Today">Today</option>
+                <option value="Yesterday">Yesterday</option>
+                <option value="Tomorrow">Tomorrow</option>
+                <option value="Week to date">Week to date</option>
+                <option value="Month to date">Month to date</option>
+                <option value="Last Full Month">Last Full Month</option>
+                <option value="Year To Date">Year To Date</option>
+                <option value="Upcoming">Upcoming</option>
+                <option value="User Specified">User Specified</option>
+            </select>
+            <div style="position: relative; display: inline-flex; align-items: center;">
+                <input type="text" class="filter-date-input" id="filter-date-val" placeholder="M/D/YYYY" style="padding-right: 22px; cursor: pointer;" onkeypress="return (event.charCode >= 48 && event.charCode <= 57) || event.charCode === 47 || event.charCode === 45" oninput="this.value = this.value.replace(/[^\d\/\-]/g, '')" onclick="openFilterDatePicker(event, this)">
+                <i class="fa-solid fa-calendar-days" style="position: absolute; right: 5px; color: #000066; cursor: pointer; font-size: 13px;" onclick="openFilterDatePicker(event, document.getElementById('filter-date-val'))" title="Open Calendar"></i>
+            </div>
+        </div>
+        <button class="btn-view-report" onclick="applyDateFilter()">View Report</button>
+    </div>
+
+    <!-- Classic Toolbar Bar for Reports -->
+    <div class="toolbar-container" id="generic-toolbar">
+        <div class="tb-group">
+            <button class="tb-btn-icon" id="btn-first" title="First Page" onclick="goToPage(1)"><i class="fa-solid fa-backward-step"></i></button>
+            <button class="tb-btn-icon" id="btn-prev" title="Previous Page" onclick="changePage(-1)"><i class="fa-solid fa-caret-left"></i></button>
+            <input type="text" class="tb-page-input" id="page-input" value="1" onchange="jumpToPage(this.value)">
+            <span>of <span id="total-pages">1</span></span>
+            <button class="tb-btn-icon" id="btn-next" title="Next Page" onclick="changePage(1)"><i class="fa-solid fa-caret-right"></i></button>
+            <button class="tb-btn-icon" id="btn-last" title="Last Page" onclick="goToPage(maxPages)"><i class="fa-solid fa-forward-step"></i></button>
+        </div>
+
+        <div class="tb-divider"></div>
+
+        <div class="tb-group">
+            <button class="tb-btn-icon" title="Refresh" onclick="loadReportData()" style="color:#555;">
+                <i class="fa-solid fa-arrows-rotate"></i>
+            </button>
+            <input type="text" class="tb-search-input" id="tb-search" placeholder="" onkeyup="handleSearchKey(event)">
+            <span class="filter-link" onclick="executeSearch()" style="color:#000066; text-decoration:none; cursor:pointer;">Find</span>
+            <span style="color:#707070;">|</span>
+            <span class="filter-link" onclick="executeSearch()" style="color:#000066; text-decoration:none; cursor:pointer;">Next</span>
+        </div>
+
+        <div class="tb-divider"></div>
+
+        <div class="tb-group">
+            <button class="tb-btn-icon" title="Export Report to CSV" onclick="exportReportCSV()" style="color:#2e7d32;">
+                <i class="fa-solid fa-floppy-disk" style="font-size:12px;"></i>
+            </button>
+            <button class="tb-btn-icon" title="Refresh Data" onclick="loadReportData()" style="color:#1b5e20;">
+                <i class="fa-solid fa-arrows-rotate" style="font-size:12px;"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Centered Report Title -->
+    <div class="report-sub-title" id="sub-heading" style="display:none; font-weight:bold; font-size:13px; margin: 12px 0 10px 0; text-align:center;">OrdersList</div>
+
+    <!-- Data Table Container -->
+    <div class="report-table-wrapper">
+        <table class="report-table" id="main-report-table">
+            <thead id="report-thead">
+                <!-- Headers populated dynamically -->
+            </thead>
+            <tbody id="report-tbody">
+                <tr><td colspan="12" class="no-data-msg">Loading data...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div id="grid-fields-modal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:99999; justify-content:center; align-items:center; font-family:Arial, sans-serif;">
+        <div style="background:#fff; border:1px solid #707070; box-shadow:0 4px 15px rgba(0,0,0,0.3); width:340px; border-radius:3px; overflow:hidden;">
+            <div style="padding:6px 10px; display:flex; justify-content:space-between; align-items:center; background:#fff; border-bottom:1px solid #eee;">
+                <span style="font-weight:bold; font-size:14px; color:#000;">Grid Display Settings</span>
+                <span style="font-weight:bold; font-size:16px; cursor:pointer; color:#999;" onclick="closeFieldsModal()">×</span>
+            </div>
+            <div style="padding:4px 8px; display:flex; gap:6px; border-bottom:1px solid #ccc; background:#f9f9f9;">
+                <button id="fields-tab-cols" onclick="switchFieldsTab('columns')" style="border:1px solid #d946ef; color:#d946ef; background:#fff; padding:2px 10px; font-weight:bold; font-size:12px; cursor:pointer;">Columns</button>
+                <button id="fields-tab-opts" onclick="switchFieldsTab('options')" style="border:1px solid #707070; color:#333; background:#e6e6e6; padding:2px 10px; font-size:12px; cursor:pointer;">Options</button>
+            </div>
+            <div id="fields-tab-content-cols" style="padding:8px; max-height:320px; overflow-y:auto;">
+                <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #000;">
+                    <thead>
+                        <tr style="background:#fff;">
+                            <th style="border:1px solid #000; padding:3px; text-align:center; width:22px;">Sr</th>
+                            <th style="border:1px solid #000; padding:3px; text-align:left;">Name</th>
+                            <th style="border:1px solid #000; padding:3px; text-align:left;">Caption</th>
+                            <th style="border:1px solid #000; padding:3px; text-align:center; width:20px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="fields-modal-tbody">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
+
+                <!-- Add Field Selector Panel -->
+                <div id="add-field-container" style="display:none; margin-top:8px; padding:6px; background:#f0f4f8; border:1px solid #707070; border-radius:2px;">
+                    <div style="font-size:11px; font-weight:bold; margin-bottom:4px; color:#333;">Select Available Field to Add:</div>
+                    <div style="display:flex; gap:4px;">
+                        <select id="add-field-select" class="no-searchable" style="flex:1; font-size:11px; padding:1px 3px; border:1px solid #707070; background:#fff;"></select>
+                        <button onclick="confirmAddField()" style="border:1px solid #707070; background:#fff; color:#0056b3; font-size:11px; padding:1px 6px; cursor:pointer; font-weight:bold;">Add</button>
+                        <button onclick="document.getElementById('add-field-container').style.display='none'" style="border:1px solid #707070; background:#fff; font-size:11px; padding:1px 6px; cursor:pointer;">Cancel</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="fields-tab-content-opts" style="display:none; padding:12px; font-size:12px;">
+                <label style="display:block; margin-bottom:8px; cursor:pointer;"><input type="checkbox" id="opt-show-gridlines" checked onchange="toggleGridlines(this.checked)"> Show Table Gridlines</label>
+                <label style="display:block; margin-bottom:8px; cursor:pointer;"><input type="checkbox" id="opt-compact-view" onchange="toggleCompactView(this.checked)"> Compact Row Height</label>
+            </div>
+
+            <div style="padding:6px 8px; border-top:1px solid #ccc; background:#f9f9f9; display:flex; justify-content:space-between; align-items:center;">
+                <button onclick="saveFieldsModal()" style="border:1px solid #707070; background:#fff; color:#0056b3; padding:2px 12px; font-weight:bold; font-size:12px; cursor:pointer; text-decoration:underline;">OK</button>
+                <button onclick="addFieldsRow()" style="border:1px solid #707070; background:#fff; color:#0056b3; padding:2px 10px; font-weight:bold; font-size:12px; cursor:pointer;"><span style="color:#0056b3; font-weight:bold;">+</span> <u>Add Fields</u></button>
+                <button onclick="resetFieldsModal()" style="border:1px solid #707070; background:#fff; color:#0056b3; padding:2px 10px; font-weight:bold; font-size:12px; cursor:pointer; text-decoration:underline;">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Info Modal -->
+    <div id="order-info-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:999999; justify-content:center; align-items:center;">
+        <div style="background:#fff; border:1px solid #707070; width:450px; border-radius:3px; box-shadow:0 4px 16px rgba(0,0,0,0.3);">
+            <div style="background:linear-gradient(to bottom, #dedede 0%, #cccccc 100%); padding:6px 12px; font-weight:bold; font-size:13px; color:#222; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #999;">
+                <span id="info-modal-header">Order Information</span>
+                <span onclick="document.getElementById('order-info-modal').style.display='none'" style="cursor:pointer; font-weight:bold; font-size:14px;">✕</span>
+            </div>
+            <div id="info-modal-body" style="padding:12px; font-size:12px; line-height:1.6; color:#333;">
+                <!-- Populated dynamically -->
+            </div>
+            <div style="padding:6px 12px; background:#f4f4f4; border-top:1px solid #ccc; text-align:right;">
+                <button id="info-modal-edit-btn" style="background:#0056b3; color:#fff; border:1px solid #004085; padding:3px 12px; font-size:12px; font-weight:bold; border-radius:2px; cursor:pointer; margin-right:6px;">Edit Order</button>
+                <button onclick="document.getElementById('order-info-modal').style.display='none'" style="background:#fff; color:#333; border:1px solid #707070; padding:3px 12px; font-size:12px; border-radius:2px; cursor:pointer;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Assign Modal -->
+    <div id="quick-assign-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:999999; justify-content:center; align-items:center;">
+        <div style="background:#fff; border:1px solid #707070; width:380px; border-radius:3px; box-shadow:0 4px 16px rgba(0,0,0,0.3);">
+            <div style="background:linear-gradient(to bottom, #dedede 0%, #cccccc 100%); padding:6px 12px; font-weight:bold; font-size:13px; color:#222; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #999;">
+                <span id="assign-modal-header">Assign / Move Order</span>
+                <span onclick="document.getElementById('quick-assign-modal').style.display='none'" style="cursor:pointer; font-weight:bold; font-size:14px;">✕</span>
+            </div>
+            <div style="padding:14px; font-size:12px; display:flex; flex-direction:column; gap:10px;">
+                <input type="hidden" id="assign-target-id">
+                <div>
+                    <label style="display:block; font-weight:bold; margin-bottom:3px; color:#333;">Order Status:</label>
+                    <select id="assign-select-status" style="width:100%; padding:3px; border:1px solid #707070; font-size:12px;">
+                        <option value="New">New</option>
+                        <option value="In Production">In Production</option>
+                        <option value="Complete">Complete</option>
+                        <option value="Hold">Hold</option>
+                        <option value="Try In">Try In</option>
+                        <option value="Cancelled">Cancelled</option>
+                        <option value="Delivered">Delivered</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display:block; font-weight:bold; margin-bottom:3px; color:#333;">Department:</label>
+                    <select id="assign-select-dept" style="width:100%; padding:3px; border:1px solid #707070; font-size:12px;">
+                        <option value="Lab">Lab</option>
+                        <option value="Acrylic">Acrylic</option>
+                        <option value="Metal">Metal</option>
+                        <option value="Porcelain">Porcelain</option>
+                        <option value="Wax">Wax</option>
+                        <option value="Quality">Quality</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display:block; font-weight:bold; margin-bottom:3px; color:#333;">Assigned Staff:</label>
+                    <select id="assign-select-tech" style="width:100%; padding:3px; border:1px solid #707070; font-size:12px;">
+                        <option value="">Unassigned</option>
+                        <option value="ABHIJITH">ABHIJITH</option>
+                        <option value="ALNA">ALNA</option>
+                        <option value="ANISH">ANISH</option>
+                        <option value="ASIN">ASIN</option>
+                        <option value="JITHU">JITHU</option>
+                        <option value="RAVI">RAVI</option>
+                        <option value="SUNIL">SUNIL</option>
+                    </select>
+                </div>
+            </div>
+            <div style="padding:6px 12px; background:#f4f4f4; border-top:1px solid #ccc; text-align:right;">
+                <button onclick="saveQuickAssign()" style="background:#0056b3; color:#fff; border:1px solid #004085; padding:3px 14px; font-size:12px; font-weight:bold; border-radius:2px; cursor:pointer; margin-right:6px;">Save Changes</button>
+                <button onclick="document.getElementById('quick-assign-modal').style.display='none'" style="background:#fff; color:#333; border:1px solid #707070; padding:3px 12px; font-size:12px; border-radius:2px; cursor:pointer;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const API_BASE = (window.location.protocol === 'file:' || isLocalhost) ? 'http://localhost:5000/api' : window.location.origin + '/api';
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const reportType = urlParams.get('type') || (urlParams.get('report') ? 'orders' : 'orders');
+        const reportTitle = urlParams.get('title') || urlParams.get('report') || 'Orders List';
+        const reportStatus = urlParams.get('status') || '';
+        const reportDateParam = urlParams.get('date') || '';
+        const reportDateField = urlParams.get('dateField') || '';
+        const reportDateFrom = urlParams.get('dateFrom') || '';
+        const reportDateTo = urlParams.get('dateTo') || '';
+
+        const ALL_ORDER_COLUMNS = [
+            { name: 'Order No', caption: 'Order #', key: 'orderNumber' },
+            { name: 'Order Date', caption: 'Order Date', key: 'orderDate' },
+            { name: 'Client', caption: 'Client', key: 'client' },
+            { name: 'Patient Name', caption: 'Patient', key: 'patientName' },
+            { name: 'Products', caption: 'Products', key: 'productName' },
+            { name: 'Model #', caption: 'Model #', key: 'modelNumber' },
+            { name: 'Status', caption: 'Status', key: 'status' },
+            { name: 'Due Date', caption: 'Due Date', key: 'dueDate' },
+            { name: 'Received Date', caption: 'Received Date', key: 'receivedDate' },
+            { name: 'Assign To', caption: 'Assign To', key: 'assignTo' },
+            { name: 'Department', caption: 'Department', key: 'department' },
+            { name: 'Delivery Method', caption: 'Delivery Method', key: 'deliveryMethod' },
+            { name: 'Invoice #', caption: 'Invoice #', key: 'invoiceNumber' },
+            { name: 'Amount', caption: 'Amount', key: 'amount' }
+        ];
+
+        let currentActiveColumns = ALL_ORDER_COLUMNS.slice(0, 8).map(c => ({ ...c }));
+
+        let rawData = [];
+        let filteredData = [];
+        let currentPage = 1;
+        let pageSize = 'All';
+        let maxPages = 1;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedCols = localStorage.getItem('orders_grid_columns');
+            if (savedCols) {
+                try {
+                    const parsed = JSON.parse(savedCols);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        currentActiveColumns = parsed;
+                    }
+                } catch(e) {}
+            }
+
+            setupHeaderAndTitles();
+            populateClientDropdown();
+            
+            const isAdvancedView = urlParams.get('view') === 'advanced';
+
+            const ofb = document.getElementById('orders-filter-box');
+            if (ofb) ofb.style.display = (isAdvancedView && reportType === 'orders') ? 'block' : 'none';
+            const otb = document.getElementById('orders-toolbar');
+            if (otb) otb.style.display = (isAdvancedView && reportType === 'orders') ? 'flex' : 'none';
+            const gfb = document.getElementById('generic-filter-box');
+            if (gfb) gfb.style.display = (isAdvancedView && reportType === 'orders') ? 'none' : 'block';
+            const gtb = document.getElementById('generic-toolbar');
+            if (gtb) gtb.style.display = (isAdvancedView && reportType === 'orders') ? 'none' : 'flex';
+            const subH = document.getElementById('sub-heading');
+            if (subH) subH.style.display = 'block';
+
+            if (isAdvancedView && reportType === 'orders') {
+                const stSelect = document.getElementById('filter-order-status');
+                if (stSelect) {
+                    let st = reportStatus || reportTitle;
+                    if (st.includes('Due')) stSelect.value = 'All';
+                    else if (st.includes('New')) stSelect.value = 'New';
+                    else if (st.includes('Production')) stSelect.value = 'In Production';
+                    else if (st.includes('Complete')) stSelect.value = 'Complete';
+                    else if (st.includes('Hold')) stSelect.value = 'Hold';
+                    else if (st.includes('Try')) stSelect.value = 'Try In';
+                    else if (st.includes('Delivered')) stSelect.value = 'Delivered';
+                }
+            } else {
+                const sel = document.getElementById('date-range-select');
+                const dateInput = document.getElementById('filter-date-val');
+                const isOrdersList = reportTitle.toLowerCase().includes('orders list') || reportTitle.toLowerCase().includes('all orders') || reportTitle.toLowerCase().includes('orderslist');
+                const rangeToSet = reportDateParam || (isOrdersList ? 'All Time' : 'Today');
+                if (sel) {
+                    sel.value = rangeToSet;
+                }
+                if (dateInput) {
+                    dateInput.value = (rangeToSet === 'All Time') ? '' : formatDisplayDate(new Date());
+                }
+
+                const statusSelect = document.getElementById('order-status-select');
+                if (statusSelect) {
+                    statusSelect.value = reportStatus || 'All';
+                }
+            }
+            
+            loadReportData();
+        });
+
+        function syncFieldsModalInputs() {
+            document.querySelectorAll('.field-caption-input').forEach(input => {
+                const idx = parseInt(input.dataset.index);
+                if (!isNaN(idx) && currentActiveColumns[idx]) {
+                    currentActiveColumns[idx].caption = input.value.trim() || currentActiveColumns[idx].name;
+                }
+            });
+        }
+
+        function openFieldsModal() {
+            document.getElementById('add-field-container').style.display = 'none';
+            renderFieldsModalTable();
+            document.getElementById('grid-fields-modal').style.display = 'flex';
+        }
+
+        function closeFieldsModal() {
+            document.getElementById('grid-fields-modal').style.display = 'none';
+        }
+
+        function switchFieldsTab(tab) {
+            if (tab === 'columns') {
+                document.getElementById('fields-tab-cols').style.border = '1px solid #d946ef';
+                document.getElementById('fields-tab-cols').style.color = '#d946ef';
+                document.getElementById('fields-tab-cols').style.background = '#fff';
+                document.getElementById('fields-tab-opts').style.border = '1px solid #707070';
+                document.getElementById('fields-tab-opts').style.color = '#333';
+                document.getElementById('fields-tab-opts').style.background = '#e6e6e6';
+                document.getElementById('fields-tab-content-cols').style.display = 'block';
+                document.getElementById('fields-tab-content-opts').style.display = 'none';
+            } else {
+                document.getElementById('fields-tab-opts').style.border = '1px solid #d946ef';
+                document.getElementById('fields-tab-opts').style.color = '#d946ef';
+                document.getElementById('fields-tab-opts').style.background = '#fff';
+                document.getElementById('fields-tab-cols').style.border = '1px solid #707070';
+                document.getElementById('fields-tab-cols').style.color = '#333';
+                document.getElementById('fields-tab-cols').style.background = '#e6e6e6';
+                document.getElementById('fields-tab-content-opts').style.display = 'block';
+                document.getElementById('fields-tab-content-cols').style.display = 'none';
+            }
+        }
+
+        function renderFieldsModalTable() {
+            const tbody = document.getElementById('fields-modal-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            currentActiveColumns.forEach((col, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="border:1px solid #000; padding:2px 4px; text-align:center;">${idx + 1}</td>
+                    <td style="border:1px solid #000; padding:2px 4px;">${col.name}</td>
+                    <td style="border:1px solid #000; padding:2px 4px;">
+                        <input type="text" class="field-caption-input" data-index="${idx}" value="${col.caption}" onchange="syncFieldsModalInputs()" style="width:100%; border:1px solid #ccc; padding:1px 3px; font-size:11px; border-radius:2px;">
+                    </td>
+                    <td style="border:1px solid #000; padding:2px 4px; text-align:center;">
+                        <span onclick="removeFieldRow(${idx})" style="font-weight:bold; cursor:pointer; color:#000;">✕</span>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openLabSlipPDF(orderId) {
+            const apiBase = (typeof API_BASE !== 'undefined') ? API_BASE : '/api';
+            
+            const printWin = window.open('', '_blank', 'width=850,height=950');
+            if (!printWin) {
+                alert('Pop-up blocked! Please allow pop-ups for this site to open the Lab Slip PDF.');
+                return;
+            }
+            
+            printWin.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head><title>Loading Lab Slip...</title></head>
+                <body style="font-family:sans-serif; text-align:center; padding:50px; color:#475569;">
+                    <h2>Loading Lab Slip PDF...</h2>
+                    <p>Please wait while order details are being loaded.</p>
+                </body>
+                </html>
+            `);
+
+            const renderPDF = (order) => {
+                const orderNo = order.orderNumber || order.id;
+                const modelNo = order.modelNumber || order.id || '';
+                
+                const clientObj = order.client || {};
+                const clientName = (clientObj.name || order.clientName || '').trim();
+                const doctorName = (order.doctorName || clientObj.doctorName || order.subDoctor || '').trim();
+                
+                let doctorAndClient = '';
+                if (doctorName && clientName && !clientName.toLowerCase().includes(doctorName.toLowerCase())) {
+                    doctorAndClient = `${doctorName.toUpperCase()}, ${clientName.toUpperCase()}`;
+                } else if (clientName) {
+                    doctorAndClient = clientName.toUpperCase();
+                } else if (doctorName) {
+                    doctorAndClient = doctorName.toUpperCase();
+                } else {
+                    doctorAndClient = 'N/A';
+                }
+
+                const city = (clientObj.city || order.city || 'WEST SOHAR').toUpperCase();
+                const patientName = (order.patientName || 'N/A').toUpperCase();
+                const units = order.units || 1;
+                const productName = (order.productName || order.productType || 'RESTORATION').toUpperCase();
+                const material = (order.material || order.productType || '').toUpperCase();
+                const productDetails = `${units} ${productName}`;
+                const shade = order.shade1 || order.shadeNotes || order.shade2 || '';
+                const notes = order.notes || order.specialInstructions || '';
+                
+                const formatDateShort = (d) => {
+                    if (!d) return '-';
+                    const dt = new Date(d);
+                    if (isNaN(dt.getTime())) return '-';
+                    const day = String(dt.getDate()).padStart(2, '0');
+                    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                    return `${day} ${months[dt.getMonth()]}`;
+                };
+
+                const orderDateStr = formatDateShort(order.orderDate || order.receivedDate);
+                const dueDateStr = formatDateShort(order.dueDate);
+
+                const now = new Date();
+                const printDay = String(now.getDate()).padStart(2, '0');
+                const printMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                const printMonthStr = printMonths[now.getMonth()];
+                const printTimeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                const printedDateStr = `${printDay} ${printMonthStr}, ${printTimeStr}`;
+
+                printWin.document.open();
+                printWin.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Lab Slip - Order #${orderNo}</title>
+                        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+                        <style>
+                            @page { size: A4 portrait; margin: 10mm; }
+                            * { box-sizing: border-box; }
+                            body { font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #000; margin: 0; padding: 15px; background: #fff; }
+                            .lab-slip-container { width: 100%; max-width: 800px; margin: 0 auto; background: #fff; padding: 10px; }
+                            .ls-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+                            .ls-lab-name { font-size: 20px; font-weight: bold; margin: 0 0 2px 0; text-transform: uppercase; letter-spacing: 0.5px; }
+                            .ls-address { font-size: 12px; line-height: 1.35; font-weight: normal; }
+                            .ls-contact { font-size: 12px; line-height: 1.4; text-align: right; }
+                            .ls-title { text-align: center; font-size: 20px; font-weight: bold; margin: 14px 0 10px 0; }
+                            .ls-table { width: 100%; border-collapse: collapse; border: 1px solid #000; margin-bottom: 12px; font-size: 13px; }
+                            .ls-table td { border: 1px solid #000; padding: 4px 8px; vertical-align: top; }
+                            .ls-teeth-table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+                            .ls-teeth-table td { border: none !important; text-align: center; padding: 2px 1px; font-weight: normal; }
+                            .ls-teeth-cross td { border-bottom: 1px solid #000 !important; }
+                            .ls-teeth-center { border-right: 1px solid #000 !important; }
+                            .ls-box { border: 1px solid #000; padding: 4px 8px; margin-bottom: 12px; font-size: 13px; font-weight: normal; min-height: 28px; }
+                            .ls-process-table { width: 100%; border-collapse: collapse; font-size: 13px; font-weight: bold; }
+                            .ls-process-table td { padding: 3px 6px; vertical-align: top; }
+                            .ls-border-box { border: 1px solid #000; padding: 4px 8px; display: inline-block; width: 100%; font-weight: bold; box-sizing: border-box; }
+                            .no-print-bar { background: #1e293b; color: #fff; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-radius: 4px; font-family: sans-serif; }
+                            .btn-print { background: #ec4899; color: #fff; border: none; padding: 8px 18px; font-weight: bold; border-radius: 4px; cursor: pointer; font-size: 13px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+                            .btn-print:hover { background: #db2777; }
+                            @media print {
+                                .no-print-bar { display: none !important; }
+                                body { padding: 0; background: #fff; }
+                                .lab-slip-container { border: none; box-shadow: none; padding: 0; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="no-print-bar">
+                            <span><strong>Lab Slip PDF Preview</strong> - Order #${orderNo}</span>
+                            <button class="btn-print" onclick="window.print()"><i class="fa-solid fa-print"></i> Print / Save as PDF</button>
+                        </div>
+
+                        <div class="lab-slip-container">
+                            <div class="ls-header">
+                                <div>
+                                    <h1 class="ls-lab-name">SOHAR DENTAL LABORATORY</h1>
+                                    <div class="ls-address">
+                                        AL HAMBAR, C.R.NO. 3203549,<br>
+                                        MOH NO. 1771,<br>
+                                        WEST SOHAR Pin - 311
+                                    </div>
+                                </div>
+                                <div class="ls-contact">
+                                    Phone : +96899622728<br>
+                                    email : sohardental@gmail.com
+                                </div>
+                            </div>
+
+                            <div class="ls-title">Lab Slip</div>
+
+                            <table class="ls-table">
+                                <tr>
+                                    <td style="width: 34%;">Order #<br><strong style="font-size:14px;">${orderNo}</strong></td>
+                                    <td style="width: 33%;">Model #<br><strong style="font-size:14px;">${modelNo}</strong></td>
+                                    <td style="width: 33%;">Order Date<br><strong style="font-size:14px;">${orderDateStr}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td>Due Date<br><strong style="font-size:14px;">${dueDateStr}</strong></td>
+                                    <td>Patient<br><strong style="font-size:14px;">${patientName}</strong></td>
+                                    <td>Printed<br><strong style="font-size:14px;">${printedDateStr}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2"><strong style="font-size:13px; text-transform:uppercase;">${doctorAndClient}</strong></td>
+                                    <td style="font-size:13px; text-transform:uppercase;"><strong>${city}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td style="width:50%; border-right: none;"><strong style="font-size:13px; text-transform:uppercase;">${productDetails}</strong></td>
+                                    <td style="border-left: none;"></td>
+                                    <td style="text-align: right; font-size:13px; text-transform:uppercase;"><strong>${material}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2" style="padding: 0;">
+                                        <table class="ls-teeth-table">
+                                            <tr class="ls-teeth-cross">
+                                                <td style="width:6.25%">8</td><td style="width:6.25%">7</td><td style="width:6.25%">6</td><td style="width:6.25%">5</td><td style="width:6.25%">4</td><td style="width:6.25%">3</td><td style="width:6.25%">2</td><td class="ls-teeth-center" style="width:6.25%">1</td>
+                                                <td style="width:6.25%">1</td><td style="width:6.25%">2</td><td style="width:6.25%">3</td><td style="width:6.25%">4</td><td style="width:6.25%">5</td><td style="width:6.25%">6</td><td style="width:6.25%">7</td><td style="width:6.25%">8</td>
+                                            </tr>
+                                            <tr>
+                                                <td>8</td><td>7</td><td>6</td><td>5</td><td>4</td><td>3</td><td>2</td><td class="ls-teeth-center">1</td>
+                                                <td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td><td>8</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                    <td style="text-align: center; vertical-align: middle;">
+                                        Units<br><strong style="font-size: 16px;">${units}</strong>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <div class="ls-box">Comments : ${notes}</div>
+
+                            <table class="ls-process-table">
+                                <tr>
+                                    <td style="border-bottom: 2px solid #000; padding-bottom: 2px; width: 24%;">Enclosure</td>
+                                    <td style="border-bottom: 2px solid #000; padding-bottom: 2px; width: 6%; text-align: center;">#</td>
+                                    <td style="border-bottom: 2px solid #000; padding-bottom: 2px; width: 28%;">Process</td>
+                                    <td style="border-bottom: 2px solid #000; padding-bottom: 4px; width: 18%;">Stage</td>
+                                    <td style="border-bottom: 2px solid #000; padding-bottom: 4px; width: 24%;">Checked by</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding-top: 6px;"></td>
+                                    <td style="padding-top: 6px;"></td>
+                                    <td style="padding-top: 6px;">Assigned to &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-</td>
+                                    <td style="padding-top: 6px;">Model</td>
+                                    <td style="padding-top: 6px;">________________</td>
+                                </tr>
+                                <tr>
+                                    <td><div class="ls-border-box">Shade ${shade ? ': ' + shade : ''}</div></td>
+                                    <td></td>
+                                    <td>Special Tray <span style="float:right;">_________</span></td>
+                                    <td>Waxup</td>
+                                    <td>________________</td>
+                                </tr>
+                                <tr>
+                                    <td></td><td></td>
+                                    <td>Wax Trial <span style="float:right;">_________</span></td>
+                                    <td>Metal</td>
+                                    <td>________________</td>
+                                </tr>
+                                <tr>
+                                    <td></td><td></td>
+                                    <td>Setting Trial <span style="float:right;">_________</span></td>
+                                    <td>Ceramic</td>
+                                    <td>________________</td>
+                                </tr>
+                                <tr>
+                                    <td></td><td></td>
+                                    <td>Finish <span style="float:right;">_________</span></td>
+                                    <td>CAD/CAM</td>
+                                    <td>________________</td>
+                                </tr>
+                                <tr>
+                                    <td></td><td></td><td></td>
+                                    <td>Cast Partial</td>
+                                    <td>________________</td>
+                                </tr>
+                                <tr>
+                                    <td></td><td></td><td></td>
+                                    <td>Denture</td>
+                                    <td>________________</td>
+                                </tr>
+                                <tr>
+                                    <td></td><td></td><td></td>
+                                    <td>Misc</td>
+                                    <td>________________</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </body>
+                    </html>
+                `);
+                printWin.document.close();
+            };
+
+            let localOrder = rawData.find(o => Number(o.id) === Number(orderId));
+            if (localOrder) {
+                renderPDF(localOrder);
+            } else {
+                fetch(`${apiBase}/orders/${orderId}`)
+                    .then(res => res.json())
+                    .then(order => {
+                        if (order && !order.error) {
+                            renderPDF(order);
+                        } else {
+                            printWin.document.body.innerHTML = '<h3 style="color:red; text-align:center;">Order details not found.</h3>';
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        printWin.document.body.innerHTML = `<h3 style="color:red; text-align:center;">Error loading order: ${err.message}</h3>`;
+                    });
+            }
+        }
+
+        function showOrderInfoModal(orderId) {
+            const item = rawData.find(o => Number(o.id) === Number(orderId));
+            if (!item) return;
+            const header = document.getElementById('info-modal-header');
+            const body = document.getElementById('info-modal-body');
+            const editBtn = document.getElementById('info-modal-edit-btn');
+            
+            if (header) header.textContent = `Order Information (#${item.orderNumber || item.id})`;
+            if (body) {
+                const clientName = (item.client ? item.client.name : item.clientName || '-').toUpperCase();
+                body.innerHTML = `
+                    <div style="display:grid; grid-template-columns: 110px 1fr; gap:6px 10px;">
+                        <strong>Order Number:</strong> <span>${item.orderNumber || item.id}</span>
+                        <strong>Client Name:</strong> <span>${clientName}</span>
+                        <strong>Patient Name:</strong> <span>${item.patientName || '-'}</span>
+                        <strong>Product / Type:</strong> <span>${item.productName || item.productType || '-'}</span>
+                        <strong>Status:</strong> <span style="color:#0056b3; font-weight:bold;">${item.status || 'New'}</span>
+                        <strong>Department:</strong> <span>${item.department || 'Lab'}</span>
+                        <strong>Assigned Staff:</strong> <span>${item.assignedTech || item.assignTo || 'Unassigned'}</span>
+                        <strong>Order Date:</strong> <span>${formatShortDate(item.orderDate || item.receivedDate)}</span>
+                        <strong>Due Date:</strong> <span style="color:#d97706; font-weight:bold;">${formatShortDate(item.dueDate)}</span>
+                    </div>
+                `;
+            }
+            if (editBtn) {
+                editBtn.onclick = function() {
+                    window.open(`orders.html?editOrder=${item.id}`, '_blank');
+                };
+            }
+            document.getElementById('order-info-modal').style.display = 'flex';
+        }
+
+        function showAssignModal(orderId) {
+            const item = rawData.find(o => Number(o.id) === Number(orderId));
+            if (!item) return;
+            document.getElementById('assign-target-id').value = item.id;
+            document.getElementById('assign-modal-header').textContent = `Assign / Move Order (#${item.orderNumber || item.id})`;
+            
+            const stSel = document.getElementById('assign-select-status');
+            const deptSel = document.getElementById('assign-select-dept');
+            const techSel = document.getElementById('assign-select-tech');
+            
+            if (stSel) stSel.value = item.status || 'New';
+            if (deptSel) deptSel.value = item.department || 'Lab';
+            if (techSel) techSel.value = item.assignedTech || item.assignTo || '';
+            
+            document.getElementById('quick-assign-modal').style.display = 'flex';
+        }
+
+        async function saveQuickAssign() {
+            const id = parseInt(document.getElementById('assign-target-id').value);
+            const status = document.getElementById('assign-select-status').value;
+            const department = document.getElementById('assign-select-dept').value;
+            const assignedTech = document.getElementById('assign-select-tech').value;
+            
+            if (!id) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/orders/bulk-update`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orderIds: [id], status, department, assignedTech })
+                });
+                if (res.ok) {
+                    const item = rawData.find(o => Number(o.id) === id);
+                    if (item) {
+                        item.status = status;
+                        item.department = department;
+                        item.assignedTech = assignedTech;
+                        item.assignTo = assignedTech;
+                    }
+                    document.getElementById('quick-assign-modal').style.display = 'none';
+                    applyFiltersAndRender();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function toggleDropdown(id, e) {
+            if (e) e.stopPropagation();
+            ['mark-as-dropdown', 'move-to-dropdown', 'assign-to-dropdown'].forEach(d => {
+                const el = document.getElementById(d);
+                if (el) {
+                    if (d === id) {
+                        el.style.display = el.style.display === 'block' ? 'none' : 'block';
+                    } else {
+                        el.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('click', (e) => {
+            ['mark-as-dropdown', 'move-to-dropdown', 'assign-to-dropdown'].forEach(id => {
+                const dd = document.getElementById(id);
+                if (dd && !dd.contains(e.target)) {
+                    dd.style.display = 'none';
+                }
+            });
+        });
+
+        async function bulkUpdateMarkAs(newStatus) {
+            const checked = Array.from(document.querySelectorAll('.row-cb:checked'));
+            if (checked.length === 0) {
+                alert('Please select at least one order using the checkbox first!');
+                return;
+            }
+            const orderIds = checked.map(cb => parseInt(cb.value)).filter(id => !isNaN(id));
+            try {
+                await fetch(`${API_BASE}/orders/bulk-update`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orderIds, status: newStatus })
+                });
+            } catch (err) {
+                console.error('Error updating status in DB:', err);
+            }
+            orderIds.forEach(id => {
+                const item = rawData.find(o => Number(o.id) === id);
+                if (item) item.status = newStatus;
+            });
+            toggleDropdown('', null);
+            applyFiltersAndRender();
+            alert(`Selected ${orderIds.length} order(s) marked as ${newStatus}.`);
+        }
+
+        async function bulkMoveTo(departmentName) {
+            const checked = Array.from(document.querySelectorAll('.row-cb:checked'));
+            if (checked.length === 0) {
+                alert('Please select at least one order using the checkbox first!');
+                return;
+            }
+            const orderIds = checked.map(cb => parseInt(cb.value)).filter(id => !isNaN(id));
+            try {
+                await fetch(`${API_BASE}/orders/bulk-update`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orderIds, department: departmentName })
+                });
+            } catch (err) {
+                console.error('Error updating department in DB:', err);
+            }
+            orderIds.forEach(id => {
+                const item = rawData.find(o => Number(o.id) === id);
+                if (item) item.department = departmentName;
+            });
+            toggleDropdown('', null);
+            applyFiltersAndRender();
+            alert(`Selected ${orderIds.length} order(s) moved to ${departmentName}.`);
+        }
+
+        async function assignSelectedOrders(techName) {
+            const checked = Array.from(document.querySelectorAll('.row-cb:checked'));
+            if (checked.length === 0) {
+                alert('Please select at least one order using the checkbox first!');
+                return;
+            }
+            const orderIds = checked.map(cb => parseInt(cb.value)).filter(id => !isNaN(id));
+            try {
+                await fetch(`${API_BASE}/orders/bulk-update`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orderIds, assignedTech: techName })
+                });
+            } catch (err) {
+                console.error('Error assigning orders in DB:', err);
+            }
+            orderIds.forEach(id => {
+                const item = rawData.find(o => Number(o.id) === id);
+                if (item) {
+                    item.assignedTech = techName;
+                    item.assignTo = techName;
+                }
+            });
+            toggleDropdown('', null);
+            applyFiltersAndRender();
+            alert(`Selected ${orderIds.length} order(s) assigned to ${techName}.`);
+        }
+
+        function removeFieldRow(index) {
+            syncFieldsModalInputs();
+            if (currentActiveColumns.length <= 1) {
+                alert('At least one column must remain visible!');
+                return;
+            }
+            currentActiveColumns.splice(index, 1);
+            renderFieldsModalTable();
+        }
+
+        function addFieldsRow() {
+            syncFieldsModalInputs();
+            const unused = ALL_ORDER_COLUMNS.filter(ac => !currentActiveColumns.some(c => c.name === ac.name));
+            if (unused.length === 0) {
+                alert('All available fields are already displayed!');
+                return;
+            }
+            
+            const selectEl = document.getElementById('add-field-select');
+            selectEl.innerHTML = unused.map(u => `<option value="${u.name}">${u.name} (${u.caption})</option>`).join('');
+            document.getElementById('add-field-container').style.display = 'block';
+        }
+
+        function confirmAddField() {
+            syncFieldsModalInputs();
+            const selectEl = document.getElementById('add-field-select');
+            const selectedName = selectEl.value;
+            const target = ALL_ORDER_COLUMNS.find(c => c.name === selectedName);
+            if (target && !currentActiveColumns.some(c => c.name === target.name)) {
+                currentActiveColumns.push({ ...target });
+            }
+            document.getElementById('add-field-container').style.display = 'none';
+            renderFieldsModalTable();
+        }
+
+        function resetFieldsModal() {
+            currentActiveColumns = ALL_ORDER_COLUMNS.slice(0, 8).map(c => ({ ...c }));
+            localStorage.removeItem('orders_grid_columns');
+            document.getElementById('add-field-container').style.display = 'none';
+            renderFieldsModalTable();
+        }
+
+        function saveFieldsModal() {
+            syncFieldsModalInputs();
+            localStorage.setItem('orders_grid_columns', JSON.stringify(currentActiveColumns));
+            closeFieldsModal();
+            renderTablePage();
+        }
+
+        function toggleGridlines(show) {
+            const table = document.getElementById('main-report-table');
+            if (table) {
+                table.style.border = show ? '1px solid #707070' : 'none';
+            }
+        }
+
+        function toggleCompactView(compact) {
+            const table = document.getElementById('main-report-table');
+            if (table) {
+                const cells = table.querySelectorAll('td, th');
+                cells.forEach(c => c.style.padding = compact ? '2px 4px' : '4px 6px');
+            }
+        }
+
+        function setupHeaderAndTitles() {
+            const mainTitleEl = document.getElementById('main-title');
+            const subHeadingEl = document.getElementById('sub-heading');
+            const closeBtnText = document.getElementById('btn-close-report-text');
+            const dateLabelEl = document.getElementById('date-label');
+            const statusFilterRow = document.getElementById('status-filter-row');
+            const dateRangeSelect = document.getElementById('date-range-select');
+            const dateInput = document.getElementById('filter-date-val');
+
+            let cleanTitle = reportTitle.replace(/^Orders List - /i, '').replace(/ List$/i, '');
+            const tLow = (reportTitle || '').toLowerCase();
+
+            if (tLow.includes('pending deliver') || tLow.includes('pending final deliver')) {
+                mainTitleEl.textContent = 'Pending Deliveries';
+                document.title = 'Pending Deliveries';
+                if (dateLabelEl) dateLabelEl.textContent = 'As On Date';
+                if (subHeadingEl) subHeadingEl.textContent = 'Pending Deliveries';
+                if (statusFilterRow) statusFilterRow.style.display = 'flex';
+                if (dateRangeSelect) dateRangeSelect.style.display = 'none';
+                if (dateInput) {
+                    dateInput.style.borderLeft = '1px solid #000066';
+                    if (!dateInput.value) dateInput.value = formatDisplayDate(new Date());
+                }
+            } else if (tLow.includes('final deliveries expected today') || tLow.includes('final deliveries expected')) {
+                mainTitleEl.textContent = 'Final Deliveries Expected Today';
+                document.title = 'Final Deliveries Expected Today';
+                if (dateLabelEl) dateLabelEl.textContent = 'As On Date';
+                if (subHeadingEl) subHeadingEl.textContent = 'Final Deliveries Expected Today';
+                if (statusFilterRow) statusFilterRow.style.display = 'flex';
+                if (dateRangeSelect) dateRangeSelect.style.display = 'none';
+                if (dateInput) {
+                    dateInput.style.borderLeft = '1px solid #000066';
+                    if (!dateInput.value) dateInput.value = formatDisplayDate(new Date());
+                }
+            } else if (tLow.includes('tryin deliveries scheduled today') || tLow.includes('tryin deliveries scheduled')) {
+                mainTitleEl.textContent = 'TryIn Deliveries Scheduled Today';
+                document.title = 'TryIn Deliveries Scheduled Today';
+                if (dateLabelEl) dateLabelEl.textContent = 'As On Date';
+                if (subHeadingEl) subHeadingEl.textContent = 'TryIn Deliveries Scheduled Today';
+                if (statusFilterRow) statusFilterRow.style.display = 'flex';
+                if (dateRangeSelect) dateRangeSelect.style.display = 'none';
+                if (dateInput) {
+                    dateInput.style.borderLeft = '1px solid #000066';
+                    if (!dateInput.value) dateInput.value = formatDisplayDate(new Date());
+                }
+            } else if (tLow.includes('orders yet to be invoiced') || tLow.includes('yet to be invoiced')) {
+                mainTitleEl.textContent = 'Orders Yet To Be Invoiced';
+                document.title = 'Orders Yet To Be Invoiced';
+                if (dateLabelEl) dateLabelEl.textContent = 'As On Date';
+                if (subHeadingEl) subHeadingEl.textContent = 'Orders Yet To Be Invoiced';
+                if (statusFilterRow) statusFilterRow.style.display = 'flex';
+                if (dateRangeSelect) dateRangeSelect.style.display = 'none';
+                if (dateInput) {
+                    dateInput.style.borderLeft = '1px solid #000066';
+                    if (!dateInput.value) dateInput.value = formatDisplayDate(new Date());
+                }
+            } else if (reportType === 'clients' || tLow.includes('new client') || tLow.includes('client')) {
+                mainTitleEl.textContent = 'Clients list';
+                document.title = 'Clients list';
+                if (dateLabelEl) dateLabelEl.textContent = 'Registration Date';
+                if (subHeadingEl) subHeadingEl.textContent = 'Clients Contact List';
+                if (statusFilterRow) statusFilterRow.style.display = 'none';
+            } else if (reportType === 'invoices' && !tLow.includes('profit')) {
+                mainTitleEl.textContent = 'Invoices list';
+                document.title = 'Invoices list';
+                if (dateLabelEl) dateLabelEl.textContent = 'Invoice Date';
+                if (subHeadingEl) subHeadingEl.textContent = 'Invoiced Amount List';
+                if (statusFilterRow) statusFilterRow.style.display = 'none';
+            } else if (reportType === 'receipts' || tLow.includes('collection')) {
+                mainTitleEl.textContent = 'Collection list';
+                document.title = 'Collection list';
+                if (dateLabelEl) dateLabelEl.textContent = 'Receipt Date';
+                if (subHeadingEl) subHeadingEl.textContent = 'Collection List';
+                if (statusFilterRow) statusFilterRow.style.display = 'none';
+            } else if (reportType === 'expenses' || tLow.includes('expense')) {
+                mainTitleEl.textContent = 'Expenses list';
+                document.title = 'Expenses list';
+                if (dateLabelEl) dateLabelEl.textContent = 'Expense Date';
+                if (subHeadingEl) subHeadingEl.textContent = 'Expenses List';
+                if (statusFilterRow) statusFilterRow.style.display = 'none';
+            } else if (reportType === 'profit_loss' || tLow.includes('profit')) {
+                mainTitleEl.textContent = 'Profit/Loss list';
+                document.title = 'Profit/Loss list';
+                if (dateLabelEl) dateLabelEl.textContent = 'Date';
+                if (subHeadingEl) subHeadingEl.textContent = 'Profit & Loss Statement';
+                if (statusFilterRow) statusFilterRow.style.display = 'none';
+            } else if (tLow.includes('dispatched')) {
+                mainTitleEl.textContent = 'TryIns Dispatched list';
+                document.title = 'TryIns Dispatched list';
+                if (dateLabelEl) dateLabelEl.textContent = 'Dispatch Date';
+                if (subHeadingEl) subHeadingEl.textContent = 'TryIns Dispatched List';
+                if (statusFilterRow) statusFilterRow.style.display = 'none';
+            } else if (tLow.includes('returned')) {
+                mainTitleEl.textContent = 'TryIns Returned list';
+                document.title = 'TryIns Returned list';
+                if (dateLabelEl) dateLabelEl.textContent = 'Return Date';
+                if (subHeadingEl) subHeadingEl.textContent = 'TryIns Returned List';
+                if (statusFilterRow) statusFilterRow.style.display = 'none';
+            } else if (tLow.includes('deliver')) {
+                mainTitleEl.textContent = 'Deliveries list';
+                document.title = 'Deliveries list';
+                if (dateLabelEl) dateLabelEl.textContent = 'Delivery Date';
+                if (subHeadingEl) subHeadingEl.textContent = 'Final Deliveries Done List';
+                if (statusFilterRow) statusFilterRow.style.display = 'none';
+            } else if (reportDateField === 'dueDate' || tLow.includes('due')) {
+                mainTitleEl.textContent = 'Orders List';
+                document.title = 'Orders List';
+                if (dateLabelEl) dateLabelEl.textContent = 'Final Delivery Due Date';
+                if (subHeadingEl) subHeadingEl.textContent = 'OrdersList';
+                if (statusFilterRow) statusFilterRow.style.display = 'flex';
+            } else {
+                mainTitleEl.textContent = 'Orders List';
+                document.title = 'Orders List';
+                if (dateLabelEl) dateLabelEl.textContent = 'Order Date';
+                if (subHeadingEl) subHeadingEl.textContent = 'OrdersList';
+                if (statusFilterRow) statusFilterRow.style.display = 'flex';
+            }
+
+            if (subHeadingEl) subHeadingEl.style.display = 'block';
+            if (closeBtnText) closeBtnText.textContent = 'Close Report';
+
+            const stSel = document.getElementById('order-status-select');
+            if (stSel) {
+                if (reportStatus && ['New', 'In Production', 'Complete', 'Hold', 'Try In', 'Delivered'].includes(reportStatus)) {
+                    stSel.value = reportStatus;
+                } else {
+                    stSel.value = 'All';
+                }
+            }
+        }
+
+        function onStatusDropdownChange(val) {
+            currentPage = 1;
+            applyFiltersAndRender();
+        }
+
+        async function populateClientDropdown() {
+            const select = document.getElementById('filter-client-select');
+            if (!select) return;
+            try {
+                const res = await fetch(`${API_BASE}/clients?simple=true`);
+                if (res.ok) {
+                    const clients = await res.json();
+                    clients.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+                    clients.forEach(c => {
+                        const opt = document.createElement('option');
+                        opt.value = c.id;
+                        opt.textContent = c.name;
+                        select.appendChild(opt);
+                    });
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function formatDisplayDate(d) {
+            if (!d) return '';
+            const m = d.getMonth() + 1;
+            const day = d.getDate();
+            const y = d.getFullYear();
+            return `${m}/${day}/${y}`;
+        }
+
+        function formatShortDate(dateStr) {
+            if (!dateStr) return '-';
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return '-';
+            const day = String(d.getDate()).padStart(2, '0');
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const month = months[d.getMonth()];
+            return `${day} ${month}`;
+        }
+
+        function formatOrderDateLong(dateStr) {
+            if (!dateStr) return '';
+            const dt = new Date(dateStr);
+            if (isNaN(dt.getTime())) return String(dateStr);
+            const day = dt.getDate();
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const month = months[dt.getMonth()];
+            const year = dt.getFullYear();
+            return `${day} ${month} ${year}`;
+        }
+
+        function formatDueDateShort(dateStr) {
+            if (!dateStr) return '';
+            const dt = new Date(dateStr);
+            if (isNaN(dt.getTime())) return String(dateStr);
+            const day = String(dt.getDate()).padStart(2, '0');
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const month = months[dt.getMonth()];
+            const yr = String(dt.getFullYear()).slice(-2);
+            return `${day}-${month}-${yr}`;
+        }
+
+        function toYYYYMMDD(d) {
+            if (!d || isNaN(d.getTime())) return '';
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        }
+
+        function parseInputDate(str) {
+            if (!str || !str.trim()) return null;
+            const s = str.trim();
+            if (s.includes('/')) {
+                const parts = s.split('/');
+                if (parts.length === 3) {
+                    const p1 = parseInt(parts[0]);
+                    const p2 = parseInt(parts[1]);
+                    let p3 = parseInt(parts[2]);
+                    if (p3 < 100) p3 += 2000;
+                    if (p1 <= 12 && p2 <= 31) {
+                        return new Date(p3, p1 - 1, p2);
+                    }
+                    if (p1 <= 31 && p2 <= 12) {
+                        return new Date(p3, p2 - 1, p1);
+                    }
+                }
+            }
+            const d = new Date(s);
+            return isNaN(d.getTime()) ? null : d;
+        }
+
+        function parseIso(val) {
+            if (!val) return '';
+            const d = new Date(val);
+            if (isNaN(d.getTime())) return '';
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        }
+
+        function onOrderStatusFilterChange(val) {
+            const mainTitleEl = document.getElementById('main-title');
+            if (val === 'All') mainTitleEl.textContent = 'All Orders';
+            else mainTitleEl.textContent = val;
+            applyFiltersAndRender();
+        }
+
+        function onDateRangePresetChange(val) {
+            const fromEl = document.getElementById('filter-date-from');
+            const toEl = document.getElementById('filter-date-to');
+            const now = new Date();
+            const formatDDMMYYLocal = (date) => {
+                if (!date) return '';
+                const d = String(date.getDate()).padStart(2, '0');
+                const m = String(date.getMonth() + 1).padStart(2, '0');
+                const y = String(date.getFullYear()).slice(-2);
+                return `${d}/${m}/${y}`;
+            };
+            const formatIso = (date) => {
+                if (!date) return '';
+                const d = String(date.getDate()).padStart(2, '0');
+                const m = String(date.getMonth() + 1).padStart(2, '0');
+                const y = String(date.getFullYear());
+                return `${y}-${m}-${d}`;
+            };
+
+            if (val === 'All' || val === 'All Time') {
+                if (fromEl) fromEl.value = '';
+                if (toEl) toEl.value = '';
+                window.effectiveReportDateFrom = '';
+            } else if (val === 'Today') {
+                const todayStr = formatDDMMYYLocal(now);
+                if (fromEl) fromEl.value = todayStr;
+                if (toEl) toEl.value = todayStr;
+                window.effectiveReportDateFrom = formatIso(now);
+            } else if (val === 'Yesterday') {
+                const yest = new Date(now);
+                yest.setDate(yest.getDate() - 1);
+                const yestStr = formatDDMMYYLocal(yest);
+                if (fromEl) fromEl.value = yestStr;
+                if (toEl) toEl.value = yestStr;
+                window.effectiveReportDateFrom = formatIso(yest);
+            } else if (val === 'This week from Sunday') {
+                const day = now.getDay();
+                const start = new Date(now);
+                start.setDate(now.getDate() - day);
+                if (fromEl) fromEl.value = formatDDMMYYLocal(start);
+                if (toEl) toEl.value = formatDDMMYYLocal(now);
+                window.effectiveReportDateFrom = formatIso(start);
+            } else if (val === 'Month To Date') {
+                const start = new Date(now.getFullYear(), now.getMonth(), 1);
+                if (fromEl) fromEl.value = formatDDMMYYLocal(start);
+                if (toEl) toEl.value = formatDDMMYYLocal(now);
+                window.effectiveReportDateFrom = formatIso(start);
+            } else if (val === 'Last 7 Days') {
+                const start = new Date(now);
+                start.setDate(now.getDate() - 6);
+                if (fromEl) fromEl.value = formatDDMMYYLocal(start);
+                if (toEl) toEl.value = formatDDMMYYLocal(now);
+                window.effectiveReportDateFrom = formatIso(start);
+            } else if (val === 'Last Full Week') {
+                const day = now.getDay();
+                const start = new Date(now);
+                start.setDate(now.getDate() - day - 7);
+                const end = new Date(now);
+                end.setDate(now.getDate() - day - 1);
+                if (fromEl) fromEl.value = formatDDMMYYLocal(start);
+                if (toEl) toEl.value = formatDDMMYYLocal(end);
+                window.effectiveReportDateFrom = formatIso(start);
+            } else if (val === 'Last Full Month') {
+                const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                const end = new Date(now.getFullYear(), now.getMonth(), 0);
+                if (fromEl) fromEl.value = formatDDMMYYLocal(start);
+                if (toEl) toEl.value = formatDDMMYYLocal(end);
+                window.effectiveReportDateFrom = formatIso(start);
+            } else if (val === 'Last 30 Days') {
+                const start = new Date(now);
+                start.setDate(now.getDate() - 29);
+                if (fromEl) fromEl.value = formatDDMMYYLocal(start);
+                if (toEl) toEl.value = formatDDMMYYLocal(now);
+                window.effectiveReportDateFrom = formatIso(start);
+            } else if (val === 'Year To Date') {
+                const start = new Date(now.getFullYear(), 0, 1);
+                if (fromEl) fromEl.value = formatDDMMYYLocal(start);
+                if (toEl) toEl.value = formatDDMMYYLocal(now);
+                window.effectiveReportDateFrom = formatIso(start);
+            } else if (val === 'Upcoming') {
+                const todayStr = formatDDMMYYLocal(now);
+                if (fromEl) fromEl.value = todayStr;
+                if (toEl) toEl.value = '';
+                window.effectiveReportDateFrom = formatIso(now);
+            }
+            applyFiltersAndRender();
+        }
+
+        function handleRangeChange() {
+            const range = document.getElementById('date-range-select').value;
+            const dateInput = document.getElementById('filter-date-val');
+            const now = new Date();
+
+            if (range === 'All Time' || range === 'All') {
+                dateInput.value = '';
+            } else if (range === 'Today') {
+                dateInput.value = formatDisplayDate(now);
+            } else if (range === 'Yesterday') {
+                const yest = new Date(now);
+                yest.setDate(yest.getDate() - 1);
+                dateInput.value = formatDisplayDate(yest);
+            } else if (range === 'Tomorrow') {
+                const tom = new Date(now);
+                tom.setDate(tom.getDate() + 1);
+                dateInput.value = formatDisplayDate(tom);
+            } else if (range === 'Week to date') {
+                const dayOfWeek = now.getDay();
+                const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek);
+                dateInput.value = formatDisplayDate(startOfWeek);
+            } else if (range === 'Month to date') {
+                const startM = new Date(now.getFullYear(), now.getMonth(), 1);
+                dateInput.value = formatDisplayDate(startM);
+            } else if (range === 'Last Full Month') {
+                const startLastM = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                dateInput.value = formatDisplayDate(startLastM);
+            } else if (range === 'Year To Date') {
+                const startY = new Date(now.getFullYear(), 0, 1);
+                dateInput.value = formatDisplayDate(startY);
+            } else if (range === 'User Specified') {
+                if (!dateInput.value) {
+                    dateInput.value = formatDisplayDate(now);
+                }
+            } else if (range === 'Upcoming') {
+                dateInput.value = formatDisplayDate(now);
+            }
+            applyDateFilter();
+        }
+
+        async function loadReportData() {
+            const refreshIcons = document.querySelectorAll('button[title="Refresh"] i, button[title="Refresh Data"] i');
+            refreshIcons.forEach(i => {
+                i.classList.add('fa-spin');
+                setTimeout(() => i.classList.remove('fa-spin'), 600);
+            });
+
+            const tbody = document.getElementById('report-tbody');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="12" class="no-data-msg">Loading data...</td></tr>';
+
+            const tLow = (reportTitle || '').toLowerCase();
+            try {
+                if (reportType === 'profit_loss' || tLow.includes('profit')) {
+                    const [invRes, expRes] = await Promise.all([
+                        fetch(`${API_BASE}/invoices`),
+                        fetch(`${API_BASE}/expenses`)
+                    ]);
+                    const invoices = invRes.ok ? await invRes.json() : [];
+                    const expenses = expRes.ok ? await expRes.json() : [];
+                    
+                    const pnlData = [];
+                    (Array.isArray(invoices) ? invoices : []).forEach(inv => {
+                        pnlData.push({
+                            type: 'Income',
+                            ref: inv.invoiceNumber || inv.id,
+                            date: inv.invoiceDate || inv.createdAt,
+                            desc: (inv.client ? inv.client.name : inv.clientName || 'Invoice Sales').toUpperCase(),
+                            income: parseFloat(inv.netAmount) || 0,
+                            expense: 0
+                        });
+                    });
+                    (Array.isArray(expenses) ? expenses : []).forEach(exp => {
+                        pnlData.push({
+                            type: 'Expense',
+                            ref: exp.voucherNo || ('EXP-' + exp.id),
+                            date: exp.date || exp.createdAt,
+                            desc: (exp.title || exp.category || exp.paidTo || 'Expense').toUpperCase(),
+                            income: 0,
+                            expense: parseFloat(exp.amount) || 0
+                        });
+                    });
+                    rawData = pnlData;
+                } else {
+                    let endpoint = `/${reportType}`;
+                    if (reportType === 'orders') {
+                        endpoint += '?limit=500';
+                    }
+                    const res = await fetch(`${API_BASE}${endpoint}`);
+                    if (!res.ok) throw new Error('Failed to load API');
+                    const json = await res.json();
+                    rawData = Array.isArray(json) ? json : (json.orders || []);
+                }
+            } catch (err) {
+                console.error('Error in loadReportData:', err);
+                rawData = [];
+            }
+
+            applyFiltersAndRender();
+        }
+
+        function applyDateFilter() {
+            currentPage = 1;
+            applyFiltersAndRender();
+        }
+
+        function getItemDateIso(item) {
+            let rawDate = null;
+            const tLow = (reportTitle || '').toLowerCase();
+            if (reportDateField === 'dueDate' || tLow.includes('due')) {
+                rawDate = item.dueDate;
+            } else if (tLow.includes('dispatch')) {
+                rawDate = item.dispatchDate || item.orderDate || item.receivedDate || item.createdAt;
+            } else if (tLow.includes('return')) {
+                rawDate = item.returnDate || item.orderDate || item.receivedDate || item.createdAt;
+            } else if (tLow.includes('pending deliver')) {
+                rawDate = item.orderDate || item.receivedDate || item.dueDate || item.createdAt;
+            } else if (tLow.includes('deliver')) {
+                rawDate = item.deliveryDate || item.dueDate || item.orderDate || item.receivedDate || item.createdAt;
+            } else if (reportType === 'clients') {
+                rawDate = item.createdAt || item.registrationDate || item.date;
+            } else if (reportType === 'invoices') {
+                rawDate = item.invoiceDate || item.createdAt || item.date;
+            } else if (reportType === 'receipts') {
+                rawDate = item.receiptDate || item.date || item.createdAt;
+            } else if (reportType === 'expenses') {
+                rawDate = item.date || item.createdAt;
+            } else if (reportType === 'profit_loss' || tLow.includes('profit')) {
+                rawDate = item.date;
+            } else {
+                rawDate = item.receivedDate || item.orderDate || item.createdAt || item.date;
+            }
+            return parseIso(rawDate);
+        }
+
+        function applyFiltersAndRender() {
+            if (!Array.isArray(rawData)) rawData = [];
+            filteredData = [...rawData];
+
+            const isAdvancedView = urlParams.get('view') === 'advanced';
+
+            if (isAdvancedView && reportType === 'orders') {
+                const selectedStatus = document.getElementById('filter-order-status')?.value || 'All';
+                const selectedClientId = document.getElementById('filter-client-select')?.value || '';
+                const searchVal = document.getElementById('tb-search-orders')?.value.toLowerCase().trim() || '';
+
+                if (selectedStatus !== 'All') {
+                    if (selectedStatus === 'Try In') {
+                        filteredData = filteredData.filter(o => (o.status || '').toLowerCase().includes('try'));
+                    } else if (selectedStatus === 'Hold') {
+                        filteredData = filteredData.filter(o => (o.status || '').toLowerCase().includes('hold'));
+                    } else if (selectedStatus === 'New') {
+                        filteredData = filteredData.filter(o => (o.status || '').toLowerCase() === 'new');
+                    } else if (selectedStatus === 'In Production') {
+                        filteredData = filteredData.filter(o => {
+                            const st = (o.status || '').toLowerCase();
+                            return st.includes('production') || st === 'new' || st.includes('hold') || st.includes('try') || (st !== 'delivered' && st !== 'cancelled');
+                        });
+                    } else if (selectedStatus === 'Complete') {
+                        filteredData = filteredData.filter(o => (o.status || '').toLowerCase().includes('complete'));
+                    } else if (selectedStatus === 'Delivered') {
+                        filteredData = filteredData.filter(o => (o.status || '').toLowerCase().includes('deliver'));
+                    }
+                }
+
+                if (selectedClientId) {
+                    filteredData = filteredData.filter(o => String(o.clientId) === String(selectedClientId));
+                }
+
+                const presetVal = document.getElementById('filter-date-range-preset')?.value || 'Custom';
+                const dateFromInput = document.getElementById('filter-date-from')?.value.trim() || '';
+                const dateToInput = document.getElementById('filter-date-to')?.value.trim() || '';
+
+                const convertDisplayDateToIso = (str) => {
+                    if (!str) return '';
+                    const parts = str.split('/');
+                    if (parts.length === 3) {
+                        let d = parts[0].padStart(2, '0');
+                        let m = parts[1].padStart(2, '0');
+                        let y = parts[2].length === 2 ? '20' + parts[2] : parts[2];
+                        return `${y}-${m}-${d}`;
+                    }
+                    return '';
+                };
+
+                if (presetVal !== 'All') {
+                    let targetFromIso = convertDisplayDateToIso(dateFromInput);
+                    let targetToIso = convertDisplayDateToIso(dateToInput);
+
+                    if (presetVal === 'Upcoming') {
+                        targetFromIso = targetFromIso || window.effectiveReportDateFrom;
+                        targetToIso = '';
+                    } else if (presetVal === 'Today' || presetVal === 'Yesterday') {
+                        targetFromIso = targetFromIso || window.effectiveReportDateFrom;
+                        targetToIso = targetToIso || targetFromIso;
+                    } else {
+                        if (!targetFromIso && !targetToIso) {
+                            targetFromIso = reportDateFrom || window.effectiveReportDateFrom || '';
+                            targetToIso = reportDateTo || '';
+                        }
+                    }
+
+                    if (targetFromIso || targetToIso) {
+                        filteredData = filteredData.filter(o => {
+                            const targetDateVal = (reportDateField === 'dueDate' || reportTitle.includes('Due')) ? o.dueDate : (o.receivedDate || o.orderDate);
+                            if (!targetDateVal) return false;
+                            const dIso = parseIso(targetDateVal);
+                            if (targetFromIso && targetToIso && targetFromIso === targetToIso) {
+                                return dIso === targetFromIso;
+                            }
+                            if (targetFromIso && dIso < targetFromIso) return false;
+                            if (targetToIso && dIso > targetToIso) return false;
+                            return true;
+                        });
+                    }
+                }
+
+                if (searchVal) {
+                    filteredData = filteredData.filter(o => {
+                        const oNum = String(o.orderNumber || o.id || '').toLowerCase();
+                        const mNum = String(o.modelNumber || '').toLowerCase();
+                        const pName = String(o.patientName || '').toLowerCase();
+                        const cName = String(o.client ? o.client.name : o.clientName || '').toLowerCase();
+                        return oNum.includes(searchVal) || mNum.includes(searchVal) || pName.includes(searchVal) || cName.includes(searchVal);
+                    });
+                }
+            } else {
+                // Filter by Status dropdown if present
+                const statusDropdown = document.getElementById('order-status-select');
+                if (reportType === 'orders' && statusDropdown && statusDropdown.value && statusDropdown.value !== 'All') {
+                    const stVal = statusDropdown.value.toLowerCase();
+                    filteredData = filteredData.filter(o => {
+                        const itemSt = (o.status || 'New').toLowerCase();
+                        if (stVal === 'new') return itemSt === 'new' || itemSt.includes('new');
+                        if (stVal === 'in production') return itemSt.includes('production') || itemSt === 'in production';
+                        if (stVal === 'complete') return itemSt.includes('complete');
+                        if (stVal === 'hold') return itemSt.includes('hold');
+                        if (stVal === 'try in') return itemSt.includes('try');
+                        if (stVal === 'delivered') return itemSt.includes('deliver');
+                        return itemSt.includes(stVal);
+                    });
+                }
+
+                // Apply date filter for generic SSRS style reports
+                const dateLabelText = document.getElementById('date-label')?.textContent || '';
+                const isAsOnDate = dateLabelText.includes('As On Date');
+                const selRange = document.getElementById('date-range-select')?.value || 'All Time';
+                const inputDateStr = document.getElementById('filter-date-val')?.value.trim() || '';
+
+                if (isAsOnDate) {
+                    if (inputDateStr) {
+                        const parsed = parseInputDate(inputDateStr);
+                        if (parsed) {
+                            const asOnIso = parseIso(parsed);
+                            filteredData = filteredData.filter(item => {
+                                const itemIso = getItemDateIso(item);
+                                if (!itemIso) return true;
+                                return itemIso <= asOnIso;
+                            });
+                        }
+                    }
+                } else if (selRange !== 'All Time' && selRange !== 'All') {
+                    const now = new Date();
+                    const getTodayIso = () => parseIso(now);
+
+                    let targetDateIso = '';
+                    let fromIso = '';
+                    let toIso = '';
+
+                    if (selRange === 'Today') {
+                        targetDateIso = getTodayIso();
+                    } else if (selRange === 'Yesterday') {
+                        const yest = new Date(now);
+                        yest.setDate(yest.getDate() - 1);
+                        targetDateIso = parseIso(yest);
+                    } else if (selRange === 'Tomorrow') {
+                        const tom = new Date(now);
+                        tom.setDate(tom.getDate() + 1);
+                        targetDateIso = parseIso(tom);
+                    } else if (selRange === 'Week to date') {
+                        const day = now.getDay();
+                        const start = new Date(now);
+                        start.setDate(now.getDate() - day);
+                        fromIso = parseIso(start);
+                        toIso = getTodayIso();
+                    } else if (selRange === 'Month to date') {
+                        const start = new Date(now.getFullYear(), now.getMonth(), 1);
+                        fromIso = parseIso(start);
+                        toIso = getTodayIso();
+                    } else if (selRange === 'Last Full Month') {
+                        const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                        const end = new Date(now.getFullYear(), now.getMonth(), 0);
+                        fromIso = parseIso(start);
+                        toIso = parseIso(end);
+                    } else if (selRange === 'Year To Date') {
+                        const start = new Date(now.getFullYear(), 0, 1);
+                        fromIso = parseIso(start);
+                        toIso = getTodayIso();
+                    } else if (selRange === 'Upcoming') {
+                        fromIso = getTodayIso();
+                    } else if (selRange === 'User Specified' || inputDateStr) {
+                        const parsed = parseInputDate(inputDateStr);
+                        if (parsed) targetDateIso = parseIso(parsed);
+                    }
+
+                    if (targetDateIso || fromIso || toIso) {
+                        filteredData = filteredData.filter(item => {
+                            const itemIso = getItemDateIso(item);
+                            if (!itemIso) return false;
+                            if (targetDateIso) {
+                                return itemIso === targetDateIso;
+                            }
+                            if (fromIso && itemIso < fromIso) return false;
+                            if (toIso && itemIso > toIso) return false;
+                            return true;
+                        });
+                    }
+                }
+
+                // Category and status specific filters
+                const tLow = (reportTitle || '').toLowerCase();
+                if (reportType === 'orders' && (!statusDropdown || statusDropdown.value === 'All')) {
+                    if (tLow.includes('pending deliver') || tLow.includes('pending final deliver')) {
+                        filteredData = filteredData.filter(o => {
+                            const st = (o.status || '').toLowerCase();
+                            return st !== 'delivered' && st !== 'cancelled';
+                        });
+                    } else if (tLow.includes('final deliveries expected today') || tLow.includes('final deliveries expected')) {
+                        filteredData = filteredData.filter(o => {
+                            const st = (o.status || '').toLowerCase();
+                            return st !== 'delivered' && st !== 'cancelled';
+                        });
+                    } else if (tLow.includes('tryin deliveries scheduled today') || tLow.includes('tryin deliveries scheduled')) {
+                        filteredData = filteredData.filter(o => {
+                            const st = (o.status || '').toLowerCase();
+                            return st.includes('try') || (o.productType || '').toLowerCase().includes('try') || (o.productName || '').toLowerCase().includes('try');
+                        });
+                    } else if (tLow.includes('orders yet to be invoiced') || tLow.includes('yet to be invoiced')) {
+                        filteredData = filteredData.filter(o => {
+                            const st = (o.status || '').toLowerCase();
+                            return !o.invoiceNumber && !o.invoiceId && st !== 'cancelled';
+                        });
+                    } else if (tLow.includes('dispatched') || (tLow.includes('try') && tLow.includes('dispatch'))) {
+                        filteredData = filteredData.filter(o => {
+                            const st = (o.status || '').toLowerCase();
+                            return st.includes('try') || st.includes('dispatch');
+                        });
+                    } else if (tLow.includes('returned') || (tLow.includes('try') && tLow.includes('return'))) {
+                        filteredData = filteredData.filter(o => {
+                            const st = (o.status || '').toLowerCase();
+                            return st.includes('return') || st.includes('try');
+                        });
+                    } else if (tLow.includes('deliver') && reportStatus === 'Delivered') {
+                        filteredData = filteredData.filter(o => (o.status || '').toLowerCase().includes('deliver'));
+                    }
+                }
+
+                const searchVal = document.getElementById('tb-search')?.value.toLowerCase().trim() || '';
+                if (searchVal) {
+                    filteredData = filteredData.filter(item => JSON.stringify(item).toLowerCase().includes(searchVal));
+                }
+            }
+
+            const effectiveSize = (pageSize === 'All') ? Math.max(1, filteredData.length) : parseInt(pageSize);
+            maxPages = Math.max(1, Math.ceil(filteredData.length / effectiveSize));
+            if (currentPage > maxPages) currentPage = maxPages;
+
+            const countText = `Total: ${filteredData.length} records`;
+            const summaryEl = document.getElementById('tb-count-summary');
+            if (summaryEl) summaryEl.textContent = countText;
+
+            renderTablePage();
+        }
+
+        function renderTablePage() {
+            const tbody = document.getElementById('report-tbody');
+            const thead = document.getElementById('report-thead');
+            tbody.innerHTML = '';
+
+            const isAdvancedView = urlParams.get('view') === 'advanced';
+            const tLow = (reportTitle || '').toLowerCase();
+
+            if (isAdvancedView && reportType === 'orders') {
+                let thHtml = `
+                    <th style="width: 25px; text-align:center;"><input type="checkbox" onclick="toggleSelectAll(this)"></th>
+                    <th style="width: 30px;">#</th>`;
+                currentActiveColumns.forEach(c => {
+                    thHtml += `<th>${c.caption}</th>`;
+                });
+                thHtml += `<th style="width: 100px; text-align:center;">Actions</th>`;
+                thead.innerHTML = `<tr>${thHtml}</tr>`;
+            } else if (reportType === 'clients' || tLow.includes('new client') || tLow.includes('client')) {
+                thead.innerHTML = `
+                    <tr>
+                        <th>Description</th>
+                        <th>Office Phone1</th>
+                        <th>Office Phone2</th>
+                        <th>Cell Phone</th>
+                        <th>Cell Phone2</th>
+                        <th>email</th>
+                        <th>City</th>
+                    </tr>`;
+            } else if (reportType === 'invoices' && !tLow.includes('profit')) {
+                thead.innerHTML = `
+                    <tr>
+                        <th>Invoice #</th>
+                        <th>Invoice Date</th>
+                        <th>Client Name</th>
+                        <th style="text-align:right;">Net Amount</th>
+                        <th style="text-align:right;">Paid</th>
+                        <th style="text-align:right;">Balance</th>
+                    </tr>`;
+            } else if (reportType === 'receipts' || tLow.includes('collection')) {
+                thead.innerHTML = `
+                    <tr>
+                        <th>Receipt #</th>
+                        <th>Receipt Date</th>
+                        <th>Client Name</th>
+                        <th style="text-align:right;">Amount</th>
+                        <th style="text-align:right;">Applied</th>
+                        <th style="text-align:right;">Balance</th>
+                    </tr>`;
+            } else if (reportType === 'expenses' || tLow.includes('expense')) {
+                thead.innerHTML = `
+                    <tr>
+                        <th>Expense #</th>
+                        <th>Date</th>
+                        <th>Category</th>
+                        <th>Title / Description</th>
+                        <th style="text-align:right;">Amount</th>
+                    </tr>`;
+            } else if (reportType === 'profit_loss' || tLow.includes('profit')) {
+                thead.innerHTML = `
+                    <tr>
+                        <th>Type</th>
+                        <th>Reference #</th>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th style="text-align:right;">Income (OMR)</th>
+                        <th style="text-align:right;">Expense (OMR)</th>
+                    </tr>`;
+            } else {
+                thead.innerHTML = `
+                    <tr>
+                        <th>Order No</th>
+                        <th>Order Date</th>
+                        <th>Client Name</th>
+                        <th>Patient Name</th>
+                        <th>Due Date</th>
+                        <th>Order Products</th>
+                        <th>Status</th>
+                        <th>Model No</th>
+                    </tr>`;
+            }
+
+            const effectiveSize = (pageSize === 'All') ? Math.max(1, filteredData.length) : parseInt(pageSize);
+
+            const pageInput = document.getElementById('page-input');
+            if (pageInput) pageInput.value = currentPage;
+            const totalPagesEl = document.getElementById('total-pages');
+            if (totalPagesEl) totalPagesEl.textContent = maxPages;
+
+            if (filteredData.length === 0) {
+                if (reportType === 'clients') {
+                    tbody.innerHTML = '';
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="10" class="no-data-msg">No records found.</td></tr>`;
+                }
+                return;
+            }
+
+            const startIndex = (currentPage - 1) * effectiveSize;
+            const pageItems = filteredData.slice(startIndex, startIndex + effectiveSize);
+
+            pageItems.forEach((item, idx) => {
+                const tr = document.createElement('tr');
+                const srNo = startIndex + idx + 1;
+
+                if (isAdvancedView && reportType === 'orders') {
+                    let tdHtml = `
+                        <td style="text-align:center;"><input type="checkbox" class="row-cb" value="${item.id}"></td>
+                        <td style="text-align:center;">${srNo}</td>`;
+                    
+                    currentActiveColumns.forEach(col => {
+                        if (col.key === 'orderNumber') {
+                            tdHtml += `<td><a href="orders.html?editOrder=${item.id}" target="_blank" class="cell-blue-link">${item.orderNumber || item.id}</a></td>`;
+                        } else if (col.key === 'orderDate') {
+                            const oDate = formatShortDate(item.orderDate || item.receivedDate);
+                            tdHtml += `<td class="cell-blue-text"><a href="javascript:void(0)" onclick="openLabSlipPDF(${item.id})" class="cell-blue-link" title="Click to view Lab Slip PDF">${oDate}</a></td>`;
+                        } else if (col.key === 'client') {
+                            const clientName = (item.client ? item.client.name : item.clientName || '-').toUpperCase();
+                            tdHtml += `<td><a href="client_viewer.html?id=${item.clientId}" target="_blank" class="cell-blue-link">${clientName}</a></td>`;
+                        } else if (col.key === 'patientName') {
+                            tdHtml += `<td>${item.patientName || ''}</td>`;
+                        } else if (col.key === 'productName') {
+                            const prodName = item.productName || item.productType || '-';
+                            tdHtml += `<td><a href="javascript:void(0)" class="cell-blue-link">${prodName}</a></td>`;
+                        } else if (col.key === 'modelNumber') {
+                            const modelNo = item.modelNumber || (22920 + idx);
+                            tdHtml += `<td>${modelNo}</td>`;
+                        } else if (col.key === 'status') {
+                            tdHtml += `<td class="cell-blue-text">${item.status || 'New'}</td>`;
+                        } else if (col.key === 'dueDate') {
+                            const dDate = formatShortDate(item.dueDate);
+                            tdHtml += `<td class="cell-orange-text">${dDate}</td>`;
+                        } else if (col.key === 'receivedDate') {
+                            tdHtml += `<td>${formatShortDate(item.receivedDate)}</td>`;
+                        } else if (col.key === 'assignTo') {
+                            tdHtml += `<td>${item.assignedTech || '-'}</td>`;
+                        } else if (col.key === 'department') {
+                            tdHtml += `<td>${item.department || 'Lab'}</td>`;
+                        } else if (col.key === 'deliveryMethod') {
+                            tdHtml += `<td>${item.deliveryMode || 'Courier'}</td>`;
+                        } else if (col.key === 'invoiceNumber') {
+                            tdHtml += `<td>${item.invoiceNumber || '-'}</td>`;
+                        } else if (col.key === 'amount') {
+                            tdHtml += `<td style="text-align:right;">${(item.totalAmount || 0).toFixed(3)}</td>`;
+                        } else {
+                            tdHtml += `<td>-</td>`;
+                        }
+                    });
+
+                    tdHtml += `
+                        <td style="text-align:center; white-space:nowrap; padding:2px 4px;">
+                            <div style="display:inline-flex; gap:3px;">
+                                <button onclick="window.open('orders.html?editOrder=${item.id}', '_blank')" class="act-btn" title="Edit Order"><i class="fa-solid fa-list-check"></i></button>
+                                <button onclick="openOrderQuickView(${item.id})" class="act-btn" title="Order Information"><i class="fa-solid fa-circle-info"></i></button>
+                                <button onclick="showAssignModal(${item.id})" class="act-btn" title="Assign Staff/Dept"><i class="fa-solid fa-users"></i></button>
+                                <button onclick="window.open('client_viewer.html?id=${item.clientId || (item.client ? item.client.id : '')}', '_blank')" class="act-btn" title="Client Profile"><i class="fa-solid fa-user"></i></button>
+                            </div>
+                        </td>`;
+                    tr.innerHTML = tdHtml;
+                } else if (reportType === 'clients' || tLow.includes('new client') || tLow.includes('client')) {
+                    tr.innerHTML = `
+                        <td><a href="client_viewer.html?id=${item.id}" target="_blank" class="cell-blue-link">${(item.name || item.description || '').toUpperCase()}</a></td>
+                        <td>${item.phone || item.officePhone1 || ''}</td>
+                        <td>${item.phone2 || item.officePhone2 || ''}</td>
+                        <td>${item.cellPhone || item.cell || ''}</td>
+                        <td>${item.cellPhone2 || ''}</td>
+                        <td>${item.email || ''}</td>
+                        <td>${item.city || ''}</td>
+                    `;
+                } else if (reportType === 'invoices' && !tLow.includes('profit')) {
+                    const invDate = formatDisplayDate(new Date(item.invoiceDate || item.createdAt));
+                    const net = parseFloat(item.netAmount) || 0;
+                    const paid = parseFloat(item.paidAmount) || 0;
+                    const bal = (item.balanceAmount !== undefined && !isNaN(item.balanceAmount)) ? parseFloat(item.balanceAmount) : (net - paid);
+                    tr.innerHTML = `
+                        <td><a href="javascript:void(0)" class="cell-blue-link">${item.invoiceNumber || item.id}</a></td>
+                        <td>${invDate}</td>
+                        <td><a href="client_viewer.html?id=${item.clientId || (item.client ? item.client.id : '')}" target="_blank" class="cell-blue-link">${(item.client ? item.client.name : item.clientName || '-').toUpperCase()}</a></td>
+                        <td style="text-align:right;">${net.toFixed(3)}</td>
+                        <td style="text-align:right;">${paid.toFixed(3)}</td>
+                        <td style="text-align:right; font-weight:bold; color:#000000;">${bal.toFixed(3)}</td>
+                    `;
+                } else if (reportType === 'receipts' || tLow.includes('collection')) {
+                    const recDate = formatDisplayDate(new Date(item.receiptDate || item.date || item.createdAt));
+                    const rawNum = item.receiptNumber || item.id || '1';
+                    const digits = String(rawNum).replace(/[^0-9]/g, '');
+                    const formattedRecNum = digits ? digits.padStart(5, '0') : String(rawNum);
+                    const amt = parseFloat(item.amount) || 0;
+                    const applied = parseFloat(item.appliedAmount) || 0;
+                    const bal = (item.creditAmount !== undefined && !isNaN(item.creditAmount)) ? parseFloat(item.creditAmount) : (amt - applied);
+                    tr.innerHTML = `
+                        <td><a href="javascript:void(0)" class="cell-blue-link">${formattedRecNum}</a></td>
+                        <td>${recDate}</td>
+                        <td><a href="client_viewer.html?id=${item.clientId || (item.client ? item.client.id : '')}" target="_blank" class="cell-blue-link">${(item.client ? item.client.name : item.clientName || '-').toUpperCase()}</a></td>
+                        <td style="text-align:right;">${amt.toFixed(3)}</td>
+                        <td style="text-align:right;">${applied.toFixed(3)}</td>
+                        <td style="text-align:right;">${bal.toFixed(3)}</td>
+                    `;
+                } else if (reportType === 'expenses' || tLow.includes('expense')) {
+                    const expDate = formatDisplayDate(new Date(item.date || item.createdAt));
+                    const amt = parseFloat(item.amount) || 0;
+                    tr.innerHTML = `
+                        <td><a href="javascript:void(0)" class="cell-blue-link">${item.voucherNo || ('EXP-' + item.id)}</a></td>
+                        <td>${expDate}</td>
+                        <td>${item.category || item.type || 'General'}</td>
+                        <td>${item.title || item.description || item.paidTo || '-'}</td>
+                        <td style="text-align:right; font-weight:bold;">${amt.toFixed(3)}</td>
+                    `;
+                } else if (reportType === 'profit_loss' || tLow.includes('profit')) {
+                    const dDate = formatDisplayDate(new Date(item.date));
+                    tr.innerHTML = `
+                        <td style="font-weight:bold; color:${item.type === 'Income' ? '#16a34a' : '#dc2626'};">${item.type}</td>
+                        <td>${item.ref}</td>
+                        <td>${dDate}</td>
+                        <td>${item.desc}</td>
+                        <td style="text-align:right; color:#16a34a; font-weight:bold;">${item.income > 0 ? item.income.toFixed(3) : '-'}</td>
+                        <td style="text-align:right; color:#dc2626; font-weight:bold;">${item.expense > 0 ? item.expense.toFixed(3) : '-'}</td>
+                    `;
+                } else {
+                    const orderNo = item.orderNumber || item.id || (10691 + idx);
+                    const oDate = formatShortDate(item.orderDate || item.receivedDate || item.createdAt);
+                    const clientObj = item.client || {};
+                    let clientName = (clientObj.name || item.clientName || '-').toUpperCase();
+                    const doctorName = (item.doctorName || clientObj.doctorName || item.subDoctor || '').trim().toUpperCase();
+                    if (doctorName && !clientName.includes(doctorName)) {
+                        clientName = `${clientName}\n${doctorName}`;
+                    }
+                    const patientName = (item.patientName || '').toUpperCase();
+                    const dDate = formatShortDate(item.dueDate);
+                    const orderProducts = (item.productName || item.productType || item.products || '-').toUpperCase();
+                    const statusVal = item.status || 'New';
+                    const modelNo = item.modelNumber ? String(item.modelNumber).padStart(5, '0') : (item.id ? String(item.id).padStart(5, '0') : '');
+
+                    tr.innerHTML = `
+                        <td><a href="orders.html?editOrder=${item.id}" target="_blank" style="color:#000; text-decoration:none;">${orderNo}</a></td>
+                        <td style="white-space:nowrap;">${oDate}</td>
+                        <td style="white-space: pre-line; line-height: 1.25; max-width: 220px;"><a href="client_viewer.html?id=${item.clientId || (item.client ? item.client.id : '')}" target="_blank" style="color:#000; text-decoration:none;">${clientName}</a></td>
+                        <td>${patientName}</td>
+                        <td style="white-space:nowrap;">${dDate}</td>
+                        <td style="white-space: normal; line-height: 1.25; max-width: 170px;">${orderProducts}</td>
+                        <td>${statusVal}</td>
+                        <td>${modelNo}</td>
+                    `;
+                }
+                tbody.appendChild(tr);
+            });
+        }
+
+        function toggleSelectAll(masterCb) {
+            document.querySelectorAll('.row-cb').forEach(cb => cb.checked = masterCb.checked);
+        }
+
+        function changePageSize(size) {
+            pageSize = size;
+            currentPage = 1;
+            applyFiltersAndRender();
+        }
+
+        function changePage(delta) {
+            goToPage(currentPage + delta);
+        }
+
+        function goToPage(p) {
+            let pageNum = parseInt(p);
+            if (isNaN(pageNum)) pageNum = 1;
+            if (pageNum < 1) pageNum = 1;
+            if (pageNum > maxPages) pageNum = maxPages;
+            currentPage = pageNum;
+            renderTablePage();
+        }
+
+        function jumpToPage(val) {
+            goToPage(val);
+        }
+
+        function handleSearchKey(e) {
+            if (e.key === 'Enter') {
+                executeSearch();
+            }
+        }
+
+        function executeSearch() {
+            currentPage = 1;
+            applyFiltersAndRender();
+        }
+
+        function exportReportCSV() {
+            if (!filteredData || filteredData.length === 0) {
+                alert('No data to export!');
+                return;
+            }
+            let csv = '';
+            const headers = Array.from(document.querySelectorAll('#report-thead th')).map(th => `"${th.textContent.trim()}"`);
+            csv += headers.join(',') + '\n';
+
+            filteredData.forEach(item => {
+                const row = Object.values(item).map(v => `"${String(v).replace(/"/g, '""')}"`);
+                csv += row.join(',') + '\n';
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${reportTitle.replace(/\s+/g, '_')}_Report.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>

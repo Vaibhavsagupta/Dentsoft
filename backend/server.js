@@ -1,9 +1,57 @@
+const path = require('path');
+const fs = require('fs');
+
+// Support loading .env from binary directory or current working directory
+const localEnvPath = path.join(__dirname, '.env');
+const cwdEnvPath = path.join(process.cwd(), '.env');
+if (fs.existsSync(localEnvPath)) {
+  require('dotenv').config({ path: localEnvPath });
+} else if (fs.existsSync(cwdEnvPath)) {
+  require('dotenv').config({ path: cwdEnvPath });
+} else {
+  require('dotenv').config();
+}
+
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const { PrismaClient } = require('@prisma/client');
 
 const app = express();
-const prisma = new PrismaClient();
+const JWT_SECRET = process.env.JWT_SECRET || 'SDL_ENTERPRISE_JWT_KEY_SECURE_2026';
+const dbUrl = process.env.DATABASE_URL || "postgresql://postgres:Sohar1dental2lab3@db.iegjermyuyuznlmoczow.supabase.co:5432/postgres";
+console.log('🔗 [Database Connection] Target URL:', dbUrl ? dbUrl.replace(/:[^:@]+@/, ':****@') : 'NOT SET');
+
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: dbUrl
+    }
+  }
+});
+
+// --- FAST IN-MEMORY API RESPONSE CACHE ---
+const apiCache = new Map();
+function getCache(key) {
+  const item = apiCache.get(key);
+  if (!item) return null;
+  if (Date.now() > item.expiry) {
+    apiCache.delete(key);
+    return null;
+  }
+  return item.data;
+}
+
+function setCache(key, data, ttlMs = 10000) {
+  apiCache.set(key, { data, expiry: Date.now() + ttlMs });
+}
+
+function clearCachePattern(prefix) {
+  for (const k of apiCache.keys()) {
+    if (!prefix || k.includes(prefix)) apiCache.delete(k);
+  }
+}
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
@@ -14,15 +62,114 @@ process.on('uncaughtException', (err) => {
 
 const PORT = process.env.PORT || 5000;
 
-const path = require('path');
 const multer = require('multer');
-const fs = require('fs');
+const { seedAllExcelData } = require('./excel_seeder');
+const memoryUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 }
+});
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, '../frontend')));
 
-// --- MANUAL MIGRATION REMOVED ---
-// Migrations should be done via Prisma.
+// Health check probes
+app.get('/healthz', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+app.get('/api/healthz', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+
+// --- ENTERPRISE AUTHENTICATION & AUTHORIZATION MIDDLEWARES ---
+function authenticateToken(req, res, next) {
+  // Allow health checks, login, and all non-API static page requests
+  if (req.path === '/api/auth/login' || req.path === '/healthz' || req.path === '/api/healthz' || !req.path.startsWith('/api/')) {
+    return next();
+  }
+
+  const authHeader = req.headers['authorization'];
+  let token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
+  if (!token && req.query && req.query.token) {
+    token = req.query.token;
+  }
+
+  if (!token) {
+    return next();
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (!err) {
+      req.user = user;
+    }
+    next();
+  });
+}
+
+function requireAdmin(req, res, next) {
+  if (!req.user || req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Forbidden: Administrator privileges required' });
+  }
+  next();
+}
+
+app.use(authenticateToken);
+
+// Disable HTTP caching so changes show up immediately on mobile and web browsers
+app.use((req, res, next) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    next();
+});
+
+const zlib = require('zlib');
+app.use((req, res, next) => {
+  const acceptEncoding = req.headers['accept-encoding'] || '';
+  if (!acceptEncoding.includes('gzip')) {
+    return next();
+  }
+
+  const oldSend = res.send;
+  res.send = function (body) {
+    if (!body) {
+      return oldSend.call(res, body);
+    }
+    
+    const contentType = res.getHeader('Content-Type') || '';
+    const isCompressible = contentType.includes('json') || contentType.includes('text') || typeof body === 'object' || typeof body === 'string';
+    
+    if (isCompressible) {
+      res.setHeader('Content-Encoding', 'gzip');
+      let buf;
+      if (Buffer.isBuffer(body)) {
+        buf = body;
+      } else if (typeof body === 'string') {
+        buf = Buffer.from(body);
+      } else {
+        buf = Buffer.from(JSON.stringify(body));
+      }
+      
+      zlib.gzip(buf, (err, compressed) => {
+        if (err) {
+          res.removeHeader('Content-Encoding');
+          oldSend.call(res, body);
+        } else {
+          res.setHeader('Content-Length', compressed.length);
+          oldSend.call(res, compressed);
+        }
+      });
+    } else {
+      oldSend.call(res, body);
+    }
+  };
+  next();
+});
+
+// Serve Frontend Static Assets & Web Application
+const frontendPath = path.join(__dirname, '../frontend');
+app.use(express.static(frontendPath));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(frontendPath, 'index.html'));
+});
 
 // Configure Multer for file uploads
 const storage = multer.diskStorage({
@@ -40,19 +187,228 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
+// --- SERIAL SEQUENCE HELPERS ---
+async function getNextSerialForType(typeKey, dbMaxNum = 0, fallbackDefault = 1) {
+  const keysToTry = [`serial_start_${typeKey}`, `serial_start_${typeKey}_no`].filter(Boolean);
+  let configuredStart = null;
+  
+  for (const k of keysToTry) {
+    const s = await prisma.systemSetting.findUnique({ where: { key: k } });
+    if (s && s.value !== null && s.value !== undefined) {
+      let val = s.value;
+      if (typeof val === 'string') {
+        try { val = JSON.parse(val); } catch(e) { val = parseInt(val); }
+      }
+      val = parseInt(val);
+      if (!isNaN(val) && val > 0) {
+        configuredStart = val;
+        break;
+      }
+    }
+  }
+
+  let prefix = '';
+  const serialsSetting = await prisma.systemSetting.findUnique({ where: { key: 'serials' } });
+  if (serialsSetting && serialsSetting.value) {
+    try {
+      const serialsData = typeof serialsSetting.value === 'object' ? serialsSetting.value : JSON.parse(serialsSetting.value);
+      if (serialsData[typeKey] && serialsData[typeKey].prefix) {
+        prefix = serialsData[typeKey].prefix;
+      }
+    } catch(e) {}
+  }
+
+  let nextNum;
+  if (configuredStart !== null) {
+    nextNum = configuredStart;
+  } else {
+    nextNum = dbMaxNum > 0 ? dbMaxNum + 1 : fallbackDefault;
+  }
+
+  const formatted = prefix ? `${prefix}${nextNum}` : String(nextNum);
+  return { nextNum, formatted };
+}
+
+async function incrementSerialStartNumber(typeKey, usedNum) {
+  const nextVal = usedNum + 1;
+  const key = `serial_start_${typeKey}`;
+  await prisma.systemSetting.upsert({
+    where: { key: key },
+    update: { value: JSON.stringify(nextVal) },
+    create: { key: key, value: JSON.stringify(nextVal) }
+  });
+}
+
+const SEQUENCE_CONFIG = {
+  order: { seqName: 'sdl_order_seq', table: 'Order', col: 'orderNumber', defaultStart: 1000 },
+  invoice: { seqName: 'sdl_invoice_seq', table: 'Invoice', col: 'invoiceNumber', defaultStart: 1000 },
+  receipt: { seqName: 'sdl_receipt_seq', table: 'Receipt', col: 'receiptNumber', defaultStart: 1000 },
+  adjustment: { seqName: 'sdl_adjustment_seq', table: 'Adjustment', col: 'adjustmentNumber', defaultStart: 1 },
+  creditAdj: { seqName: 'sdl_adjustment_seq', table: 'Adjustment', col: 'adjustmentNumber', defaultStart: 1 },
+  debitAdj: { seqName: 'sdl_adjustment_seq', table: 'Adjustment', col: 'adjustmentNumber', defaultStart: 1 },
+  journalVoucher: { seqName: 'sdl_adjustment_seq', table: 'Adjustment', col: 'adjustmentNumber', defaultStart: 1 },
+  shipment: { seqName: 'sdl_shipment_seq', table: 'ShipmentNote', col: 'noteNumber', defaultStart: 1000 },
+  expense: { seqName: 'sdl_expense_seq', table: 'Expense', col: 'voucherNo', defaultStart: 1000 },
+  clientCode: { seqName: 'sdl_client_code_seq', table: 'Client', col: 'code', defaultStart: 100 },
+  model: { seqName: 'sdl_model_seq', table: null, col: null, defaultStart: 48784 }
+};
+
+const initializedSequences = new Set();
+
+async function ensureSequenceInitialized(typeKey, customStart = null) {
+  const conf = SEQUENCE_CONFIG[typeKey] || { seqName: `sdl_${typeKey}_seq`, defaultStart: 1000 };
+  const seqName = conf.seqName;
+  let startNum = customStart;
+  if (!startNum) {
+    try {
+      const s = await prisma.systemSetting.findUnique({ where: { key: `serial_start_${typeKey}` } });
+      if (s && s.value !== null && s.value !== undefined) {
+        let val = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+        val = parseInt(val);
+        if (!isNaN(val) && val > 0) startNum = val;
+      }
+    } catch(e) {}
+  }
+  if (!startNum) startNum = conf.defaultStart || 1;
+
+  if (!initializedSequences.has(seqName)) {
+    try {
+      await prisma.$executeRawUnsafe(`CREATE SEQUENCE IF NOT EXISTS "${seqName}" START WITH ${startNum} INCREMENT BY 1;`);
+      
+      // Auto-sync with table max value
+      if (conf.table && conf.col) {
+        try {
+          const maxRows = await prisma.$queryRawUnsafe(`SELECT MAX(NULLIF(regexp_replace("${conf.col}", '\\D', '', 'g'), '')::bigint) as max_val FROM "${conf.table}";`);
+          const maxVal = maxRows && maxRows[0] && maxRows[0].max_val ? Number(maxRows[0].max_val) : 0;
+          if (maxVal > 0) {
+            await prisma.$executeRawUnsafe(`SELECT setval('"${seqName}"', ${maxVal}, true);`);
+          }
+        } catch (syncErr) {
+          console.warn(`[Sequence Sync] Warning syncing ${seqName}:`, syncErr.message);
+        }
+      }
+      initializedSequences.add(seqName);
+    } catch (e) {
+      console.warn(`[Sequence Init] Note on sequence ${seqName}:`, e.message);
+    }
+  }
+  return { conf, seqName, startNum };
+}
+
+async function formatSequenceValue(typeKey, num) {
+  let prefix = '';
+  try {
+    const serialsSetting = await prisma.systemSetting.findUnique({ where: { key: 'serials' } });
+    if (serialsSetting && serialsSetting.value) {
+      const serialsData = typeof serialsSetting.value === 'object' ? serialsSetting.value : JSON.parse(serialsSetting.value);
+      if (serialsData[typeKey] && serialsData[typeKey].prefix) {
+        prefix = serialsData[typeKey].prefix;
+      }
+    }
+  } catch (e) {}
+
+  let formatted = prefix ? `${prefix}${num}` : (typeKey === 'clientCode' || typeKey === 'receipt' || typeKey === 'adjustment' || typeKey === 'creditAdj' || typeKey === 'debitAdj' || typeKey === 'journalVoucher' ? String(num).padStart(5, '0') : String(num));
+  return formatted;
+}
+
+// PEEK next sequence number without advancing sequence in DB
+async function peekNextAtomicSequence(typeKey, customStart = null) {
+  const { conf, seqName, startNum } = await ensureSequenceInitialized(typeKey, customStart);
+  try {
+    let tableMax = 0;
+    if (conf.table && conf.col) {
+      try {
+        const maxRows = await prisma.$queryRawUnsafe(`SELECT MAX(NULLIF(regexp_replace("${conf.col}", '\\D', '', 'g'), '')::bigint) as max_val FROM "${conf.table}";`);
+        tableMax = maxRows && maxRows[0] && maxRows[0].max_val ? Number(maxRows[0].max_val) : 0;
+      } catch (e) {}
+    }
+
+    let seqVal = 0;
+    try {
+      const seqRows = await prisma.$queryRawUnsafe(`SELECT last_value, is_called FROM "${seqName}";`);
+      if (seqRows && seqRows[0]) {
+        seqVal = Number(seqRows[0].last_value);
+        if (!seqRows[0].is_called) {
+          seqVal = seqVal - 1;
+        }
+      }
+    } catch (e) {}
+
+    let nextNum;
+    if (tableMax > 0 || seqVal > 0) {
+      nextNum = Math.max(tableMax + 1, seqVal + 1);
+    } else {
+      nextNum = startNum;
+    }
+
+    const formatted = await formatSequenceValue(typeKey, nextNum);
+    return { nextNum, formatted };
+  } catch (err) {
+    console.error(`[Atomic Sequence Peek] Fallback for ${seqName}:`, err.message);
+    return getNextSerialForType(typeKey, 0, startNum);
+  }
+}
+
+// ATOMIC INCREMENT & CLAIM (only call on actual entity save/creation)
+async function getNextAtomicSequence(typeKey, customStart = null) {
+  const { conf, seqName, startNum } = await ensureSequenceInitialized(typeKey, customStart);
+
+  try {
+    if (conf.table && conf.col) {
+      try {
+        const maxRows = await prisma.$queryRawUnsafe(`SELECT MAX(NULLIF(regexp_replace("${conf.col}", '\\D', '', 'g'), '')::bigint) as max_val FROM "${conf.table}";`);
+        const maxVal = maxRows && maxRows[0] && maxRows[0].max_val ? Number(maxRows[0].max_val) : 0;
+        const seqRows = await prisma.$queryRawUnsafe(`SELECT last_value FROM "${seqName}";`);
+        const currentLast = seqRows && seqRows[0] ? Number(seqRows[0].last_value) : 0;
+        if (maxVal > currentLast) {
+          await prisma.$executeRawUnsafe(`SELECT setval('"${seqName}"', ${maxVal}, true);`);
+        }
+      } catch (e) {}
+    }
+
+    const result = await prisma.$queryRawUnsafe(`SELECT nextval('"${seqName}"') as val;`);
+    let nextVal = Number(result[0].val);
+
+    const formatted = await formatSequenceValue(typeKey, nextVal);
+    return { nextNum: nextVal, formatted };
+  } catch (err) {
+    console.error(`[Atomic Sequence] Fallback for ${seqName}:`, err.message);
+    return getNextSerialForType(typeKey, 0, startNum);
+  }
+}
+
+async function syncSequenceWithNumber(typeKey, usedNumber) {
+  try {
+    const num = parseInt(String(usedNumber).replace(/\D/g, ''));
+    if (!isNaN(num) && num > 0) {
+      const conf = SEQUENCE_CONFIG[typeKey];
+      if (conf && conf.seqName) {
+        await ensureSequenceInitialized(typeKey);
+        const seqRows = await prisma.$queryRawUnsafe(`SELECT last_value FROM "${conf.seqName}";`);
+        const currentLast = seqRows && seqRows[0] ? Number(seqRows[0].last_value) : 0;
+        if (num > currentLast) {
+          await prisma.$executeRawUnsafe(`SELECT setval('"${conf.seqName}"', ${num}, true);`);
+        }
+      }
+    }
+  } catch (e) {
+    console.warn(`[Sync Sequence With Number] Error for ${typeKey}:`, e.message);
+  }
+}
+
 // --- EXPENSES ---
 app.get('/api/expenses', async (req, res) => {
   try {
-    const expenses = await prisma.expense.findMany({ orderBy: { id: 'desc' } });
+    const expenses = await prisma.expense.findMany({ orderBy: { date: 'desc' } });
     res.json(expenses);
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 app.get('/api/expenses/next-number', async (req, res) => {
   try {
-    const last = await prisma.expense.findFirst({ orderBy: { id: 'desc' } });
-    const count = last ? last.id : 0;
-    res.json({ nextNumber: (count + 1).toString().padStart(5, '0') });
+    const serialResult = await peekNextAtomicSequence('expense');
+    const nextNumber = String(serialResult.nextNum).padStart(5, '0');
+    res.json({ nextNumber });
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
@@ -62,8 +418,40 @@ app.post('/api/expenses', async (req, res) => {
     data.amount = Number(data.amount);
     data.date = toDate(data.date) || new Date();
     
+    if (!data.voucherNo) {
+      const serialResult = await getNextAtomicSequence('expense');
+      data.voucherNo = String(serialResult.nextNum).padStart(5, '0');
+    } else {
+      const clean = String(data.voucherNo).replace(/[^0-9]/g, '');
+      if (clean) data.voucherNo = clean.padStart(5, '0');
+    }
+
     const expense = await prisma.expense.create({ data });
     res.status(201).json(expense);
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.put('/api/expenses/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const data = { ...req.body };
+    if (data.amount !== undefined) data.amount = Number(data.amount);
+    if (data.date) data.date = toDate(data.date);
+    delete data.id;
+
+    const updated = await prisma.expense.update({
+      where: { id },
+      data
+    });
+    res.json(updated);
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.delete('/api/expenses/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await prisma.expense.delete({ where: { id } });
+    res.json({ success: true, message: 'Expense deleted' });
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
@@ -75,6 +463,9 @@ app.use((req, res, next) => {
     next();
 });
 app.use(express.static(path.join(__dirname, '..')));
+app.get('/favicon.ico', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/logo.jpeg'));
+});
 // Serve uploaded images
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -103,7 +494,7 @@ async function recalculateClientBalances(clientId, tx = prisma) {
   });
   
   const receipts = await tx.receipt.findMany({
-    where: { clientId: Number(clientId) },
+    where: { clientId: Number(clientId), NOT: { status: 'Cancelled' } },
     orderBy: [{ receiptDate: 'asc' }, { id: 'asc' }]
   });
   
@@ -150,19 +541,23 @@ async function recalculateClientBalances(clientId, tx = prisma) {
   }
   
   for (const inv of invoiceTrak) {
-    const totalPaid = inv.paidFromReceipts + inv.adjCredit - inv.adjDebit;
-    const balance = Math.max(0, inv.netAmount - totalPaid);
-    let status = 'Awaiting to Paid';
-    if (balance <= 0) {
+    const totalPaidFromReceipts = Math.max(inv.paidFromReceipts + inv.adjCredit - inv.adjDebit, 0);
+    // Find database invoice record to preserve manually updated paidAmount if no receipt overrides it
+    const existingDbInv = invoices.find(i => i.id === inv.id);
+    const manualPaid = existingDbInv ? (existingDbInv.paidAmount || 0) : 0;
+    const finalPaid = Math.max(totalPaidFromReceipts, inv.paidFromReceipts > 0 ? totalPaidFromReceipts : manualPaid);
+    const balance = Math.max(0, Math.round((inv.netAmount - finalPaid) * 1000) / 1000);
+    let status = 'Unpaid';
+    if (balance <= 0 && inv.netAmount > 0) {
       status = 'Paid';
-    } else if (totalPaid > 0) {
+    } else if (finalPaid > 0) {
       status = 'Partially Paid';
     }
     
     await tx.invoice.update({
       where: { id: inv.id },
       data: {
-        paidAmount: toMoney(totalPaid),
+        paidAmount: toMoney(finalPaid),
         balanceAmount: toMoney(balance),
         status: status
       }
@@ -191,47 +586,256 @@ async function recalculateClientBalances(clientId, tx = prisma) {
 // --- CLIENTS ---
 app.get('/api/clients', async (req, res) => {
   try {
-    const { search } = req.query;
+    const { search, simple, include_relations, withDetails, page, limit, take, skip, paginate } = req.query;
+    const isRelations = include_relations === 'true' || withDetails === 'true';
+
+    if (!search && !page && !limit && !skip) {
+      const cacheKey = isRelations ? 'clients_relations' : (simple === 'true' ? 'clients_simple' : 'clients_fast');
+      const cached = getCache(cacheKey);
+      if (cached) return res.json(cached);
+    }
+
     let where = {};
 
     if (search) {
       where.OR = [
-        { name: { contains: search } },
-        { code: { contains: search } },
-        { phone: { contains: search } },
-        { cellPhone: { contains: search } },
-        { email: { contains: search } }
+        { name: { contains: search, mode: 'insensitive' } },
+        { code: { contains: search, mode: 'insensitive' } },
+        { phone: { contains: search, mode: 'insensitive' } },
+        { cellPhone: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } }
       ];
     }
 
-    const clients = await prisma.client.findMany({ 
-      where,
-      include: { orders: { include: { shipmentNote: true } }, invoices: true, receipts: true, shipmentNotes: true },
-      orderBy: { name: 'asc' }
+    const total = await prisma.client.count({ where });
+    let queryOptions = { where, orderBy: { name: 'asc' } };
+
+    let pageVal = Math.max(Number(page) || 1, 1);
+    let takeVal = limit === 'all' ? null : (Number(limit || take) || (page || paginate === 'true' ? 50 : null));
+    let skipVal = skip !== undefined ? Number(skip) : (takeVal ? (pageVal - 1) * takeVal : null);
+
+    if (takeVal) queryOptions.take = takeVal;
+    if (skipVal !== null && skipVal !== undefined) queryOptions.skip = skipVal;
+
+    let clients;
+    if (isRelations) {
+      queryOptions.include = { 
+        orders: { select: { id: true, status: true, totalAmount: true, netAmount: true, orderNumber: true, receivedDate: true, createdAt: true } },
+        invoices: { select: { id: true, invoiceNumber: true, invoiceDate: true, netAmount: true, paidAmount: true, balanceAmount: true, status: true } },
+        receipts: { select: { id: true, receiptNumber: true, amount: true } },
+        shipmentNotes: { select: { id: true, noteNumber: true, status: true } },
+        adjustments: { select: { id: true, amount: true } }
+      };
+      clients = await prisma.client.findMany(queryOptions);
+      if (!search && !page && !limit && !skip) setCache('clients_relations', clients, 15000);
+    } else if (simple === 'true') {
+      queryOptions.select = {
+        id: true,
+        name: true,
+        code: true,
+        doctorName: true,
+        phone: true,
+        cellPhone: true,
+        city: true,
+        area: true,
+        route: true,
+        email: true,
+        priceBand: true,
+        billTo: true,
+        address: true,
+        openingBalance: true,
+        openingBalanceType: true,
+        createdAt: true
+      };
+      clients = await prisma.client.findMany(queryOptions);
+      if (!search && !page && !limit && !skip) setCache('clients_simple', clients, 30000);
+    } else {
+      clients = await prisma.client.findMany(queryOptions);
+      if (!search && !page && !limit && !skip) setCache('clients_fast', clients, 30000);
+    }
+
+    const totalPages = takeVal ? Math.ceil(total / takeVal) : 1;
+    res.set({
+      'X-Total-Count': String(total),
+      'X-Page': String(pageVal),
+      'X-Total-Pages': String(totalPages),
+      'X-Limit': String(takeVal || total)
     });
+
+    if (paginate === 'true') {
+      return res.json({
+        data: clients,
+        pagination: {
+          total,
+          page: pageVal,
+          limit: takeVal || total,
+          totalPages
+        }
+      });
+    }
+
     res.json(clients);
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
+app.get('/api/clients/next-code', async (req, res) => {
+  try {
+    const serialResult = await peekNextAtomicSequence('clientCode');
+    res.json({ nextCode: serialResult.formatted });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+async function getUniqueClientCode(requestedCode) {
+  let code = requestedCode ? String(requestedCode).trim() : '';
+
+  if (code) {
+    const existing = await prisma.client.findFirst({ where: { code } });
+    if (!existing) {
+      return code;
+    }
+  }
+
+  const serialResult = await getNextAtomicSequence('clientCode');
+  let candidateCode = serialResult.formatted;
+
+  const exists = await prisma.client.findFirst({ where: { code: candidateCode } });
+  if (exists) {
+    const retryResult = await getNextAtomicSequence('clientCode');
+    candidateCode = retryResult.formatted;
+  }
+
+  return candidateCode;
+}
+
+const VALID_CLIENT_FIELDS = new Set([
+  'code',
+  'salutation',
+  'name',
+  'contactPerson',
+  'doctorName',
+  'regNum',
+  'workingHours',
+  'salesManager',
+  'email',
+  'phone',
+  'phone2',
+  'cellPhone',
+  'cellPhone2',
+  'city',
+  'area',
+  'pinCode',
+  'address',
+  'address2',
+  'deliveryMethod',
+  'route',
+  'priceBand',
+  'taxId',
+  'creditLimit',
+  'paymentTermsDays',
+  'openingBalance',
+  'openingBalanceType',
+  'categories',
+  'defaultDeliveryAgent',
+  'collectionCentre',
+  'regularVisits',
+  'taxExemption',
+  'isDentalLab',
+  'billTo',
+  'trn',
+  'discountPercentage',
+  'priceListCategory',
+  'status',
+  'notes',
+  'advanceBalance'
+]);
+
+function sanitizeClientInput(input) {
+  const data = { ...input };
+
+  // Map frontend field aliases to Prisma schema fields
+  if (data.regNo !== undefined && data.regNum === undefined) {
+    data.regNum = data.regNo;
+  }
+  if (data.cell2 !== undefined && data.cellPhone2 === undefined) {
+    data.cellPhone2 = data.cell2;
+  }
+  if (data.deliveryAgent !== undefined && data.defaultDeliveryAgent === undefined) {
+    data.defaultDeliveryAgent = data.deliveryAgent;
+  }
+  if (data.paymentTerms !== undefined && data.paymentTermsDays === undefined) {
+    data.paymentTermsDays = data.paymentTerms;
+  }
+  if (data.pincode !== undefined && data.pinCode === undefined) {
+    data.pinCode = data.pincode;
+  }
+  if (data.inactive !== undefined && data.status === undefined) {
+    data.status = data.inactive ? 'Inactive' : 'Active';
+  }
+
+  // Type conversions
+  if (data.discountPercentage !== undefined) data.discountPercentage = toNum(data.discountPercentage) || 0;
+  if (data.creditLimit !== undefined) data.creditLimit = toNum(data.creditLimit) || 0;
+  if (data.openingBalance !== undefined) data.openingBalance = toNum(data.openingBalance) || 0;
+  if (data.paymentTermsDays !== undefined) data.paymentTermsDays = parseInt(data.paymentTermsDays, 10) || 0;
+  if (data.advanceBalance !== undefined) data.advanceBalance = toNum(data.advanceBalance) || 0;
+  if (data.taxExemption !== undefined) data.taxExemption = Boolean(data.taxExemption);
+  if (data.isDentalLab !== undefined) data.isDentalLab = Boolean(data.isDentalLab);
+
+  // String cleans
+  if (data.name !== undefined) data.name = String(data.name).trim();
+  if (data.code !== undefined && data.code !== null) {
+    const trimmed = String(data.code).trim();
+    data.code = trimmed || null;
+  }
+
+  // Filter out any key not in VALID_CLIENT_FIELDS
+  const sanitized = {};
+  for (const key of Object.keys(data)) {
+    if (VALID_CLIENT_FIELDS.has(key) && data[key] !== undefined) {
+      sanitized[key] = data[key];
+    }
+  }
+
+  return sanitized;
+}
+
 app.post('/api/clients', async (req, res) => {
   try {
-    const data = { ...req.body };
-    
-    // Auto-generate code if missing
-    if (!data.code) {
-      const count = await prisma.client.count();
-      data.code = (count + 1).toString().padStart(5, '0');
+    clearCachePattern('clients');
+    const sanitizedData = sanitizeClientInput(req.body);
+
+    if (!sanitizedData.name || !String(sanitizedData.name).trim()) {
+      return res.status(400).json({ error: 'Client Name is required' });
     }
 
-    data.discountPercentage = toNum(data.discountPercentage) || 0;
-    data.creditLimit = toNum(data.creditLimit) || 0;
-    data.openingBalance = toNum(data.openingBalance) || 0;
-    data.paymentTermsDays = toNum(data.paymentTermsDays) || 0;
-    data.advanceBalance = toNum(data.advanceBalance) || 0;
+    // Auto-generate or resolve unique client code
+    sanitizedData.code = await getUniqueClientCode(sanitizedData.code);
     
-    const client = await prisma.client.create({ data });
+    let client;
+    let attempts = 0;
+    while (attempts < 5) {
+      attempts++;
+      try {
+        client = await prisma.client.create({ data: sanitizedData });
+        break;
+      } catch (createErr) {
+        if (createErr.code === 'P2002' || (createErr.message && (createErr.message.includes('code') || createErr.message.includes('Unique constraint')))) {
+          console.warn(`Client code collision for '${sanitizedData.code}', generating fallback code (Attempt ${attempts})...`);
+          const count = await prisma.client.count();
+          const randSuffix = Math.floor(1000 + Math.random() * 9000);
+          sanitizedData.code = `CL-${count + attempts}-${randSuffix}`;
+        } else {
+          throw createErr;
+        }
+      }
+    }
     res.status(201).json(client);
-  } catch (error) { res.status(500).json({ error: error.message }); }
+  } catch (error) { 
+    console.error("Error creating client:", error);
+    res.status(400).json({ error: error.message || 'Failed to create client' }); 
+  }
 });
 
 app.get('/api/clients/:id', async (req, res) => {
@@ -244,7 +848,8 @@ app.get('/api/clients/:id', async (req, res) => {
           include: { orders: true }
         }, 
         invoices: true, 
-        receipts: true 
+        receipts: true,
+        adjustments: true
       }
     });
     if (!client) return res.status(404).json({ error: 'Client not found' });
@@ -254,20 +859,116 @@ app.get('/api/clients/:id', async (req, res) => {
 
 app.put('/api/clients/:id', async (req, res) => {
   try {
-    const data = { ...req.body };
-    if (data.discountPercentage !== undefined) data.discountPercentage = toNum(data.discountPercentage);
-    if (data.creditLimit !== undefined) data.creditLimit = toNum(data.creditLimit);
-    if (data.advanceBalance !== undefined) data.advanceBalance = toNum(data.advanceBalance);
-    const client = await prisma.client.update({ where: { id: Number(req.params.id) }, data });
+    clearCachePattern('clients');
+    const id = Number(req.params.id);
+    const sanitizedData = sanitizeClientInput(req.body);
+
+    if (sanitizedData.code !== undefined && sanitizedData.code !== null && String(sanitizedData.code).trim()) {
+      const targetCode = String(sanitizedData.code).trim();
+      const existing = await prisma.client.findFirst({
+        where: { code: targetCode, NOT: { id } }
+      });
+      if (existing) {
+        return res.status(400).json({ error: `Client Code '${targetCode}' is already assigned to ${existing.name}. Please use a different code.` });
+      }
+      sanitizedData.code = targetCode;
+    }
+
+    const client = await prisma.client.update({
+      where: { id },
+      data: sanitizedData
+    });
     res.json(client);
-  } catch (error) { res.status(500).json({ error: error.message }); }
+  } catch (error) { 
+    console.error("Error updating client:", error);
+    res.status(500).json({ error: error.message || 'Failed to update client' }); 
+  }
 });
 
 app.delete('/api/clients/:id', async (req, res) => {
+  const clientId = Number(req.params.id);
+  if (!clientId || isNaN(clientId)) {
+    return res.status(400).json({ error: 'Invalid client ID' });
+  }
+
   try {
-    await prisma.client.delete({ where: { id: Number(req.params.id) } });
-    res.status(204).send();
-  } catch (error) { res.status(500).json({ error: error.message }); }
+    await prisma.$transaction(async (tx) => {
+      // 1. Get all orders, shipment notes, invoices of this client
+      const clientOrders = await tx.order.findMany({
+        where: { clientId },
+        select: { id: true }
+      });
+      const orderIds = clientOrders.map(o => o.id);
+
+      const clientShipmentNotes = await tx.shipmentNote.findMany({
+        where: { clientId },
+        select: { id: true }
+      });
+      const shipmentNoteIds = clientShipmentNotes.map(s => s.id);
+
+      const clientInvoices = await tx.invoice.findMany({
+        where: { clientId },
+        select: { id: true }
+      });
+      const invoiceIds = clientInvoices.map(i => i.id);
+
+      // Unlink any orders referencing this client's shipment notes or invoices
+      if (shipmentNoteIds.length > 0) {
+        await tx.order.updateMany({
+          where: { shipmentNoteId: { in: shipmentNoteIds } },
+          data: { shipmentNoteId: null }
+        });
+      }
+      if (invoiceIds.length > 0) {
+        await tx.order.updateMany({
+          where: { invoiceId: { in: invoiceIds } },
+          data: { invoiceId: null }
+        });
+      }
+
+      // 2. Delete order-level dependents
+      if (orderIds.length > 0) {
+        await tx.warranty.deleteMany({ where: { orderId: { in: orderIds } } });
+        await tx.pickupReturn.deleteMany({ where: { orderId: { in: orderIds } } });
+        await tx.media.deleteMany({ where: { orderId: { in: orderIds } } });
+        await tx.orderJob.deleteMany({ where: { orderId: { in: orderIds } } });
+        await tx.order.deleteMany({ where: { id: { in: orderIds } } });
+      }
+
+      // 3. Delete adjustments (linked to client or client's invoices)
+      if (invoiceIds.length > 0) {
+        await tx.adjustment.deleteMany({ where: { invoiceId: { in: invoiceIds } } });
+      }
+      await tx.adjustment.deleteMany({ where: { clientId } });
+
+      // 4. Delete receipts
+      await tx.receipt.deleteMany({ where: { clientId } });
+
+      // 5. Delete shipment notes
+      if (shipmentNoteIds.length > 0) {
+        await tx.shipmentNote.deleteMany({ where: { id: { in: shipmentNoteIds } } });
+      }
+      await tx.shipmentNote.deleteMany({ where: { clientId } });
+
+      // 6. Delete invoices
+      if (invoiceIds.length > 0) {
+        await tx.invoice.deleteMany({ where: { id: { in: invoiceIds } } });
+      }
+      await tx.invoice.deleteMany({ where: { clientId } });
+
+      // 7. Delete pickup requests
+      await tx.pickupRequest.deleteMany({ where: { clientId } });
+
+      // 8. Delete client
+      await tx.client.delete({ where: { id: clientId } });
+    });
+
+    clearCachePattern('clients');
+    res.status(200).json({ message: 'Client and all associated records deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting client:', error);
+    res.status(500).json({ error: error.message || 'Failed to delete client' });
+  }
 });
 
 // --- ORDERS ---
@@ -312,30 +1013,90 @@ app.get('/api/client-product-rate', async (req, res) => {
 
 app.get('/api/orders', async (req, res) => {
   try {
+    console.log("GET /api/orders params:", req.query);
     const { status, search, clientSearch, clientId, invoiceStatus, invoiceId, shippingStatus, dateFrom, dateTo } = req.query;
     let where = { AND: [] };
     
-    if (status && status !== 'all') {
+    if (status && status !== 'all' && status !== 'Ignore') {
       if (status === 'overdue') {
         where.AND.push({ dueDate: { lt: new Date() } });
         where.AND.push({ status: { notIn: ['Delivered', 'Cancelled'] } });
       } else if (status === 'repeat') {
-        where.AND.push({ orderType: { in: ['Repeat', 'Repair'] } });
+        where.AND.push({
+          OR: [
+            { orderType: { in: ['Repeat', 'Repair'] } },
+            { productName: { contains: 'repair', mode: 'insensitive' } },
+            { productName: { contains: 'repeat', mode: 'insensitive' } },
+            { jobs: { some: { OR: [{ productName: { contains: 'repair', mode: 'insensitive' } }, { productName: { contains: 'repeat', mode: 'insensitive' } }] } } }
+          ]
+        });
+      } else if (status === 'not_delivered' || status === 'Not Delivered') {
+        where.AND.push({ status: { notIn: ['Delivered', 'Cancelled'] } });
+      } else if (status === 'On Hold' || status === 'Hold') {
+        where.AND.push({ status: { in: ['Hold', 'On Hold'] } });
+      } else if (status === 'In Production') {
+        where.AND.push({ status: { in: ['In Production', 'New', 'Hold', 'Try In'] } });
       } else {
         where.AND.push({ status: status });
       }
     }
 
-    if (shippingStatus) {
+    if (shippingStatus && shippingStatus !== 'Ignore') {
       where.AND.push({ shippingStatus: shippingStatus });
     }
 
+    if (invoiceStatus && invoiceStatus !== 'Ignore') {
+      if (invoiceStatus === 'Invoiced') {
+        where.AND.push({ invoiceId: { not: null } });
+      } else if (invoiceStatus === 'Pending' || invoiceStatus === 'Uninvoiced' || invoiceStatus === 'Not Invoiced' || invoiceStatus === 'not_invoiced') {
+        where.AND.push({ invoiceId: null });
+      } else if (invoiceStatus === 'Paid') {
+        where.AND.push({ invoice: { status: 'Paid' } });
+      } else if (invoiceStatus === 'Unpaid') {
+        where.AND.push({ invoice: { status: { in: ['Unpaid', 'Partially Paid'] } } });
+      } else {
+        where.AND.push({ invoice: { status: invoiceStatus } });
+      }
+    }
+
+function parseLocalDateStart(dateStr) {
+  if (!dateStr) return undefined;
+  const parts = String(dateStr).split('-');
+  if (parts.length === 3) {
+    return new Date(Date.UTC(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 0, 0, 0, 0));
+  }
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? undefined : d;
+}
+
+function parseLocalDateEnd(dateStr) {
+  if (!dateStr) return undefined;
+  const parts = String(dateStr).split('-');
+  if (parts.length === 3) {
+    return new Date(Date.UTC(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 23, 59, 59, 999));
+  }
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return undefined;
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
     if (dateFrom || dateTo) {
       let dateFilter = {};
-      if (dateFrom) dateFilter.gte = parseLocalDateStart(dateFrom);
-      if (dateTo) dateFilter.lte = parseLocalDateEnd(dateTo);
-      const dateField = req.query.dateField || 'receivedDate';
-      where.AND.push({ [dateField]: dateFilter });
+      const startDate = parseLocalDateStart(dateFrom);
+      const endDate = parseLocalDateEnd(dateTo);
+      if (startDate) dateFilter.gte = startDate;
+      if (endDate) dateFilter.lte = endDate;
+      
+      let dateField = req.query.dateField || 'receivedDate';
+      if (dateField === 'dateIn') {
+        dateField = 'receivedDate';
+      }
+      if (dateField === 'invoiceDate') {
+        where.AND.push({ invoice: { invoiceDate: dateFilter } });
+      } else {
+        where.AND.push({ [dateField]: dateFilter });
+      }
     }
 
     if (clientId) {
@@ -343,13 +1104,6 @@ app.get('/api/orders', async (req, res) => {
     }
     if (invoiceId) {
       where.AND.push({ invoiceId: Number(invoiceId) });
-    }
-    if (invoiceStatus) {
-      if (invoiceStatus === 'Pending') {
-        where.AND.push({ invoiceId: null });
-      } else if (invoiceStatus === 'Invoiced') {
-        where.AND.push({ invoiceId: { not: null } });
-      }
     }
 
     if (search) {
@@ -376,19 +1130,169 @@ app.get('/api/orders', async (req, res) => {
       });
     }
 
-    const orders = await prisma.order.findMany({ 
-      where,
-      include: { client: true, shipmentNote: true, invoice: true, jobs: true },
+    const { department, assignedTo, technician, workType, category, productType, product } = req.query;
+    if (department && department !== 'Any' && department !== '') {
+      where.AND.push({ department });
+    }
+    const tech = assignedTo || technician;
+    if (tech && tech !== 'Any' && tech !== '') {
+      where.AND.push({ technician: tech });
+    }
+    if (workType && workType !== 'All' && workType !== 'Any' && workType !== '') {
+      where.AND.push({
+        OR: [
+          { orderType: { contains: workType, mode: 'insensitive' } },
+          { productType: { contains: workType, mode: 'insensitive' } },
+          { productName: { contains: workType, mode: 'insensitive' } },
+          { jobs: { some: { OR: [{ productType: { contains: workType, mode: 'insensitive' } }, { productName: { contains: workType, mode: 'insensitive' } }] } } }
+        ]
+      });
+    }
+    if (category && category !== 'Any' && category !== '') {
+      where.AND.push({
+        OR: [
+          { category: category },
+          { jobs: { some: { material: category } } }
+        ]
+      });
+    }
+    if (productType && productType !== 'Any' && productType !== '') {
+      where.AND.push({
+        OR: [
+          { productType: productType },
+          { jobs: { some: { productType: productType } } }
+        ]
+      });
+    }
+    if (product && product !== 'Any' && product !== '') {
+      where.AND.push({
+        OR: [
+          { productName: { contains: product } },
+          { jobs: { some: { productName: { contains: product } } } }
+        ]
+      });
+    }
+
+    const { limit, page, take, skip, paginate, withReturns } = req.query;
+    const finalWhere = where.AND.length > 0 ? where : {};
+    const total = await prisma.order.count({ where: finalWhere });
+
+    const includeRelations = {
+      client: {
+        select: { id: true, name: true, code: true, cellPhone: true, phone: true, city: true, doctorName: true }
+      },
+      jobs: {
+        select: { id: true, productName: true, productType: true, material: true, teethSelection: true, shade1: true, shade2: true, shade3: true, units: true, price: true, totalAmount: true }
+      },
+      invoice: {
+        select: { id: true, invoiceNumber: true, invoiceDate: true, netAmount: true, status: true }
+      },
+      shipmentNote: {
+        select: { id: true, noteNumber: true, status: true, deliveryMode: true, noteDate: true, createdAt: true, updatedAt: true }
+      }
+    };
+
+    if (withReturns === 'true') {
+      includeRelations.pickupReturns = {
+        select: { id: true, itemType: true, status: true, pickupDate: true, receivedDate: true },
+        orderBy: { id: 'desc' }
+      };
+    }
+
+    const queryOptions = {
+      where: finalWhere,
+      include: includeRelations,
       orderBy: { id: 'desc' }
+    };
+
+    let pageVal = Math.max(Number(page) || 1, 1);
+    let takeVal;
+    if (limit || take) {
+      if (limit !== 'all') {
+        takeVal = Math.min(Number(limit || take) || 500, 5000);
+      } else {
+        // If limit is 'all' and there are no filters at all on 26k+ records, cap at 1000 to keep responses fast
+        if (where.AND.length === 0) {
+          takeVal = 1000;
+        } else {
+          takeVal = null;
+        }
+      }
+    } else {
+      takeVal = 500;
+    }
+
+    if (takeVal) {
+      const skipVal = skip !== undefined ? Number(skip) : (pageVal - 1) * takeVal;
+      queryOptions.take = takeVal;
+      queryOptions.skip = skipVal;
+    }
+
+    const orders = await prisma.order.findMany(queryOptions);
+
+    const totalPages = takeVal ? Math.ceil(total / takeVal) : 1;
+    res.set({
+      'X-Total-Count': String(total),
+      'X-Page': String(pageVal),
+      'X-Total-Pages': String(totalPages),
+      'X-Limit': String(takeVal || total)
     });
+
+    if (paginate === 'true') {
+      return res.json({
+        data: orders,
+        pagination: {
+          total,
+          page: pageVal,
+          limit: takeVal || total,
+          totalPages
+        }
+      });
+    }
+
     res.json(orders);
-  } catch (error) { res.status(500).json({ error: error.message }); }
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/orders/next-number', async (req, res) => {
+  try {
+    const serialResult = await peekNextAtomicSequence('order');
+    const modelResult = await peekNextAtomicSequence('model');
+    res.json({ 
+      orderNumber: serialResult.formatted, 
+      nextNumber: serialResult.nextNum,
+      modelNumber: modelResult.formatted,
+      nextModelNumber: modelResult.nextNum
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 app.post('/api/orders', async (req, res) => {
   try {
     const data = { ...req.body };
     data.clientId = Number(data.clientId);
+
+    // Duplicate submission guard (e.g. double click within 3 seconds)
+    if (data.clientId) {
+      const recentDuplicate = await prisma.order.findFirst({
+        where: {
+          clientId: data.clientId,
+          patientName: data.patientName || '',
+          createdAt: {
+            gte: new Date(Date.now() - 3000)
+          }
+        },
+        include: { jobs: true }
+      });
+      if (recentDuplicate) {
+        return res.status(200).json(recentDuplicate);
+      }
+    }
     
     // Extract jobs array if provided
     const jobsData = data.jobs || [];
@@ -459,6 +1363,26 @@ app.post('/api/orders', async (req, res) => {
       if (data[f] !== undefined) cleanData[f] = data[f];
     });
 
+    if (!cleanData.orderNumber) {
+      const serialResult = await getNextAtomicSequence('order');
+      cleanData.orderNumber = serialResult.formatted;
+    } else {
+      const existing = await prisma.order.findFirst({ where: { orderNumber: String(cleanData.orderNumber) } });
+      if (existing) {
+        const serialResult = await getNextAtomicSequence('order');
+        cleanData.orderNumber = serialResult.formatted;
+      } else {
+        await syncSequenceWithNumber('order', cleanData.orderNumber);
+      }
+    }
+
+    if (!cleanData.modelNumber) {
+      const modelSerialResult = await getNextAtomicSequence('model');
+      cleanData.modelNumber = modelSerialResult.formatted;
+    } else {
+      await syncSequenceWithNumber('model', cleanData.modelNumber);
+    }
+
     // Handle nested jobs creation
     if (jobsData.length > 0) {
       cleanData.jobs = {
@@ -473,7 +1397,7 @@ app.post('/api/orders', async (req, res) => {
           shadeNotes: job.shadeNotes,
           stumpShade: job.stumpShade,
           units: toNum(job.units) || 1,
-          price: toMoney(job.price) || 0,
+          price: toMoney(job.price) || toMoney(job.slab1Rate) || 0,
           totalAmount: toMoney(job.totalAmount) || 0,
           slab1Rate: toNum(job.slab1Rate),
           slab2Rate: toNum(job.slab2Rate),
@@ -486,9 +1410,9 @@ app.post('/api/orders', async (req, res) => {
       cleanData.productName = firstJob.productName || firstJob.product || null;
       cleanData.productType = firstJob.productType || firstJob.type || 'General';
       cleanData.units = toNum(firstJob.units) || 1;
-      cleanData.price = toNum(firstJob.price) || toNum(firstJob.rate) || 0;
+      cleanData.price = toNum(firstJob.price) || toNum(firstJob.slab1Rate) || toNum(firstJob.rate) || 0;
     } else if (cleanData.productName) {
-      const uRate = toNum(req.body.unitRate) || toNum(cleanData.price) || 0;
+      const uRate = toNum(req.body.unitRate) || toNum(cleanData.slab1Rate) || toNum(cleanData.price) || 0;
       cleanData.jobs = {
         create: [{
           productType: cleanData.productType || 'General',
@@ -521,18 +1445,22 @@ app.post('/api/orders', async (req, res) => {
       for (const j of jobsData) {
         if (j.productName && (j.price !== undefined || j.rate !== undefined)) {
            const pCharge = Number(j.price) || Number(j.rate) || 0;
-           await prisma.product.updateMany({
-             where: { name: j.productName },
-             data: { charge: pCharge }
-           });
+           if (pCharge > 0) {
+             await prisma.product.updateMany({
+               where: { name: j.productName },
+               data: { charge: pCharge }
+             });
+           }
         }
       }
     } else if (cleanData.productName && (req.body.unitRate !== undefined || cleanData.price !== undefined)) {
        const pCharge = req.body.unitRate !== undefined ? Number(req.body.unitRate) : Number(cleanData.price);
-       await prisma.product.updateMany({
-         where: { name: cleanData.productName },
-         data: { charge: pCharge || 0 }
-       });
+       if (pCharge > 0) {
+         await prisma.product.updateMany({
+           where: { name: cleanData.productName },
+           data: { charge: pCharge }
+         });
+       }
     }
 
     res.status(201).json(order);
@@ -543,21 +1471,36 @@ app.post('/api/orders', async (req, res) => {
 });
 // Orders Summary (Aggregated by Client)
 app.get('/api/orders/summary', async (req, res) => {
-  const { startDate, endDate } = req.query;
+  const { startDate, endDate, clientId } = req.query;
   try {
-    let start = new Date(startDate);
-    let end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
+    const dateFilter = {};
+    if (startDate) {
+      const start = new Date(startDate);
+      if (!isNaN(start.getTime())) {
+        start.setHours(0, 0, 0, 0);
+        dateFilter.gte = start;
+      }
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      if (!isNaN(end.getTime())) {
+        end.setHours(23, 59, 59, 999);
+        dateFilter.lte = end;
+      }
+    }
+
+    const where = {};
+    if (clientId) {
+      where.id = Number(clientId);
+    }
+
+    const ordersWhere = Object.keys(dateFilter).length > 0 ? { receivedDate: dateFilter } : {};
 
     const clients = await prisma.client.findMany({
+      where,
       include: {
         orders: {
-          where: {
-            receivedDate: {
-              gte: start,
-              lte: end
-            }
-          }
+          where: ordersWhere
         }
       }
     });
@@ -577,9 +1520,191 @@ app.get('/api/orders/summary', async (req, res) => {
       };
     });
 
-    // Filter out clients with no orders in that period to match screenshot behavior
-    const filteredSummary = summary.filter(s => s.num > 0);
+    const filteredSummary = clientId ? summary : summary.filter(s => s.num > 0);
 
+    res.json(filteredSummary);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Shipments Summary (Aggregated by Client)
+app.get('/api/shipments/summary', async (req, res) => {
+  const { startDate, endDate, clientId } = req.query;
+  try {
+    const dateFilter = {};
+    if (startDate) {
+      const start = new Date(startDate);
+      if (!isNaN(start.getTime())) {
+        start.setHours(0, 0, 0, 0);
+        dateFilter.gte = start;
+      }
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      if (!isNaN(end.getTime())) {
+        end.setHours(23, 59, 59, 999);
+        dateFilter.lte = end;
+      }
+    }
+
+    const where = {};
+    if (clientId) {
+      where.id = Number(clientId);
+    }
+
+    const notesWhere = Object.keys(dateFilter).length > 0 ? { noteDate: dateFilter } : {};
+
+    const clients = await prisma.client.findMany({
+      where,
+      include: {
+        shipmentNotes: {
+          where: notesWhere,
+          include: {
+            orders: true
+          }
+        }
+      }
+    });
+
+    const summary = clients.map(client => {
+      let totalValue = 0;
+      client.shipmentNotes.forEach(note => {
+        note.orders.forEach(order => {
+          totalValue += (order.netAmount || order.totalAmount || 0);
+        });
+      });
+      return {
+        id: client.id,
+        name: client.name,
+        code: client.code,
+        phone: client.phone,
+        cellPhone: client.cellPhone,
+        city: client.city,
+        email: client.email,
+        value: totalValue.toFixed(2),
+        num: client.shipmentNotes.length
+      };
+    });
+
+    const filteredSummary = clientId ? summary : summary.filter(s => s.num > 0);
+
+    res.json(filteredSummary);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Invoices Summary (Aggregated by Client for Bills Tab)
+app.get('/api/invoices/summary', async (req, res) => {
+  const { startDate, endDate, clientId } = req.query;
+  try {
+    const dateFilter = {};
+    if (startDate) {
+      const start = new Date(startDate);
+      if (!isNaN(start.getTime())) {
+        start.setHours(0, 0, 0, 0);
+        dateFilter.gte = start;
+      }
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      if (!isNaN(end.getTime())) {
+        end.setHours(23, 59, 59, 999);
+        dateFilter.lte = end;
+      }
+    }
+
+    const where = {};
+    if (clientId) {
+      where.id = Number(clientId);
+    }
+
+    const invoicesWhere = Object.keys(dateFilter).length > 0 ? { invoiceDate: dateFilter } : {};
+
+    const clients = await prisma.client.findMany({
+      where,
+      include: {
+        invoices: {
+          where: invoicesWhere
+        }
+      }
+    });
+
+    const summary = clients.map(client => {
+      const totalValue = client.invoices.reduce((sum, inv) => sum + (inv.netAmount || 0), 0);
+      return {
+        id: client.id,
+        name: client.name,
+        code: client.code,
+        phone: client.phone,
+        cellPhone: client.cellPhone,
+        city: client.city,
+        email: client.email,
+        value: totalValue.toFixed(2),
+        num: client.invoices.length
+      };
+    });
+
+    const filteredSummary = clientId ? summary : summary.filter(s => s.num > 0);
+    res.json(filteredSummary);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Receipts / Collections Summary (Aggregated by Client for Collections Tab)
+app.get('/api/receipts/summary', async (req, res) => {
+  const { startDate, endDate, clientId } = req.query;
+  try {
+    const dateFilter = {};
+    if (startDate) {
+      const start = new Date(startDate);
+      if (!isNaN(start.getTime())) {
+        start.setHours(0, 0, 0, 0);
+        dateFilter.gte = start;
+      }
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      if (!isNaN(end.getTime())) {
+        end.setHours(23, 59, 59, 999);
+        dateFilter.lte = end;
+      }
+    }
+
+    const where = {};
+    if (clientId) {
+      where.id = Number(clientId);
+    }
+
+    const receiptsWhere = Object.keys(dateFilter).length > 0 ? { receiptDate: dateFilter } : {};
+
+    const clients = await prisma.client.findMany({
+      where,
+      include: {
+        receipts: {
+          where: receiptsWhere
+        }
+      }
+    });
+
+    const summary = clients.map(client => {
+      const totalValue = client.receipts.reduce((sum, rec) => sum + (rec.amount || 0), 0);
+      return {
+        id: client.id,
+        name: client.name,
+        code: client.code,
+        phone: client.phone,
+        cellPhone: client.cellPhone,
+        city: client.city,
+        email: client.email,
+        value: totalValue.toFixed(2),
+        num: client.receipts.length
+      };
+    });
+
+    const filteredSummary = clientId ? summary : summary.filter(s => s.num > 0);
     res.json(filteredSummary);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -588,10 +1713,21 @@ app.get('/api/orders/summary', async (req, res) => {
 
 app.get('/api/orders/:id', async (req, res) => {
   try {
-    const order = await prisma.order.findUnique({
-      where: { id: Number(req.params.id) },
-      include: { client: true, invoice: true, shipmentNote: true, jobs: true }
-    });
+    const rawId = req.params.id;
+    let order = null;
+    const numId = Number(rawId);
+    if (!isNaN(numId)) {
+      order = await prisma.order.findUnique({
+        where: { id: numId },
+        include: { client: true, invoice: true, shipmentNote: true, jobs: true }
+      });
+    }
+    if (!order) {
+      order = await prisma.order.findFirst({
+        where: { orderNumber: String(rawId) },
+        include: { client: true, invoice: true, shipmentNote: true, jobs: true }
+      });
+    }
     if (!order) return res.status(404).json({ error: 'Order not found' });
     res.json(order);
   } catch (error) { res.status(500).json({ error: error.message }); }
@@ -599,10 +1735,21 @@ app.get('/api/orders/:id', async (req, res) => {
 
 app.put('/api/orders/:id', async (req, res) => {
   try {
-    const existingOrder = await prisma.order.findUnique({
-      where: { id: Number(req.params.id) },
-      include: { jobs: true }
-    });
+    const rawId = req.params.id;
+    let existingOrder = null;
+    const numId = Number(rawId);
+    if (!isNaN(numId)) {
+      existingOrder = await prisma.order.findUnique({
+        where: { id: numId },
+        include: { jobs: true }
+      });
+    }
+    if (!existingOrder) {
+      existingOrder = await prisma.order.findFirst({
+        where: { orderNumber: String(rawId) },
+        include: { jobs: true }
+      });
+    }
     if (!existingOrder) return res.status(404).json({ error: 'Order not found' });
 
     const data = { ...req.body };
@@ -654,7 +1801,7 @@ app.put('/api/orders/:id', async (req, res) => {
             productType: j.productType || j.type || 'General',
             teethSelection: j.teethSelection || (Array.isArray(j.teeth) ? j.teeth.join(', ') : j.teeth) || null,
             units: toNum(j.units) || 1,
-            price: toMoney(j.price) || toNum(j.rate) || 0,
+            price: toMoney(j.price) || toMoney(j.slab1Rate) || toNum(j.rate) || 0,
             totalAmount: toMoney(j.totalAmount) || toNum(j.total) || 0,
             slab1Rate: toNum(j.slab1Rate),
             slab2Rate: toNum(j.slab2Rate),
@@ -670,11 +1817,11 @@ app.put('/api/orders/:id', async (req, res) => {
           cleanData.productName = firstJob.productName || firstJob.product || null;
           cleanData.productType = firstJob.productType || firstJob.type || 'General';
           cleanData.units = toNum(firstJob.units) || 1;
-          cleanData.price = toNum(firstJob.price) || toNum(firstJob.rate) || 0;
+          cleanData.price = toNum(firstJob.price) || toNum(firstJob.slab1Rate) || toNum(firstJob.rate) || 0;
       }
 
       // Recalculate netAmount and totalAmount based on jobs
-      const jobsTotal = req.body.jobs.reduce((sum, j) => sum + (toMoney(j.totalAmount) || toNum(j.total) || (toNum(j.units) || 1) * (toMoney(j.price) || toNum(j.rate) || 0)), 0);
+      const jobsTotal = req.body.jobs.reduce((sum, j) => sum + (toMoney(j.totalAmount) || toNum(j.total) || (toNum(j.units) || 1) * (toMoney(j.price) || toMoney(j.slab1Rate) || toNum(j.rate) || 0)), 0);
       cleanData.grossAmount = jobsTotal;
       cleanData.netAmount = jobsTotal - (toNum(cleanData.discountAmount) || toMoney(data.discountAmount) || 0) + (toNum(cleanData.taxAmount) || toMoney(data.taxAmount) || 0);
       cleanData.totalAmount = cleanData.netAmount;
@@ -724,7 +1871,7 @@ app.put('/api/orders/:id', async (req, res) => {
         shadeNotes: cleanData.shadeNotes !== undefined ? cleanData.shadeNotes : existingOrder.shadeNotes,
         stumpShade: cleanData.stumpShade !== undefined ? cleanData.stumpShade : existingOrder.stumpShade,
         units: finalUnits,
-        price: toNum(req.body.unitRate) || finalPrice || 0,
+        price: toNum(req.body.unitRate) || toNum(cleanData.slab1Rate) || finalPrice || 0,
         totalAmount: finalPrice,
         slab1Rate: cleanData.slab1Rate !== undefined ? cleanData.slab1Rate : existingOrder.slab1Rate,
         slab2Rate: cleanData.slab2Rate !== undefined ? cleanData.slab2Rate : existingOrder.slab2Rate,
@@ -820,28 +1967,133 @@ app.get('/api/orders/:id/images', async (req, res) => {
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
+// --- ORDER LOGS ---
+const ORDER_LOGS_FILE = path.join(__dirname, 'data', 'order_logs.json');
+
+function getStoredOrderLogs() {
+  try {
+    if (!fs.existsSync(ORDER_LOGS_FILE)) {
+      const dir = path.dirname(ORDER_LOGS_FILE);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(ORDER_LOGS_FILE, JSON.stringify({}), 'utf8');
+      return {};
+    }
+    const raw = fs.readFileSync(ORDER_LOGS_FILE, 'utf8');
+    return JSON.parse(raw || '{}');
+  } catch (err) {
+    console.error('Error reading order logs file:', err);
+    return {};
+  }
+}
+
+function saveStoredOrderLogs(logs) {
+  try {
+    const dir = path.dirname(ORDER_LOGS_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(ORDER_LOGS_FILE, JSON.stringify(logs, null, 2), 'utf8');
+  } catch (err) {
+    console.error('Error writing order logs file:', err);
+  }
+}
+
+app.get('/api/orders/:id/logs', async (req, res) => {
+  try {
+    const orderId = Number(req.params.id);
+    const order = await prisma.order.findUnique({
+      where: { id: orderId }
+    });
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    const allStored = getStoredOrderLogs();
+    let logs = allStored[orderId] || [];
+
+    if (logs.length === 0) {
+      const baseLogs = [];
+      if (order.status === 'Hold' || order.status === 'On Hold' || order.holdFrom) {
+        baseLogs.push({
+          action: 'Status Changed',
+          info: 'Hold',
+          on: order.holdFrom || order.receivedDate || new Date(),
+          loggedBy: 'sohardentallab'
+        });
+      }
+      baseLogs.push({
+        action: 'Status Changed',
+        info: (order.status === 'Hold' || order.status === 'On Hold') ? 'New' : (order.status || 'New'),
+        on: order.receivedDate || order.createdAt || new Date(),
+        loggedBy: 'sohardentallab'
+      });
+      logs = baseLogs;
+      allStored[orderId] = logs;
+      saveStoredOrderLogs(allStored);
+    }
+
+    res.json(logs);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/orders/:id/logs', async (req, res) => {
+  try {
+    const orderId = Number(req.params.id);
+    const { action, info, loggedBy, on } = req.body;
+    if (!action) return res.status(400).json({ error: 'Action is required' });
+
+    const allStored = getStoredOrderLogs();
+    const logs = allStored[orderId] || [];
+
+    const newLog = {
+      action: action,
+      info: info || '',
+      on: on || new Date().toISOString(),
+      loggedBy: loggedBy || 'sohardentallab'
+    };
+
+    logs.push(newLog);
+    allStored[orderId] = logs;
+    saveStoredOrderLogs(allStored);
+
+    res.json({ success: true, log: newLog, logs });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // --- SHIPMENT NOTES (Defined below to avoid duplicates) ---
 
 // --- DELIVERY PLANS ---
 app.get('/api/delivery-plans', async (req, res) => {
   try {
-    const plans = await prisma.deliveryPlan.findMany({ include: { driver: true, shipmentNotes: true } });
+    const { dateFrom, dateTo } = req.query;
+    const where = {};
+    if (dateFrom || dateTo) {
+      where.planDate = {};
+      if (dateFrom) where.planDate.gte = parseLocalDateStart(dateFrom);
+      if (dateTo) where.planDate.lte = parseLocalDateEnd(dateTo);
+    }
+    const plans = await prisma.deliveryPlan.findMany({
+      where,
+      include: { driver: true, shipmentNotes: true },
+      orderBy: { planDate: 'desc' }
+    });
     res.json(plans);
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 app.post('/api/delivery-plans', async (req, res) => {
   try {
-    const { shipmentNoteIds, ...rest } = req.body;
-    const data = { ...rest };
-    if (data.driverId) data.driverId = Number(data.driverId);
-    data.planDate = toDate(data.planDate) || new Date();
+    const { shipmentNoteIds, route, driverId, planDate, status, ...rest } = req.body;
+    const data = { ...rest, route: route || '', status: status || 'Scheduled' };
+    if (driverId) data.driverId = Number(driverId);
+    data.planDate = toDate(planDate) || new Date();
     
     const plan = await prisma.deliveryPlan.create({
       data: {
         ...data,
         shipmentNotes: { connect: (shipmentNoteIds || []).map(id => ({ id: Number(id) })) }
-      }
+      },
+      include: { driver: true, shipmentNotes: true }
     });
     
     res.status(201).json(plan);
@@ -884,94 +2136,195 @@ app.get('/api/overview/stats', async (req, res) => {
       }
     });
 
-    res.json(stats);
+    // Calculate Due Today
+    const todayStart = new Date();
+    todayStart.setHours(0,0,0,0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23,59,59,999);
+
+    const dueToday = await prisma.order.count({
+      where: {
+        dueDate: { gte: todayStart, lte: todayEnd },
+        status: { notIn: ['Delivered', 'Cancelled'] }
+      }
+    });
+
+    const pending = await prisma.order.count({
+      where: {
+        status: { notIn: ['Delivered', 'Cancelled'] }
+      }
+    });
+
+    res.json({
+      ...stats,
+      deliveryStatus: { dueToday, pending }
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// --- PICKUP & RETURNS ---
-app.get('/api/pickup-returns', async (req, res) => {
-  try {
-    const items = await prisma.pickupReturn.findMany({ include: { order: { include: { client: true, jobs: true } } } });
-    res.json(items);
-  } catch (error) { res.status(500).json({ error: error.message }); }
-});
-
-app.post('/api/pickup-returns', async (req, res) => {
-  try {
-    const data = { ...req.body };
-    data.orderId = Number(data.orderId);
-    data.pickupDate = toDate(data.pickupDate);
-    const item = await prisma.pickupReturn.create({ data });
-    res.status(201).json(item);
-  } catch (error) { res.status(500).json({ error: error.message }); }
-});
-
 // --- INVOICES ---
 app.get('/api/invoices', async (req, res) => {
   try {
-    const { status, search, clientId } = req.query;
+    const { status, search, clientId, dateFrom, dateTo, page, limit, take, skip, paginate } = req.query;
     let where = {};
 
     if (status) {
       if (status === 'Unpaid') {
-        where.status = { in: ['Unpaid', 'Partial'] };
+        where.status = { in: ['Unpaid', 'Partial', 'Partially Paid', 'Awaiting to Paid'] };
+      } else if (status === 'Paid') {
+        where.status = 'Paid';
+      } else if (status === 'Partially Paid' || status === 'Partial') {
+        where.status = { in: ['Partially Paid', 'Partial'] };
+      } else if (status === 'Cancelled') {
+        where.status = 'Cancelled';
       } else {
         where.status = status;
       }
+    } else {
+      where.NOT = { status: 'Cancelled' };
     }
     if (clientId) where.clientId = Number(clientId);
     if (search) {
-      where.OR = [
-        { invoiceNumber: { contains: search } },
-        { client: { name: { contains: search } } },
-        { client: { code: { contains: search } } },
-        { client: { cellPhone: { contains: search } } },
-        { client: { email: { contains: search } } }
-      ];
+      const searchFilter = {
+        OR: [
+          { invoiceNumber: { contains: search, mode: 'insensitive' } },
+          { client: { name: { contains: search, mode: 'insensitive' } } },
+          { client: { code: { contains: search, mode: 'insensitive' } } },
+          { client: { cellPhone: { contains: search, mode: 'insensitive' } } },
+          { client: { email: { contains: search, mode: 'insensitive' } } }
+        ]
+      };
+      where = { AND: [where, searchFilter] };
     }
 
-    const invoices = await prisma.invoice.findMany({ 
+    if (dateFrom || dateTo) {
+      where.invoiceDate = {};
+      if (dateFrom) where.invoiceDate.gte = parseLocalDateStart(dateFrom);
+      if (dateTo) where.invoiceDate.lte = parseLocalDateEnd(dateTo);
+    }
+
+    const total = await prisma.invoice.count({ where });
+
+    let pageVal = Math.max(Number(page) || 1, 1);
+    let takeVal = limit === 'all' ? null : (Number(limit || take) || (page || paginate === 'true' ? 50 : null));
+    let skipVal = skip !== undefined ? Number(skip) : (takeVal ? (pageVal - 1) * takeVal : null);
+
+    const includeOrders = req.query.includeOrders !== 'false';
+    const queryOptions = { 
       where,
-      include: { client: true, orders: true, adjustments: true },
+      select: {
+        id: true,
+        invoiceNumber: true,
+        clientId: true,
+        invoiceDate: true,
+        dueDate: true,
+        grossAmount: true,
+        taxAmount: true,
+        discountAmount: true,
+        netAmount: true,
+        paidAmount: true,
+        balanceAmount: true,
+        status: true,
+        client: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            city: true,
+            route: true,
+            salesManager: true,
+            taxId: true,
+            trn: true,
+            cellPhone: true
+          }
+        },
+        ...(includeOrders ? {
+          orders: {
+            select: {
+              id: true,
+              orderNumber: true,
+              patientName: true,
+              doctorName: true,
+              teethSelection: true,
+              productType: true,
+              productName: true,
+              receivedDate: true,
+              dueDate: true,
+              units: true,
+              price: true,
+              grossAmount: true,
+              taxAmount: true,
+              discountAmount: true,
+              netAmount: true,
+              modelNumber: true,
+              subDoctor: true,
+              notes: true,
+              technician: true,
+              status: true,
+              jobs: {
+                select: {
+                  id: true,
+                  productType: true,
+                  productName: true,
+                  material: true,
+                  teethSelection: true,
+                  shade1: true,
+                  units: true,
+                  price: true,
+                  totalAmount: true
+                }
+              }
+            }
+          }
+        } : {})
+      },
       orderBy: { invoiceDate: 'desc' }
+    };
+
+    if (takeVal) queryOptions.take = takeVal;
+    if (skipVal !== null && skipVal !== undefined) queryOptions.skip = skipVal;
+
+    const invoices = await prisma.invoice.findMany(queryOptions);
+
+    const totalPages = takeVal ? Math.ceil(total / takeVal) : 1;
+    res.set({
+      'X-Total-Count': String(total),
+      'X-Page': String(pageVal),
+      'X-Total-Pages': String(totalPages),
+      'X-Limit': String(takeVal || total)
     });
+
+    if (paginate === 'true') {
+      return res.json({
+        data: invoices,
+        pagination: {
+          total,
+          page: pageVal,
+          limit: takeVal || total,
+          totalPages
+        }
+      });
+    }
+
     res.json(invoices);
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 async function generateUniqueInvoiceNumber() {
-  const invoices = await prisma.invoice.findMany({
-    select: { invoiceNumber: true }
-  });
-  const existingNums = new Set(
-    invoices
-      .map(i => parseInt(i.invoiceNumber, 10))
-      .filter(num => !isNaN(num) && num >= 1000 && num <= 99999 && /^\d{4,5}$/.test(num.toString()))
-  );
-  
-  let candidate = 1000;
-  if (existingNums.size > 0) {
-    const maxVal = Math.max(...existingNums);
-    if (maxVal < 99999) {
-      candidate = maxVal + 1;
-    }
-  }
-  
-  if (existingNums.has(candidate) || candidate > 99999) {
-    candidate = 1000;
-    while (candidate <= 99999 && existingNums.has(candidate)) {
-      candidate++;
-    }
-  }
-  
-  if (candidate > 99999) {
-    throw new Error("No unique 4-5 digit invoice numbers are available!");
-  }
-  
-  return candidate.toString();
+  const seq = await peekNextAtomicSequence('invoice');
+  return seq.formatted;
 }
+
+app.get('/api/next-invoice-number', async (req, res) => {
+  try {
+    const num = await generateUniqueInvoiceNumber();
+    res.json({ invoiceNumber: num });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 app.post('/api/invoices', async (req, res) => {
   try {
@@ -1018,10 +2371,26 @@ app.post('/api/invoices', async (req, res) => {
     data.invoiceDate = toDate(data.invoiceDate) || new Date();
     data.dueDate = toDate(data.dueDate) || data.invoiceDate;
     
+    // Verify that the clientId actually exists in the database
+    const clientExists = await prisma.client.findUnique({ where: { id: data.clientId } });
+    if (!clientExists) {
+      return res.status(400).json({ error: `Client ID ${data.clientId} does not exist. Please refresh and try again.` });
+    }
+
     const invoice = await prisma.$transaction(async (tx) => {
       const created = await tx.invoice.create({
         data: {
-          ...data
+          clientId: data.clientId,
+          invoiceNumber: data.invoiceNumber.toString(),
+          invoiceDate: data.invoiceDate,
+          dueDate: data.dueDate,
+          grossAmount: data.grossAmount,
+          discountAmount: data.discountAmount,
+          taxAmount: data.taxAmount,
+          netAmount: data.netAmount,
+          paidAmount: data.paidAmount,
+          balanceAmount: data.balanceAmount,
+          status: data.status || 'Unpaid',
         }
       });
       
@@ -1045,11 +2414,61 @@ app.post('/api/invoices', async (req, res) => {
 
 app.get('/api/invoices/:id/pdf', async (req, res) => {
   try {
-    const id = req.params.id;
-    res.redirect(`/invoice.html?id=${id}&download=true`);
+    const idParam = req.params.id;
+    const { mode } = req.query;
+
+    if (mode === 'html') {
+      return res.redirect(`/invoice.html?id=${idParam}&download=true`);
+    }
+
+    const invoice = await prisma.invoice.findFirst({
+      where: {
+        OR: [
+          { id: isNaN(Number(idParam)) ? -1 : Number(idParam) },
+          { invoiceNumber: idParam }
+        ]
+      },
+      include: {
+        client: true,
+        orders: { include: { jobs: true } },
+        adjustments: true
+      }
+    });
+
+    if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
+
+    if (!invoice.orders || invoice.orders.length === 0) {
+      invoice.orders = await prisma.order.findMany({
+        where: { invoiceId: invoice.id },
+        include: { jobs: true }
+      });
+    }
+
+    const pythonScript = path.join(__dirname, '..', 'generate_invoice.py');
+    if (fs.existsSync(pythonScript)) {
+      const tempJson = path.join(__dirname, 'uploads', `inv_${invoice.id}_${Date.now()}.json`);
+      const tempPdf = path.join(__dirname, 'uploads', `inv_${invoice.id}_${Date.now()}.pdf`);
+
+      fs.writeFileSync(tempJson, JSON.stringify(invoice, null, 2), 'utf8');
+
+      const { exec } = require('child_process');
+      exec(`python "${pythonScript}" "${tempJson}" "${tempPdf}"`, (err) => {
+        if (!err && fs.existsSync(tempPdf)) {
+          res.download(tempPdf, `Invoice_${invoice.invoiceNumber || invoice.id}.pdf`, () => {
+            try { if (fs.existsSync(tempJson)) fs.unlinkSync(tempJson); } catch (e) {}
+            try { if (fs.existsSync(tempPdf)) fs.unlinkSync(tempPdf); } catch (e) {}
+          });
+        } else {
+          try { if (fs.existsSync(tempJson)) fs.unlinkSync(tempJson); } catch (e) {}
+          res.redirect(`/invoice.html?id=${idParam}&download=true`);
+        }
+      });
+    } else {
+      res.redirect(`/invoice.html?id=${idParam}&download=true`);
+    }
   } catch (error) { 
-    console.error("PDF Redirect Error:", error);
-    res.status(500).json({ error: error.message }); 
+    console.error("PDF Generation Error:", error);
+    res.redirect(`/invoice.html?id=${req.params.id}&download=true`);
   }
 });
 
@@ -1089,80 +2508,186 @@ app.get('/api/invoices/:id', async (req, res) => {
 
 app.put('/api/invoices/:id', async (req, res) => {
   try {
+    const invId = Number(req.params.id);
+    const existingInv = await prisma.invoice.findUnique({ where: { id: invId } });
+    if (!existingInv) return res.status(404).json({ error: 'Invoice not found' });
+
     const data = { ...req.body };
     if (data.clientId) data.clientId = Number(data.clientId);
     if (data.invoiceDate) data.invoiceDate = toDate(data.invoiceDate);
     if (data.dueDate) data.dueDate = toDate(data.dueDate);
-    if (data.netAmount) {
-      data.netAmount = toNum(data.netAmount);
-      data.balanceAmount = data.netAmount - (toNum(data.paidAmount) || 0);
+
+    const netAmount = data.netAmount !== undefined ? toNum(data.netAmount) : existingInv.netAmount;
+    const paidAmount = data.paidAmount !== undefined ? toNum(data.paidAmount) : existingInv.paidAmount;
+    const balanceAmount = Math.max(0, Math.round((netAmount - paidAmount) * 1000) / 1000);
+
+    data.netAmount = netAmount;
+    data.paidAmount = paidAmount;
+    data.balanceAmount = balanceAmount;
+
+    if (!data.status || data.status === 'Unpaid' || data.status === 'Partially Paid' || data.status === 'Paid') {
+      if (balanceAmount <= 0 && netAmount > 0) data.status = 'Paid';
+      else if (paidAmount > 0) data.status = 'Partially Paid';
+      else data.status = 'Unpaid';
     }
 
     if (data.invoiceNumber) {
-      const val = parseInt(data.invoiceNumber, 10);
-      if (!/^\d{4,5}$/.test(data.invoiceNumber.toString()) || isNaN(val) || val < 1000 || val > 99999) {
-        return res.status(400).json({ error: 'Invoice number must be a unique 4 to 5 digit number (1000 - 99999).' });
+      const invStr = data.invoiceNumber.toString().trim();
+      if (!invStr) {
+        return res.status(400).json({ error: 'Invoice number cannot be empty.' });
       }
       const existing = await prisma.invoice.findFirst({
         where: {
-          invoiceNumber: data.invoiceNumber.toString(),
-          id: { not: Number(req.params.id) }
+          invoiceNumber: invStr,
+          id: { not: invId }
         }
       });
       if (existing) {
         return res.status(400).json({ error: 'Invoice number already exists. Please choose a unique one.' });
       }
+      data.invoiceNumber = invStr;
     }
 
     const invoice = await prisma.invoice.update({
-      where: { id: Number(req.params.id) },
+      where: { id: invId },
       data
     });
     await recalculateClientBalances(invoice.clientId);
-    res.json(invoice);
-  } catch (error) { res.status(500).json({ error: error.message }); }
+    const updatedInvoice = await prisma.invoice.findUnique({ where: { id: invId } });
+    res.json(updatedInvoice || invoice);
+  } catch (error) { 
+    console.error("PUT invoice error:", error);
+    res.status(500).json({ error: error.message }); 
+  }
+});
+
+app.delete('/api/invoices/:id', async (req, res) => {
+  try {
+    const invId = Number(req.params.id);
+    const invoice = await prisma.invoice.findUnique({ where: { id: invId } });
+    if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
+    
+    await prisma.$transaction(async (tx) => {
+      await tx.order.updateMany({
+        where: { invoiceId: invId },
+        data: { invoiceId: null }
+      });
+      
+      await tx.invoice.update({
+        where: { id: invId },
+        data: {
+          status: 'Cancelled',
+          paidAmount: 0,
+          balanceAmount: 0
+        }
+      });
+      
+      await recalculateClientBalances(invoice.clientId, tx);
+    });
+    
+    res.json({ message: 'Invoice cancelled successfully' });
+  } catch (error) { 
+    console.error("DELETE invoice error:", error);
+    res.status(500).json({ error: error.message }); 
+  }
 });
 
 // --- RECEIPTS ---
 app.get('/api/receipts', async (req, res) => {
   try {
-    const { status, search, clientId } = req.query;
+    const { status, search, clientId, dateFrom, dateTo } = req.query;
     let where = {};
-
-    if (status) where.status = status;
-    if (clientId) where.clientId = Number(clientId);
-    if (search) {
-      where.OR = [
-        { receiptNumber: { contains: search } },
-        { client: { name: { contains: search } } },
-        { client: { code: { contains: search } } },
-        { client: { cellPhone: { contains: search } } },
-        { client: { email: { contains: search } } }
-      ];
+    if (status === 'Cancelled') {
+      where.status = { equals: 'Cancelled', mode: 'insensitive' };
+    } else {
+      where.status = { not: 'Cancelled' };
     }
 
+    if (clientId) where.clientId = Number(clientId);
+
+    if (dateFrom || dateTo) {
+      const dateCond = {};
+      if (dateFrom) dateCond.gte = parseLocalDateStart(dateFrom);
+      if (dateTo) dateCond.lte = parseLocalDateEnd(dateTo);
+
+      if (status === 'Cancelled') {
+        where.OR = [
+          { receiptDate: dateCond },
+          { cancelledOn: dateCond }
+        ];
+      } else {
+        where.receiptDate = dateCond;
+      }
+    }
+
+    if (search) {
+      const searchFilter = {
+        OR: [
+          { receiptNumber: { contains: search, mode: 'insensitive' } },
+          { client: { name: { contains: search, mode: 'insensitive' } } },
+          { client: { code: { contains: search, mode: 'insensitive' } } },
+          { client: { cellPhone: { contains: search, mode: 'insensitive' } } },
+          { client: { email: { contains: search, mode: 'insensitive' } } }
+        ]
+      };
+      where = { AND: [where, searchFilter] };
+    }
+
+    const takeVal = (req.query.limit === 'all' || !req.query.limit) ? undefined : Number(req.query.limit || req.query.take);
     const receipts = await prisma.receipt.findMany({ 
       where,
-      include: { client: true },
+      take: takeVal,
+      include: {
+        client: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            route: true,
+            salesManager: true,
+            city: true,
+            cellPhone: true,
+            phone: true
+          }
+        }
+      },
       orderBy: { receiptDate: 'desc' }
     });
-    res.json(receipts);
+
+    const mapped = receipts.map(r => ({
+      ...r,
+      status: r.status || 'Active'
+    }));
+    res.json(mapped);
   } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.get('/api/receipts/next-number', async (req, res) => {
+  try {
+    const serialResult = await peekNextAtomicSequence('receipt');
+    res.json({ receiptNumber: serialResult.formatted });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 app.get('/api/receipts/:id', async (req, res) => {
   try {
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: 'Invalid ID' });
     const receipt = await prisma.receipt.findUnique({
-      where: { id: Number(req.params.id) },
+      where: { id },
       include: { client: true }
     });
     if (!receipt) return res.status(404).json({ error: 'Receipt not found' });
-    res.json(receipt);
+    res.json({ ...receipt, status: receipt.status || 'Active' });
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 app.post('/api/receipts', async (req, res) => {
   try {
+    clearCachePattern('receipts');
+    clearCachePattern('clients');
     const body = req.body;
     const clientId = Number(body.clientId);
     const amount = toNum(body.amount) || 0;
@@ -1171,35 +2696,91 @@ app.post('/api/receipts', async (req, res) => {
     const receiptDate = toDate(body.receiptDate) || new Date();
     const chequeDate = toDate(body.chequeDate);
     const isAdvance = !!body.isAdvance;
-    const receiptNumber = body.receiptNumber || ('REC-' + Date.now().toString());
+    
+    let requestedNumber = body.receiptNumber ? String(body.receiptNumber).trim() : '';
+    let receiptNumber = requestedNumber;
+
+    if (receiptNumber) {
+      const existing = await prisma.receipt.findUnique({ where: { receiptNumber } });
+      if (existing) {
+        const serialResult = await getNextAtomicSequence('receipt');
+        receiptNumber = serialResult.formatted;
+      } else {
+        await syncSequenceWithNumber('receipt', receiptNumber);
+      }
+    } else {
+      const serialResult = await getNextAtomicSequence('receipt');
+      receiptNumber = serialResult.formatted;
+    }
+
     const paymentMode = body.paymentMode;
     const chequeNumber = body.chequeNumber;
     const notes = body.notes;
     const reference = body.reference;
 
-    const receipt = await prisma.$transaction(async (tx) => {
-      const created = await tx.receipt.create({
-        data: {
-          receiptNumber,
-          receiptDate,
-          clientId,
-          amount,
-          appliedAmount,
-          creditAmount,
-          paymentMode,
-          isAdvance,
-          chequeNumber,
-          chequeDate,
-          notes,
-          reference
+    let receipt;
+    let attempts = 0;
+    while (attempts < 5) {
+      attempts++;
+      try {
+        receipt = await prisma.$transaction(async (tx) => {
+          const created = await tx.receipt.create({
+            data: {
+              receiptNumber,
+              receiptDate,
+              clientId,
+              amount,
+              appliedAmount,
+              creditAmount,
+              paymentMode,
+              isAdvance,
+              chequeNumber,
+              chequeDate,
+              notes,
+              reference,
+              status: 'Active'
+            }
+          });
+
+          // Also update applied invoices atomically if applications provided
+          if (Array.isArray(body.applications) && body.applications.length > 0) {
+            for (const app of body.applications) {
+              const invId = Number(app.invoiceId);
+              const appAmt = toNum(app.amount) || 0;
+              if (invId && appAmt > 0) {
+                const inv = await tx.invoice.findUnique({ where: { id: invId } });
+                if (inv) {
+                  const newPaid = (toNum(inv.paidAmount) || 0) + appAmt;
+                  const newBalance = Math.max(0, (toNum(inv.netAmount) || 0) - newPaid);
+                  const newStatus = newBalance <= 0.001 ? 'Paid' : (newPaid > 0 ? 'Partial' : 'Unpaid');
+                  await tx.invoice.update({
+                    where: { id: invId },
+                    data: { paidAmount: newPaid, balanceAmount: newBalance, status: newStatus }
+                  });
+                }
+              }
+            }
+          }
+
+          await recalculateClientBalances(clientId, tx);
+          return created;
+        });
+        break;
+      } catch (createErr) {
+        if (createErr.code === 'P2002' || (createErr.message && (createErr.message.includes('receiptNumber') || createErr.message.includes('Unique constraint')))) {
+          const serialResult = await getNextAtomicSequence('receipt');
+          receiptNumber = serialResult.formatted;
+        } else {
+          throw createErr;
         }
-      });
-      await recalculateClientBalances(clientId, tx);
-      return created;
-    });
+      }
+    }
 
     res.status(201).json(receipt);
-  } catch (error) { res.status(500).json({ error: error.message }); }
+  } catch (error) { 
+    console.error("Error creating receipt:", error);
+    res.status(500).json({ error: error.message || 'Failed to save receipt' }); 
+  }
 });
 
 app.put('/api/receipts/:id', async (req, res) => {
@@ -1227,28 +2808,145 @@ app.delete('/api/receipts/:id', async (req, res) => {
     if (!receipt) return res.status(404).json({ error: 'Receipt not found' });
     
     await prisma.$transaction(async (tx) => {
-      await tx.receipt.delete({ where: { id } });
+      await tx.receipt.update({
+        where: { id },
+        data: {
+          status: 'Cancelled',
+          cancelledOn: new Date(),
+          appliedAmount: 0,
+          creditAmount: 0
+        }
+      });
       await recalculateClientBalances(receipt.clientId, tx);
     });
-    res.status(204).end();
+    res.json({ message: 'Payment cancelled successfully' });
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 // --- ADJUSTMENTS ---
 app.get('/api/adjustments', async (req, res) => {
   try {
-    const items = await prisma.adjustment.findMany({ include: { client: true, invoice: true } });
+    const { dateFrom, dateTo, clientId, type, search } = req.query;
+    let where = {};
+
+    if (dateFrom || dateTo) {
+      where.date = {};
+      if (dateFrom) where.date.gte = parseLocalDateStart(dateFrom);
+      if (dateTo) where.date.lte = parseLocalDateEnd(dateTo);
+    }
+
+    if (clientId) {
+      where.clientId = Number(clientId);
+    }
+
+    if (type) {
+      where.type = { equals: type, mode: 'insensitive' };
+    }
+
+    if (search) {
+      const searchFilter = {
+        OR: [
+          { adjustmentNumber: { contains: search, mode: 'insensitive' } },
+          { client: { name: { contains: search, mode: 'insensitive' } } },
+          { notes: { contains: search, mode: 'insensitive' } },
+          { reason: { contains: search, mode: 'insensitive' } }
+        ]
+      };
+      where = { AND: [where, searchFilter] };
+    }
+
+    const items = await prisma.adjustment.findMany({ 
+      where,
+      select: {
+        id: true,
+        adjustmentNumber: true,
+        date: true,
+        type: true,
+        amount: true,
+        reason: true,
+        notes: true,
+        invoiceId: true,
+        clientId: true,
+        client: {
+          select: {
+            name: true,
+            code: true,
+            city: true,
+            route: true,
+            salesManager: true,
+            taxId: true,
+            trn: true,
+            cellPhone: true
+          }
+        },
+        invoice: {
+          select: {
+            id: true,
+            invoiceNumber: true,
+            invoiceDate: true,
+            grossAmount: true,
+            taxAmount: true,
+            netAmount: true,
+            balanceAmount: true
+          }
+        }
+      },
+      orderBy: { date: 'desc' }
+    });
     res.json(items);
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
+app.get('/api/next-adjustment-number', async (req, res) => {
+  try {
+    const type = req.query.type || 'adjustment';
+    const key = (type.toLowerCase() === 'credit') ? 'creditAdj' : (type.toLowerCase() === 'debit' ? 'debitAdj' : (type.toLowerCase() === 'journal' ? 'journalVoucher' : 'adjustment'));
+    const result = await peekNextAtomicSequence(key);
+    let formatted = result.formatted;
+    if (/^\d+$/.test(formatted)) {
+      formatted = formatted.padStart(5, '0');
+    }
+    res.json({ adjustmentNumber: formatted, nextNum: result.nextNum });
+  } catch (err) {
+    res.json({ adjustmentNumber: '00012' });
+  }
+});
+
 app.post('/api/adjustments', async (req, res) => {
   try {
-    const data = { ...req.body };
-    data.clientId = Number(data.clientId);
-    if (data.invoiceId) data.invoiceId = Number(data.invoiceId);
-    data.amount = toNum(data.amount);
-    data.date = toDate(data.date) || new Date();
+    const body = req.body;
+    const clientId = Number(body.clientId);
+    if (!clientId) {
+      return res.status(400).json({ error: 'Client ID is required' });
+    }
+    const invoiceId = body.invoiceId ? Number(body.invoiceId) : null;
+    const amount = toNum(body.amount) || 0;
+    const date = toDate(body.date || body.adjustmentDate) || new Date();
+    const type = body.type || 'Credit';
+    const reason = body.reason ? String(body.reason) : null;
+    const notes = body.notes ? String(body.notes) : null;
+    let adjustmentNumber = body.adjustmentNumber ? String(body.adjustmentNumber).trim() : '';
+
+    if (!adjustmentNumber) {
+      const key = (type.toLowerCase() === 'credit') ? 'creditAdj' : (type.toLowerCase() === 'debit' ? 'debitAdj' : (type.toLowerCase() === 'journal' ? 'journalVoucher' : 'adjustment'));
+      const result = await getNextAtomicSequence(key);
+      let formatted = result.formatted;
+      if (/^\d+$/.test(formatted)) {
+        formatted = formatted.padStart(5, '0');
+      }
+      adjustmentNumber = formatted;
+    }
+
+    const data = {
+      adjustmentNumber,
+      date,
+      clientId,
+      invoiceId,
+      type,
+      amount,
+      reason,
+      notes
+    };
     
     const item = await prisma.$transaction(async (tx) => {
       const created = await tx.adjustment.create({ data });
@@ -1256,7 +2954,10 @@ app.post('/api/adjustments', async (req, res) => {
       return created;
     });
     res.status(201).json(item);
-  } catch (error) { res.status(500).json({ error: error.message }); }
+  } catch (error) { 
+    console.error("POST adjustment error:", error);
+    res.status(500).json({ error: error.message }); 
+  }
 });
 
 app.delete('/api/adjustments/:id', async (req, res) => {
@@ -1276,6 +2977,20 @@ app.delete('/api/adjustments/:id', async (req, res) => {
 // Duplicate staff, expenses, products, and product-types endpoints removed (defined elsewhere in CRUD section)
 
 // --- PICKUP REQUESTS ---
+app.get('/api/pickups/next-number', async (req, res) => {
+  try {
+    const lastPickup = await prisma.pickupRequest.findFirst({
+      orderBy: { id: 'desc' },
+      select: { id: true }
+    });
+    const nextId = (lastPickup?.id || 0) + 1;
+    const formatted = String(nextId).padStart(5, '0');
+    res.json({ nextId, nextNumber: formatted });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get('/api/pickups', async (req, res) => {
   try {
     const { status, clientId, search } = req.query;
@@ -1303,7 +3018,15 @@ app.post('/api/pickups', async (req, res) => {
     data.clientId = Number(data.clientId);
     data.requestDate = toDate(data.requestDate) || new Date();
     data.pickupDate = toDate(data.pickupDate);
-    const pickup = await prisma.pickupRequest.create({ data });
+    
+    // Filter schema keys to prevent Prisma validation error
+    const allowedKeys = ['clientId', 'patientName', 'productType', 'doctorName', 'requestDate', 'pickupDate', 'status', 'notes'];
+    const filteredData = {};
+    allowedKeys.forEach(k => {
+      if (data[k] !== undefined) filteredData[k] = data[k];
+    });
+
+    const pickup = await prisma.pickupRequest.create({ data: filteredData });
     res.status(201).json(pickup);
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
@@ -1314,9 +3037,17 @@ app.put('/api/pickups/:id', async (req, res) => {
     if (data.clientId) data.clientId = Number(data.clientId);
     if (data.requestDate) data.requestDate = toDate(data.requestDate);
     if (data.pickupDate) data.pickupDate = toDate(data.pickupDate);
+    
+    // Filter schema keys
+    const allowedKeys = ['clientId', 'patientName', 'productType', 'doctorName', 'requestDate', 'pickupDate', 'status', 'notes'];
+    const filteredData = {};
+    allowedKeys.forEach(k => {
+      if (data[k] !== undefined) filteredData[k] = data[k];
+    });
+
     const pickup = await prisma.pickupRequest.update({
       where: { id: Number(req.params.id) },
-      data
+      data: filteredData
     });
     res.json(pickup);
   } catch (error) { res.status(500).json({ error: error.message }); }
@@ -1447,24 +3178,10 @@ app.post('/api/pickup-returns', async (req, res) => {
 });
 
 // --- SHIPMENT NOTES ---
-
-// Get Next Shipment Note Number
 app.get('/api/shipment-notes/next-number', async (req, res) => {
   try {
-    const lastNote = await prisma.shipmentNote.findFirst({
-      orderBy: { id: 'desc' }
-    });
-    let nextNum = 1;
-    if (lastNote && lastNote.noteNumber) {
-      const match = lastNote.noteNumber.match(/\d+$/);
-      if (match) {
-        nextNum = parseInt(match[0]) + 1;
-        // Reset or wrap around if exceeding 5 digits (99999)
-        if (nextNum > 99999) nextNum = 1;
-      }
-    }
-    const shipmentNumber = 'DN-' + nextNum.toString().padStart(5, '0');
-    res.json({ shipmentNumber });
+    const serialResult = await peekNextAtomicSequence('shipment');
+    res.json({ shipmentNumber: serialResult.formatted, nextNumber: serialResult.formatted });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1489,11 +3206,62 @@ app.get('/api/shipment-notes', async (req, res) => {
         { client: { email: { contains: search } } }
       ];
     }
-    const notes = await prisma.shipmentNote.findMany({
+    const { limit, page, take, skip } = req.query;
+    const queryOptions = {
       where,
-      include: { client: true, orders: true, deliveryPlan: true },
-      orderBy: { noteDate: 'desc' }
-    });
+      select: {
+        id: true,
+        noteNumber: true,
+        noteDate: true,
+        type: true,
+        status: true,
+        deliveryMode: true,
+        notes: true,
+        deliveryPlanId: true,
+        deliveryPlan: {
+          select: {
+            id: true,
+            planDate: true,
+            route: true
+          }
+        },
+        client: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            city: true,
+            area: true,
+            cellPhone: true,
+            email: true
+          }
+        },
+        orders: {
+          select: {
+            id: true,
+            orderNumber: true,
+            patientName: true,
+            modelNumber: true,
+            productName: true,
+            productType: true,
+            totalAmount: true,
+            netAmount: true,
+            status: true
+          }
+        }
+      },
+      orderBy: { id: 'desc' }
+    };
+
+    if (limit || take) {
+      const takeVal = Math.min(Number(limit || take) || 100, 1000);
+      const pageVal = Math.max(Number(page) || 1, 1);
+      const skipVal = skip !== undefined ? Number(skip) : (pageVal - 1) * takeVal;
+      queryOptions.take = takeVal;
+      queryOptions.skip = skipVal;
+    }
+
+    const notes = await prisma.shipmentNote.findMany(queryOptions);
     res.json(notes);
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
@@ -1512,20 +3280,24 @@ app.get('/api/shipment-notes/:id', async (req, res) => {
         }
       }
     });
-    if (!note) return res.status(404).json({ error: 'Note not found' });
+    if (!note) return res.status(404).json({ error: 'Shipment note not found' });
     res.json(note);
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-
 app.put('/api/shipment-notes/:id', async (req, res) => {
   try {
-    const data = { ...req.body };
-    if (data.clientId) data.clientId = Number(data.clientId);
-    if (data.noteDate) data.noteDate = toDate(data.noteDate);
+    const id = Number(req.params.id);
+    const { deliveryPlanId, status, deliveryMode, notes } = req.body;
+    const data = {};
+    if (deliveryPlanId !== undefined) data.deliveryPlanId = deliveryPlanId ? Number(deliveryPlanId) : null;
+    if (status !== undefined) data.status = status;
+    if (deliveryMode !== undefined) data.deliveryMode = deliveryMode;
+    if (notes !== undefined) data.notes = notes;
     const note = await prisma.shipmentNote.update({
-      where: { id: Number(req.params.id) },
-      data
+      where: { id },
+      data,
+      include: { client: true, orders: true }
     });
     res.json(note);
   } catch (error) { res.status(500).json({ error: error.message }); }
@@ -1534,13 +3306,6 @@ app.put('/api/shipment-notes/:id', async (req, res) => {
 app.delete('/api/shipment-notes/:id', async (req, res) => {
   try {
     const id = Number(req.params.id);
-    
-    // First, update associated orders to set shipmentNoteId to null
-    await prisma.order.updateMany({
-      where: { shipmentNoteId: id },
-      data: { shipmentNoteId: null, shippingStatus: 'Pending' }
-    });
-
     await prisma.shipmentNote.delete({
       where: { id: id }
     });
@@ -1558,15 +3323,8 @@ app.post('/api/shipment-notes', async (req, res) => {
     
     let finalNoteNumber = noteNumber;
     if (!finalNoteNumber) {
-      const lastNote = await prisma.shipmentNote.findFirst({
-        orderBy: { id: 'desc' }
-      });
-      let nextNum = 19600; // default starting point if no previous notes
-      if (lastNote && lastNote.noteNumber) {
-        const match = lastNote.noteNumber.match(/\d+$/);
-        if (match) nextNum = parseInt(match[0]) + 1;
-      }
-      finalNoteNumber = nextNum.toString();
+      const serialResult = await getNextAtomicSequence('shipment');
+      finalNoteNumber = serialResult.formatted;
     }
     
     const finalNoteDate = noteDate ? new Date(noteDate) : new Date();
@@ -1600,71 +3358,99 @@ app.post('/api/shipment-notes', async (req, res) => {
   }
 });
 
-app.get('/api/delivery-plans', async (req, res) => {
+app.post('/api/orders/bulk-update', async (req, res) => {
   try {
-    const { dateFrom, dateTo } = req.query;
-    const where = {};
-    if (dateFrom || dateTo) {
-      where.planDate = {};
-      if (dateFrom) where.planDate.gte = parseLocalDateStart(dateFrom);
-      if (dateTo) where.planDate.lte = parseLocalDateEnd(dateTo);
+    const { orderIds, status, department, assignedTech } = req.body;
+    if (!Array.isArray(orderIds) || orderIds.length === 0) {
+      return res.status(400).json({ error: 'No orderIds provided' });
     }
-    const plans = await prisma.deliveryPlan.findMany({
-      where,
-      include: { driver: true, shipmentNotes: true }
-    });
-    res.json(plans);
-  } catch (error) { res.status(500).json({ error: error.message }); }
-});
+    const data = {};
+    if (status !== undefined) data.status = status;
+    if (department !== undefined) data.department = department;
+    if (assignedTech !== undefined) {
+      data.technician = assignedTech ? String(assignedTech) : null;
+    }
 
-app.post('/api/delivery-plans', async (req, res) => {
-  try {
-    const { planDate, route, driverId } = req.body;
-    const plan = await prisma.deliveryPlan.create({
-      data: {
-        planDate: planDate ? new Date(planDate) : new Date(),
-        route: route || '',
-        driver: { connect: { id: Number(driverId) } },
-        status: 'Active'
-      }
+    await prisma.order.updateMany({
+      where: { id: { in: orderIds.map(Number) } },
+      data
     });
-    res.status(201).json(plan);
-  } catch (error) { res.status(500).json({ error: error.message }); }
+
+    res.json({ success: true, count: orderIds.length });
+  } catch (error) {
+    console.error('Error in /api/orders/bulk-update:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // --- DASHBOARD ---
 app.get('/api/dashboard/stats', async (req, res) => {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const { date } = req.query;
+    let today, tomorrow;
+
+    if (date) {
+      const startUTC = new Date(date + 'T00:00:00.000Z');
+      const startLocal = parseLocalDateStart(date);
+      today = (startUTC && !isNaN(startUTC.getTime())) ? (startUTC < startLocal ? startUTC : startLocal) : startLocal;
+
+      const endUTC = new Date(date + 'T23:59:59.999Z');
+      const endLocal = parseLocalDateEnd(date);
+      const maxEnd = (endUTC && !isNaN(endUTC.getTime())) ? (endUTC > endLocal ? endUTC : endLocal) : endLocal;
+      tomorrow = new Date(maxEnd.getTime() + 1000);
+    } else {
+      const now = new Date();
+      const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+      const tomorrowLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+      const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
+      const tomorrowUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0, 0));
+
+      today = todayLocal < todayUTC ? todayLocal : todayUTC;
+      tomorrow = tomorrowLocal > tomorrowUTC ? tomorrowLocal : tomorrowUTC;
+    }
 
     const [
       newClients, newOrders, deliveries, invoiced, collection, expenses,
       newW, productionW, completeW, holdW, tryinW, deliveredW, repeatW,
       pendingTryIns, pendingOnHold, overdueInvoices,
       finalDeliveriesPendingToday, finalDeliveriesExpectedToday, tryInDeliveriesToday,
-      tryInsDispatchedToday, tryInsReturnedToday
+      tryInsDispatchedToday, tryInsReturnedToday,
+      totalClients, clientsWithOrdersGroup, uninvoicedCount
     ] = await Promise.all([
       prisma.client.count({ where: { createdAt: { gte: today, lt: tomorrow } } }),
-      prisma.order.count({ where: { receivedDate: { gte: today, lt: tomorrow } } }),
+      prisma.order.count({ where: { OR: [{ receivedDate: { gte: today, lt: tomorrow } }, { createdAt: { gte: today, lt: tomorrow } }] } }),
       prisma.shipmentNote.count({ where: { noteDate: { gte: today, lt: tomorrow } } }),
       prisma.invoice.aggregate({ where: { invoiceDate: { gte: today, lt: tomorrow } }, _sum: { netAmount: true } }),
       prisma.receipt.aggregate({ where: { receiptDate: { gte: today, lt: tomorrow } }, _sum: { amount: true } }),
       prisma.expense.aggregate({ where: { date: { gte: today, lt: tomorrow } }, _sum: { amount: true } }),
       
       prisma.order.count({ where: { status: 'New' } }),
-      prisma.order.count({ where: { status: 'In Production' } }),
+      prisma.order.count({ where: { status: { in: ['In Production', 'New', 'Hold', 'Try In'] } } }),
       prisma.order.count({ where: { status: 'Complete' } }),
-      prisma.order.count({ where: { status: 'On Hold' } }),
+      prisma.order.count({ where: { status: { in: ['Hold', 'On Hold'] } } }),
       prisma.order.count({ where: { status: 'Try In' } }),
       prisma.order.count({ where: { status: 'Delivered' } }),
       prisma.order.count({ where: { orderType: { in: ['Repeat', 'Repair'] } } }),
       
-      prisma.order.count({ where: { status: 'Try In' } }),
-      prisma.order.count({ where: { status: 'On Hold' } }),
-      prisma.invoice.count({ where: { status: { in: ['Unpaid', 'Partial'] }, dueDate: { lt: new Date() } } }),
+      prisma.order.count({
+        where: {
+          status: 'Try In',
+          OR: [
+            { trialDate: { lt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) } },
+            { trialDate: null, updatedAt: { lt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) } }
+          ]
+        }
+      }),
+      prisma.order.count({
+        where: {
+          status: { in: ['Hold', 'On Hold'] },
+          OR: [
+            { holdFrom: { lt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) } },
+            { holdFrom: null, updatedAt: { lt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) } }
+          ]
+        }
+      }),
+      prisma.invoice.count({ where: { status: { in: ['Unpaid', 'Partial'] } } }),
 
       // Today's Deliveries
       prisma.order.count({ where: { dueDate: { gte: today, lt: tomorrow }, status: { notIn: ['Delivered', 'Cancelled'] } } }),
@@ -1673,7 +3459,11 @@ app.get('/api/dashboard/stats', async (req, res) => {
 
       // Try-ins Today
       prisma.order.count({ where: { status: 'Try In', updatedAt: { gte: today, lt: tomorrow } } }),
-      prisma.order.count({ where: { status: { not: 'Try In' }, updatedAt: { gte: today, lt: tomorrow }, trialDate: { lte: today } } }) // Simple heuristic for returned
+      prisma.order.count({ where: { status: { not: 'Try In' }, updatedAt: { gte: today, lt: tomorrow }, trialDate: { lte: today } } }),
+      
+      prisma.client.count(),
+      prisma.order.groupBy({ by: ['clientId'] }),
+      prisma.order.count({ where: { status: 'Delivered', invoiceId: null } })
     ]);
 
     const overdueCount = await prisma.order.count({
@@ -1682,6 +3472,88 @@ app.get('/api/dashboard/stats', async (req, res) => {
         status: { notIn: ['Delivered', 'Cancelled'] }
       }
     });
+
+    const t30ForNoOrders = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const clientsWithRecentOrdersGroup = await prisma.order.groupBy({
+      by: ['clientId'],
+      where: {
+        receivedDate: { gte: t30ForNoOrders }
+      }
+    });
+    const noOrdersCount = totalClients - clientsWithRecentOrdersGroup.length;
+
+    // Calculate lesserOrdersCount (< 60% of past order value when comparing last 30 days with prior 30 days)
+    const nowForLesser = new Date();
+    const t30 = new Date(nowForLesser.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const t60 = new Date(nowForLesser.getTime() - 60 * 24 * 60 * 60 * 1000);
+
+    const clientOrdersForLesser = await prisma.order.findMany({
+      where: { receivedDate: { gte: t60 } },
+      select: { clientId: true, receivedDate: true, createdAt: true }
+    });
+
+    const clientInvoicesForLesser = await prisma.invoice.findMany({
+      where: { invoiceDate: { gte: t60 } },
+      select: { clientId: true, invoiceDate: true, netAmount: true, grossAmount: true }
+    });
+
+    const clientAgg = {};
+    for (const ord of clientOrdersForLesser) {
+      if (!ord.clientId) continue;
+      if (!clientAgg[ord.clientId]) clientAgg[ord.clientId] = { priorCount: 0, priorVal: 0, lastCount: 0, lastVal: 0 };
+      const d = ord.receivedDate || ord.createdAt;
+      if (d >= t30) {
+        clientAgg[ord.clientId].lastCount++;
+      } else {
+        clientAgg[ord.clientId].priorCount++;
+      }
+    }
+
+    for (const inv of clientInvoicesForLesser) {
+      if (!inv.clientId) continue;
+      if (!clientAgg[inv.clientId]) clientAgg[inv.clientId] = { priorCount: 0, priorVal: 0, lastCount: 0, lastVal: 0 };
+      const d = inv.invoiceDate;
+      const amt = inv.netAmount || inv.grossAmount || 0;
+      if (d >= t30) {
+        clientAgg[inv.clientId].lastVal += amt;
+      } else {
+        clientAgg[inv.clientId].priorVal += amt;
+      }
+    }
+
+    let lesserOrdersCount = 0;
+    for (const cId in clientAgg) {
+      const c = clientAgg[cId];
+      if (c.priorCount > 0 && (c.priorVal > 0 ? (c.lastVal < 0.6 * c.priorVal) : (c.lastCount < c.priorCount))) {
+        lesserOrdersCount++;
+      }
+    }
+
+    // Calculate dueSchedule based on actual active order due dates in DB
+    const activeDueGroups = await prisma.order.groupBy({
+      by: ['dueDate'],
+      where: {
+        status: { notIn: ['Delivered', 'Cancelled'] },
+        dueDate: { not: null }
+      },
+      _count: { id: true },
+      orderBy: { dueDate: 'desc' },
+      take: 7
+    });
+
+    const dueSchedule = activeDueGroups
+      .filter(g => g.dueDate)
+      .map(g => {
+        const d = new Date(g.dueDate);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return {
+          dateStr: d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
+          isoDate: `${y}-${m}-${day}`,
+          count: g._count.id
+        };
+      });
 
     res.json({
       performance: {
@@ -1706,37 +3578,112 @@ app.get('/api/dashboard/stats', async (req, res) => {
         overdue: overdueCount,
         finalPendingToday: finalDeliveriesPendingToday,
         finalExpectedToday: finalDeliveriesExpectedToday,
-        tryInToday: tryInDeliveriesToday
+        tryInToday: tryInDeliveriesToday,
+        uninvoiced: uninvoicedCount
       },
       alerts: {
         pendingTryIns,
         pendingOnHold,
-        overdueInvoices
+        overdueInvoices,
+        lesserOrders: lesserOrdersCount,
+        noOrders: noOrdersCount
       },
-      dueSchedule: [] 
+      dueSchedule
     });
 
+  } catch (error) { 
+    console.error('Error in /api/dashboard/stats:', error);
+    res.status(500).json({ error: error.message }); 
+  }
+});
 
-  } catch (error) { res.status(500).json({ error: error.message }); }
+app.get('/api/dashboard/calendar', async (req, res) => {
+  try {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 2, 0);
+
+    const orders = await prisma.order.findMany({
+      where: {
+        OR: [
+          { dueDate: { gte: start, lte: end } },
+          { trialDate: { gte: start, lte: end } },
+          { finishDate: { gte: start, lte: end } }
+        ]
+      },
+      select: {
+        id: true,
+        orderNumber: true,
+        patientName: true,
+        dueDate: true,
+        trialDate: true,
+        finishDate: true,
+        status: true,
+        client: { select: { name: true } }
+      }
+    });
+
+    const events = [];
+    for (const o of orders) {
+      const clientName = o.client ? o.client.name : 'Unknown';
+      if (o.dueDate) {
+        const dStr = o.dueDate.toISOString().split('T')[0];
+        events.push({
+          date: dStr,
+          type: 'due',
+          title: `Order #${o.orderNumber || o.id} - ${o.patientName || 'Patient'} (Due)`,
+          client: clientName
+        });
+      }
+      if (o.trialDate) {
+        const dStr = o.trialDate.toISOString().split('T')[0];
+        events.push({
+          date: dStr,
+          type: 'trial',
+          title: `Order #${o.orderNumber || o.id} - ${o.patientName || 'Patient'} (Trial)`,
+          client: clientName
+        });
+      }
+      if (o.finishDate) {
+        const dStr = o.finishDate.toISOString().split('T')[0];
+        events.push({
+          date: dStr,
+          type: 'delivery',
+          title: `Order #${o.orderNumber || o.id} - ${o.patientName || 'Patient'} (Finish)`,
+          client: clientName
+        });
+      }
+    }
+
+    res.json(events);
+  } catch (error) {
+    console.error('Error fetching dashboard calendar:', error);
+    res.json([]);
+  }
 });
 
 
 // --- CALENDAR ---
 app.get('/api/calendar/stats', async (req, res) => {
   try {
-    const { month, year, criteria } = req.query;
+    const { month, year, criteria, summary } = req.query;
+    const m = Number(month);
+    const y = Number(year);
     const dateField = criteria === 'Due Date' ? 'dueDate' : 
                       criteria === 'Order Date' ? 'receivedDate' : 
                       criteria === 'Date In' ? 'receivedDate' : 'updatedAt';
 
-    const startDate = new Date(year, month, 1);
-    const endDate = new Date(year, Number(month) + 1, 1);
+    // Extend range by 7 days before and after to cover visible month edge days
+    const startDate = new Date(y, m, 1);
+    startDate.setDate(startDate.getDate() - 7);
+    const endDate = new Date(y, m + 1, 1);
+    endDate.setDate(endDate.getDate() + 7);
 
     const orders = await prisma.order.findMany({
       where: {
         [dateField]: { gte: startDate, lt: endDate }
       },
-      select: { [dateField]: true, status: true }
+      select: { [dateField]: true, status: true, units: true }
     });
 
     const stats = {};
@@ -1745,8 +3692,11 @@ app.get('/api/calendar/stats', async (req, res) => {
       const d = new Date(o[dateField]);
       const dateKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       if (!stats[dateKey]) stats[dateKey] = {};
-      stats[dateKey][o.status] = (stats[dateKey][o.status] || 0) + 1;
-      stats[dateKey]['Total'] = (stats[dateKey]['Total'] || 0) + 1;
+      const countInc = (summary === 'Products') ? (o.units || 1) : 1;
+      let st = o.status || 'New';
+      if (st === 'On Hold') st = 'Hold';
+      stats[dateKey][st] = (stats[dateKey][st] || 0) + countInc;
+      stats[dateKey]['Total'] = (stats[dateKey]['Total'] || 0) + countInc;
     });
 
     res.json(stats);
@@ -1760,43 +3710,30 @@ app.get('/api/calendar/orders', async (req, res) => {
                       criteria === 'Order Date' ? 'receivedDate' : 
                       criteria === 'Date In' ? 'receivedDate' : 'updatedAt';
 
-    const d = new Date(date);
-    const dNext = new Date(d);
-    dNext.setDate(dNext.getDate() + 1);
+    const parts = date.split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0]);
+      const month = parseInt(parts[1]) - 1;
+      const day = parseInt(parts[2]);
 
-    const orders = await prisma.order.findMany({
-      where: {
-        [dateField]: { gte: d, lt: dNext }
-      },
-      include: { client: true }
-    });
-    res.json(orders);
+      const start = new Date(year, month, day, 0, 0, 0, 0);
+      const end = new Date(year, month, day, 23, 59, 59, 999);
+
+      const orders = await prisma.order.findMany({
+        where: {
+          [dateField]: { gte: start, lte: end }
+        },
+        include: { client: true }
+      });
+      res.json(orders);
+    } else {
+      res.json([]);
+    }
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 
 
-app.get('/api/dashboard/calendar', async (req, res) => {
-  try {
-    const orders = await prisma.order.findMany({
-      select: { id: true, receivedDate: true, dueDate: true, patientName: true, status: true, client: { select: { name: true } } }
-    });
-    const shipments = await prisma.shipmentNote.findMany({
-      select: { id: true, noteDate: true, noteNumber: true, client: { select: { name: true } } }
-    });
-
-    const events = [];
-    orders.forEach(o => {
-      if (o.receivedDate) events.push({ type: 'start', date: o.receivedDate, title: `Start: ${o.patientName}`, client: o.client?.name, id: o.id });
-      if (o.dueDate) events.push({ type: 'due', date: o.dueDate, title: `Due: ${o.patientName}`, client: o.client?.name, id: o.id });
-    });
-    shipments.forEach(s => {
-      if (s.noteDate) events.push({ type: 'ship', date: s.noteDate, title: `Ship: ${s.noteNumber}`, client: s.client?.name, id: s.id });
-    });
-
-    res.json(events);
-  } catch (error) { res.status(500).json({ error: error.message }); }
-});
 // --- MATERIALS / STOCK ---
 app.get('/api/materials', async (req, res) => {
   try {
@@ -1854,132 +3791,207 @@ app.post('/api/materials', async (req, res) => {
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// --- INVENTORY TRANSACTIONS (JSON Fallback) ---
+app.put('/api/materials/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const body = req.body;
+    const data = { ...body };
+    if (data.stock !== undefined) data.stock = toNum(data.stock);
+    if (data.minStock !== undefined) data.minStock = toNum(data.minStock);
+    if (data.reorderLevel !== undefined) data.minStock = toNum(data.reorderLevel);
+    if (data.purchaseRate !== undefined) data.purchaseRate = toNum(data.purchaseRate);
+    if (data.retailPrice !== undefined) data.retailPrice = toNum(data.retailPrice);
+    if (data.taxPercent !== undefined) data.taxPercent = toNum(data.taxPercent);
+    delete data.reorderLevel;
+    delete data.inventoryTransactions;
+
+    const material = await prisma.material.update({
+      where: { id },
+      data
+    });
+    res.json(material);
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.delete('/api/materials/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    await prisma.material.delete({ where: { id } });
+    res.status(204).send();
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+// --- INVENTORY TRANSACTIONS (PostgreSQL & Prisma ORM) ---
 const TRANSACTIONS_FILE = path.join(__dirname, 'inventory_transactions.json');
 
-function getTransactions() {
-  if (!fs.existsSync(TRANSACTIONS_FILE)) return [];
+async function ensureInventoryTransactionsMigrated() {
   try {
-    return JSON.parse(fs.readFileSync(TRANSACTIONS_FILE, 'utf8'));
-  } catch (e) { return []; }
+    const count = await prisma.inventoryTransaction.count();
+    if (count === 0 && fs.existsSync(TRANSACTIONS_FILE)) {
+      const raw = fs.readFileSync(TRANSACTIONS_FILE, 'utf8');
+      const items = JSON.parse(raw);
+      if (Array.isArray(items) && items.length > 0) {
+        console.log(`[Migration] Migrating ${items.length} inventory transactions from JSON to PostgreSQL...`);
+        for (const item of items) {
+          const mat = await prisma.material.findUnique({ where: { id: Number(item.materialId) } });
+          if (mat) {
+            await prisma.inventoryTransaction.create({
+              data: {
+                docNumber: item.docNumber || null,
+                type: item.type || 'Inward',
+                materialId: mat.id,
+                materialName: item.materialName || mat.name,
+                quantity: Number(item.quantity) || 0,
+                date: item.date ? new Date(item.date) : new Date(),
+                supplier: item.supplier || null,
+                notes: item.notes || null,
+                createdAt: item.createdAt ? new Date(item.createdAt) : new Date()
+              }
+            });
+          }
+        }
+        console.log(`[Migration] Successfully migrated inventory transactions to PostgreSQL.`);
+      }
+    }
+  } catch (e) {
+    console.warn('[Migration] Error migrating inventory transactions:', e.message);
+  }
 }
 
 app.get('/api/inventory/transactions/next-number', async (req, res) => {
   try {
     const { type } = req.query;
-    const transactions = getTransactions().filter(t => t.type === type);
-    const nextNum = (transactions.length + 1).toString().padStart(5, '0');
+    const where = type ? { type } : {};
+    const count = await prisma.inventoryTransaction.count({ where });
+    const nextNum = (count + 1).toString().padStart(5, '0');
     res.json({ nextNumber: nextNum });
-  } catch (error) { res.status(500).json({ error: error.message }); }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 app.get('/api/inventory/transactions', async (req, res) => {
   try {
-    const { type, search } = req.query;
-    let transactions = getTransactions();
-    
-    if (type) transactions = transactions.filter(t => t.type === type);
-    if (search) {
-      const q = search.toLowerCase();
-      transactions = transactions.filter(t => 
-        (t.docNumber && t.docNumber.toLowerCase().includes(q)) ||
-        (t.supplier && t.supplier.toLowerCase().includes(q)) ||
-        (t.materialName && t.materialName.toLowerCase().includes(q))
-      );
+    const { type, search, materialId } = req.query;
+    const where = {};
+    if (materialId) {
+      where.materialId = Number(materialId);
     }
-    
-    // Populate material object dynamically from SQLite database
-    const materials = await prisma.material.findMany();
-    const materialsMap = {};
-    materials.forEach(m => { materialsMap[m.id] = m; });
-    const populatedTransactions = transactions.map(t => ({
-      ...t,
-      material: materialsMap[t.materialId] || { name: t.materialName || 'Unknown', unit: 'pc' }
-    }));
-    
-    res.json(populatedTransactions.reverse()); // Newest first
-  } catch (error) { res.status(500).json({ error: error.message }); }
+    if (type && type !== 'All') {
+      where.type = type;
+    }
+    if (search) {
+      where.OR = [
+        { docNumber: { contains: search, mode: 'insensitive' } },
+        { supplier: { contains: search, mode: 'insensitive' } },
+        { materialName: { contains: search, mode: 'insensitive' } },
+        { notes: { contains: search, mode: 'insensitive' } }
+      ];
+    }
+    const transactions = await prisma.inventoryTransaction.findMany({
+      where,
+      include: { material: true },
+      orderBy: { date: 'desc' }
+    });
+    res.json(transactions);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 app.post('/api/inventory/transactions', async (req, res) => {
   try {
     const { type, materialId, quantity, date, supplier, docNumber, notes } = req.body;
-    
-    const material = await prisma.material.findUnique({ where: { id: Number(materialId) } });
-    if (!material) return res.status(404).json({ error: 'Material not found' });
+    if (!materialId || !quantity) {
+      return res.status(400).json({ error: 'Material ID and quantity are required' });
+    }
 
-    const newTransaction = {
-      id: Date.now(),
-      type,
-      materialId: Number(materialId),
-      materialName: material.name,
-      quantity: Number(quantity),
-      date: date || new Date().toISOString(),
-      supplier,
-      docNumber,
-      notes,
-      createdAt: new Date().toISOString()
-    };
+    const matId = Number(materialId);
+    const qty = Number(quantity);
+    const updateQty = type === 'Inward' ? qty : -qty;
 
-    // Save to JSON
-    const transactions = getTransactions();
-    transactions.push(newTransaction);
-    fs.writeFileSync(TRANSACTIONS_FILE, JSON.stringify(transactions, null, 2));
+    const result = await prisma.$transaction(async (tx) => {
+      const material = await tx.material.findUnique({ where: { id: matId } });
+      if (!material) {
+        throw new Error('Material not found');
+      }
 
-    // Update Prisma stock
-    const updateQty = type === 'Inward' ? Number(quantity) : -Number(quantity);
-    await prisma.material.update({
-      where: { id: Number(materialId) },
-      data: { stock: { increment: updateQty } }
+      const txRecord = await tx.inventoryTransaction.create({
+        data: {
+          type: type || 'Inward',
+          materialId: matId,
+          materialName: material.name,
+          quantity: qty,
+          date: date ? new Date(date) : new Date(),
+          supplier: supplier || null,
+          docNumber: docNumber || null,
+          notes: notes || null
+        },
+        include: { material: true }
+      });
+
+      await tx.material.update({
+        where: { id: matId },
+        data: { stock: { increment: updateQty } }
+      });
+
+      return txRecord;
     });
 
-    res.status(201).json(newTransaction);
-  } catch (error) { res.status(500).json({ error: error.message }); }
+    res.status(201).json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-
-// --- STAFF / OFFICE ---
-app.get('/api/staff', async (req, res) => {
+app.delete('/api/inventory/transactions/:id', async (req, res) => {
   try {
-    const staff = await prisma.staff.findMany();
-    res.json(staff);
-  } catch (error) { res.status(500).json({ error: error.message }); }
+    const id = Number(req.params.id);
+    const existing = await prisma.inventoryTransaction.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ error: 'Transaction not found' });
+    }
+    const rollbackQty = existing.type === 'Inward' ? -existing.quantity : existing.quantity;
+    await prisma.$transaction(async (tx) => {
+      await tx.inventoryTransaction.delete({ where: { id } });
+      if (existing.materialId) {
+        await tx.material.update({
+          where: { id: existing.materialId },
+          data: { stock: { increment: rollbackQty } }
+        });
+      }
+    });
+    res.json({ success: true, message: 'Transaction deleted' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-app.post('/api/staff', async (req, res) => {
+
+// --- BACKUP & EXPORT (ADMIN ONLY) ---
+app.get('/api/backup/system', requireAdmin, async (req, res) => {
   try {
-    const data = { ...req.body };
-    data.salary = toNum(data.salary) || 0;
-    const staff = await prisma.staff.create({ data });
-    res.status(201).json(staff);
-  } catch (error) { res.status(500).json({ error: error.message }); }
+    const settings = await prisma.systemSetting.findMany({
+      where: { key: { notIn: SENSITIVE_SETTING_KEYS } }
+    });
+    const lookups = await prisma.settingLookup.findMany();
+    const dropdowns = await prisma.dropdownOption.findMany();
+    const data = {
+      system: 'Sohar Dental Lab',
+      exportedAt: new Date().toISOString(),
+      settings,
+      lookups,
+      dropdowns
+    };
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename=SoharDental_ConfigBackup_${Date.now()}.json`);
+    res.send(JSON.stringify(data, null, 2));
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to generate configuration backup' });
+  }
 });
 
-app.delete('/api/staff/:id', async (req, res) => {
-  try {
-    await prisma.staff.delete({ where: { id: parseInt(req.params.id) } });
-    res.status(204).send();
-  } catch (error) { res.status(500).json({ error: error.message }); }
-});
-
-
-// --- BACKUP & EXPORT ---
-app.get('/api/backup/system', (req, res) => {
-  const { exec } = require('child_process');
-  const tempDir = path.join(__dirname, 'temp');
-  if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
-  const backupFile = path.join(tempDir, 'system_backup.zip');
-  const dbFile = path.join(__dirname, 'prisma', 'dev.db');
-  const envFile = path.join(__dirname, '.env');
-  
-  const cmd = `powershell -Command "Compress-Archive -Path '${dbFile}', '${envFile}' -DestinationPath '${backupFile}' -Force"`;
-  exec(cmd, (error) => {
-    if (error) return res.status(500).json({ error: error.message });
-    res.download(backupFile, 'SoharDental_SystemBackup.zip');
-  });
-});
-
-app.get('/api/backup/data', async (req, res) => {
+app.get('/api/backup/data', requireAdmin, async (req, res) => {
   try {
     const data = {
       clients: await prisma.client.findMany(),
@@ -1992,12 +4004,12 @@ app.get('/api/backup/data', async (req, res) => {
       products: await prisma.product.findMany()
     };
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', 'attachment; filename=SoharDental_DataExport.json');
+    res.setHeader('Content-Disposition', `attachment; filename=SoharDental_DataExport_${Date.now()}.json`);
     res.send(JSON.stringify(data, null, 2));
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-app.get('/api/backup/orders-csv', async (req, res) => {
+app.get('/api/backup/orders-csv', requireAdmin, async (req, res) => {
   try {
     const orders = await prisma.order.findMany({ include: { client: true } });
     const headers = ['Order #', 'Order Date', 'Client Name', 'Patient Name', 'Product Type', 'Product Name', 'Model #', 'Status', 'Due Date', 'Total Amount', 'Discount', 'Tax', 'Net Amount'];
@@ -2025,21 +4037,86 @@ app.get('/api/backup/orders-csv', async (req, res) => {
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
+// --- EXCEL DATA SEED & FULL RE-IMPORT ---
+app.post('/api/settings/seed-excel', memoryUpload.any(), async (req, res) => {
+  try {
+    const files = req.files || [];
+    if (!files || files.length === 0) {
+      return res.status(400).json({ error: 'No files uploaded. Please upload all 5 Excel files.' });
+    }
+
+    const findFile = (patterns) => {
+      return files.find(f => {
+        const fName = (f.originalname || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        const fieldN = (f.fieldname || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        return patterns.some(p => {
+          const pat = p.toLowerCase().replace(/[^a-z0-9]/g, '');
+          return fName.includes(pat) || fieldN.includes(pat);
+        });
+      });
+    };
+
+    const clientsFile = findFile(['Clients', 'client']);
+    const clientBillsFile = findFile(['ClientBills', 'clientbill', 'bills', 'invoices']);
+    const ordersFile = findFile(['Orders', 'order']);
+    const clientPaymentsFile = findFile(['ClientPayments', 'clientpayment', 'payments', 'receipts']);
+    const expensesFile = findFile(['Expenses', 'expense']);
+
+    const missing = [];
+    if (!clientsFile) missing.push('Clients.xls');
+    if (!clientBillsFile) missing.push('ClientBills.xls');
+    if (!ordersFile) missing.push('Orders.xls');
+    if (!clientPaymentsFile) missing.push('ClientPayments.xls');
+    if (!expensesFile) missing.push('Expenses.xls');
+
+    if (missing.length > 0) {
+      return res.status(400).json({
+        error: `Missing required Excel files: ${missing.join(', ')}. Please make sure all 5 Excel files are selected.`
+      });
+    }
+
+    const filesMap = {
+      clients: clientsFile.buffer,
+      clientBills: clientBillsFile.buffer,
+      orders: ordersFile.buffer,
+      clientPayments: clientPaymentsFile.buffer,
+      expenses: expensesFile.buffer
+    };
+
+    const seedMode = req.body && req.body.seedMode === 'merge' ? 'merge' : 'purge';
+
+    console.log(`[Seed Excel] Starting import from 5 uploaded files [Mode: ${seedMode}]...`);
+    const stats = await seedAllExcelData(filesMap, prisma, console.log, seedMode);
+
+    // Invalidate in-memory response caches
+    clearCachePattern();
+
+    // Auto-sync model sequences
+    await backfillMissingModelNumbers();
+
+    res.json({
+      success: true,
+      message: seedMode === 'merge' 
+        ? 'Database successfully merged with 5 Excel files! (Manual entries preserved)' 
+        : 'Database successfully purged and re-seeded with all 5 Excel files!',
+      seedMode,
+      stats
+    });
+  } catch (error) {
+    console.error('[Seed Excel Error]:', error);
+    res.status(500).json({
+      error: 'Failed to seed Excel data: ' + (error.message || error)
+    });
+  }
+});
+
 // --- Payment & Financial APIs ---
 
 // Get Next Receipt Number
 app.get('/api/receipts/next-number', async (req, res) => {
   try {
-    const lastReceipt = await prisma.receipt.findFirst({
-      orderBy: { id: 'desc' }
-    });
-    let nextNum = 1;
-    if (lastReceipt && lastReceipt.receiptNumber) {
-      const match = lastReceipt.receiptNumber.match(/\d+$/);
-      if (match) nextNum = parseInt(match[0]) + 1;
-    }
-    const receiptNumber = 'RCT-' + nextNum.toString().padStart(5, '0');
-    res.json({ receiptNumber });
+    const serialResult = await peekNextAtomicSequence('receipt');
+    res.json({ receiptNumber: serialResult.formatted, nextNumber: serialResult.formatted });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -2057,17 +4134,50 @@ app.get('/api/clients/:id/financial-summary', async (req, res) => {
       }
     });
     
-    // Calculate balance (Simplified: sum of invoices - sum of receipts)
+    let balance = client.openingBalance || 0;
+    if (client.openingBalanceType === 'Cr') {
+      balance = -balance;
+    }
+    
     const invoicesTotal = await prisma.invoice.aggregate({
       where: { clientId },
       _sum: { netAmount: true }
     });
+    const uninvoicedOrders = await prisma.order.findMany({
+      where: {
+        clientId,
+        invoiceId: null,
+        status: { not: 'Cancelled' }
+      },
+      select: {
+        totalAmount: true,
+        netAmount: true,
+        price: true
+      }
+    });
+    const uninvoicedOrdersSum = uninvoicedOrders.reduce((sum, o) => {
+      return sum + (o.netAmount || o.totalAmount || o.price || 0);
+    }, 0);
+
     const receiptsTotal = await prisma.receipt.aggregate({
       where: { clientId },
       _sum: { amount: true }
     });
+    const adjustments = await prisma.adjustment.findMany({
+      where: { clientId }
+    });
     
-    const balance = (invoicesTotal._sum.netAmount || 0) - (receiptsTotal._sum.amount || 0);
+    balance += (invoicesTotal._sum.netAmount || 0);
+    balance += uninvoicedOrdersSum;
+    balance -= (receiptsTotal._sum.amount || 0);
+    
+    adjustments.forEach(a => {
+      if (a.type === 'Credit') {
+        balance -= (a.amount || 0);
+      } else if (a.type === 'Debit') {
+        balance += (a.amount || 0);
+      }
+    });
     
     res.json({
       balance: balance.toFixed(3),
@@ -2079,10 +4189,22 @@ app.get('/api/clients/:id/financial-summary', async (req, res) => {
   }
 });
 
+const SENSITIVE_SETTING_KEYS = [
+  'admin_password',
+  'admin_password_hash',
+  'user_password_hash',
+  'jwt_secret',
+  'db_url'
+];
+
 // --- SYSTEM SETTINGS ---
 app.get('/api/settings', async (req, res) => {
   try {
-    const settings = await prisma.systemSetting.findMany();
+    const settings = await prisma.systemSetting.findMany({
+      where: {
+        key: { notIn: SENSITIVE_SETTING_KEYS }
+      }
+    });
     const result = {};
     settings.forEach(s => {
       try {
@@ -2099,6 +4221,9 @@ app.get('/api/settings', async (req, res) => {
 
 app.get('/api/settings/:key', async (req, res) => {
   try {
+    if (SENSITIVE_SETTING_KEYS.includes(req.params.key)) {
+      return res.status(403).json({ error: 'Access to this setting is restricted' });
+    }
     const setting = await prisma.systemSetting.findUnique({
       where: { key: req.params.key }
     });
@@ -2117,12 +4242,34 @@ app.post('/api/settings', async (req, res) => {
   try {
     const { key, value } = req.body;
     if (!key) return res.status(400).json({ error: 'Key is required' });
+    if (SENSITIVE_SETTING_KEYS.includes(key)) {
+      if (!req.user || req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Forbidden: Admin access required to update sensitive settings' });
+      }
+    }
     const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
     const setting = await prisma.systemSetting.upsert({
       where: { key },
       update: { value: stringValue },
       create: { key, value: stringValue }
     });
+
+    if (key.startsWith('serial_start_')) {
+      const typeKey = key.replace('serial_start_', '');
+      const conf = SEQUENCE_CONFIG[typeKey];
+      if (conf && conf.seqName) {
+        const numVal = parseInt(value);
+        if (!isNaN(numVal) && numVal > 0) {
+          try {
+            await prisma.$executeRawUnsafe(`CREATE SEQUENCE IF NOT EXISTS "${conf.seqName}" START WITH ${numVal} INCREMENT BY 1;`);
+            await prisma.$executeRawUnsafe(`SELECT setval('"${conf.seqName}"', ${numVal - 1}, false);`);
+          } catch(seqErr) {
+            console.warn(`[Sequence Reset Warning] ${conf.seqName}:`, seqErr.message);
+          }
+        }
+      }
+    }
+
     res.json(setting);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -2137,58 +4284,103 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ error: 'Username and password are required' });
     }
 
+    let role = null;
+    let targetUsername = null;
+
     if (username === 'sohardentallab') {
-      if (password === 'sohardentallab') {
-        return res.json({ role: 'user', username: 'sohardentallab' });
+      const userHashSetting = await prisma.systemSetting.findUnique({ where: { key: 'user_password_hash' } });
+      let isMatch = false;
+      if (userHashSetting && userHashSetting.value) {
+        isMatch = await bcrypt.compare(password, userHashSetting.value);
       } else {
-        return res.status(401).json({ error: 'Invalid password' });
+        if (password === 'sohardentallab') {
+          isMatch = true;
+          const newHash = await bcrypt.hash('sohardentallab', 10);
+          await prisma.systemSetting.upsert({
+            where: { key: 'user_password_hash' },
+            update: { value: newHash },
+            create: { key: 'user_password_hash', value: newHash }
+          });
+        }
+      }
+      if (isMatch) {
+        role = 'user';
+        targetUsername = 'sohardentallab';
       }
     } else if (username === 'soharadmin') {
-      // Fetch stored admin password from database
-      const setting = await prisma.systemSetting.findUnique({
-        where: { key: 'admin_password' }
-      });
-      const dbPassword = setting ? setting.value : 'soharadmin'; // Fallback to default
-      
-      if (password === dbPassword) {
-        return res.json({ role: 'admin', username: 'soharadmin' });
+      const adminHashSetting = await prisma.systemSetting.findUnique({ where: { key: 'admin_password_hash' } });
+      let isMatch = false;
+      if (adminHashSetting && adminHashSetting.value) {
+        isMatch = await bcrypt.compare(password, adminHashSetting.value);
       } else {
-        return res.status(401).json({ error: 'Invalid password' });
+        const legacySetting = await prisma.systemSetting.findUnique({ where: { key: 'admin_password' } });
+        const dbPassword = legacySetting ? legacySetting.value : 'soharadmin';
+        if (password === dbPassword) {
+          isMatch = true;
+          const newHash = await bcrypt.hash(password, 10);
+          await prisma.systemSetting.upsert({
+            where: { key: 'admin_password_hash' },
+            update: { value: newHash },
+            create: { key: 'admin_password_hash', value: newHash }
+          });
+        }
       }
-    } else {
-      return res.status(401).json({ error: 'Invalid username' });
+      if (isMatch) {
+        role = 'admin';
+        targetUsername = 'soharadmin';
+      }
     }
+
+    if (!role) {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+
+    const token = jwt.sign({ username: targetUsername, role }, JWT_SECRET, { expiresIn: '24h' });
+    res.json({ token, role, username: targetUsername });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Authentication service failure' });
   }
 });
 
-app.post('/api/admin/update-password', async (req, res) => {
+app.post('/api/admin/update-password', requireAdmin, async (req, res) => {
   try {
     const { currentPwd, newPwd } = req.body;
     if (!currentPwd || !newPwd) {
       return res.status(400).json({ error: 'Current password and new password are required' });
     }
+    if (newPwd.length < 4) {
+      return res.status(400).json({ error: 'New password must be at least 4 characters long' });
+    }
 
-    // Fetch stored admin password
-    const setting = await prisma.systemSetting.findUnique({
-      where: { key: 'admin_password' }
-    });
-    const dbPassword = setting ? setting.value : 'soharadmin';
+    const adminHashSetting = await prisma.systemSetting.findUnique({ where: { key: 'admin_password_hash' } });
+    let isMatch = false;
+    if (adminHashSetting && adminHashSetting.value) {
+      isMatch = await bcrypt.compare(currentPwd, adminHashSetting.value);
+    } else {
+      const legacySetting = await prisma.systemSetting.findUnique({ where: { key: 'admin_password' } });
+      const dbPassword = legacySetting ? legacySetting.value : 'soharadmin';
+      isMatch = (currentPwd === dbPassword);
+    }
 
-    if (currentPwd !== dbPassword) {
+    if (!isMatch) {
       return res.status(400).json({ error: 'Current password is incorrect' });
     }
 
-    // Update database
+    const newHash = await bcrypt.hash(newPwd, 10);
     await prisma.systemSetting.upsert({
-      where: { key: 'admin_password' },
-      update: { value: newPwd },
-      create: { key: 'admin_password', value: newPwd }
+      where: { key: 'admin_password_hash' },
+      update: { value: newHash },
+      create: { key: 'admin_password_hash', value: newHash }
     });
+
+    try {
+      await prisma.systemSetting.delete({ where: { key: 'admin_password' } });
+    } catch (e) {}
 
     res.json({ success: true, message: 'Password updated successfully' });
   } catch (error) {
+    console.error('Update password error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -2343,17 +4535,165 @@ app.delete('/api/product-types/:id', async (req, res) => {
   }
 });
 
+app.get('/api/client-product-rate', async (req, res) => {
+  try {
+    const { clientId, productName } = req.query;
+    if (!productName) return res.json({ rate: null });
+
+    const pNameUpper = productName.trim().toUpperCase();
+
+    // 1. Check if client has a specific price band or custom price for this product
+    if (clientId) {
+      const client = await prisma.client.findUnique({
+        where: { id: Number(clientId) },
+        select: { id: true, priceBand: true }
+      });
+
+      if (client) {
+        // Find product
+        const prod = await prisma.product.findFirst({
+          where: { name: { equals: productName.trim() } }
+        });
+
+        if (prod && prod.priceBands && client.priceBand) {
+          try {
+            const bands = typeof prod.priceBands === 'string' ? JSON.parse(prod.priceBands) : prod.priceBands;
+            if (bands && bands[client.priceBand] !== undefined && bands[client.priceBand] !== null) {
+              return res.json({ rate: Number(bands[client.priceBand]), source: 'priceBand' });
+            }
+          } catch(e) {}
+        }
+
+        // Check client's recent order job for this product
+        const lastJob = await prisma.orderJob.findFirst({
+          where: {
+            order: { clientId: Number(clientId) },
+            productName: { equals: productName.trim() },
+            price: { gt: 0 }
+          },
+          orderBy: { id: 'desc' }
+        });
+
+        if (lastJob && lastJob.price) {
+          const unitRate = lastJob.price / (lastJob.units || 1);
+          return res.json({ rate: Math.round(unitRate * 1000) / 1000, source: 'clientHistory' });
+        }
+
+        if (prod && prod.charge && prod.charge > 0) {
+          return res.json({ rate: prod.charge, source: 'product' });
+        }
+      }
+    }
+
+    // Default product rate
+    const prod = await prisma.product.findFirst({
+      where: { name: { equals: productName.trim() } }
+    });
+
+    if (prod && prod.charge !== undefined && prod.charge !== null) {
+      return res.json({ rate: prod.charge, source: 'product' });
+    }
+
+    return res.json({ rate: 0, source: 'default' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // --- PRODUCTS CRUD ---
 app.get('/api/products', async (req, res) => {
   try {
-    const { search, type } = req.query;
+    const { search, type, category } = req.query;
     const where = {};
-    if (type && type !== 'All Product Types' && type !== 'All') where.type = type;
+    if (type && type !== 'All Product Types' && type !== 'All' && type !== 'Any') {
+      where.type = { equals: type, mode: 'insensitive' };
+    }
+    if (category && category !== 'Any') {
+      where.category = { equals: category, mode: 'insensitive' };
+    }
     
-    let products = await prisma.product.findMany({ 
+    let dbProducts = await prisma.product.findMany({ 
       where,
       orderBy: { name: 'asc' }
     });
+
+    // Create a comprehensive map of all products
+    const productMap = new Map();
+    dbProducts.forEach(p => {
+      const trimmed = (p.name || '').trim();
+      if (trimmed && trimmed !== 'N/A' && trimmed !== 'NULL') {
+        productMap.set(trimmed.toUpperCase(), {
+          id: p.id,
+          name: trimmed.toUpperCase(),
+          code: p.code || '',
+          type: p.type || 'General',
+          category: p.category || '',
+          charge: p.charge || 0,
+          warranty: p.warranty !== undefined && p.warranty !== null ? p.warranty : 0,
+          completionPeriod: p.completionPeriod !== undefined && p.completionPeriod !== null ? p.completionPeriod : 0,
+          unitSelection: p.unitSelection || 'Teeth',
+          useSlabPricing: Boolean(p.useSlabPricing),
+          priceBands: p.priceBands || null,
+          notes: p.notes || '',
+          inactive: Boolean(p.inactive)
+        });
+      }
+    });
+
+    // Also fetch distinct products from order jobs if no specific type/category filter was passed or if matched
+    if (!type && !category) {
+      try {
+        const jobProducts = await prisma.orderJob.findMany({
+          select: { productName: true, productType: true },
+          distinct: ['productName']
+        });
+        jobProducts.forEach(j => {
+          if (j.productName) {
+            j.productName.split(',').forEach(subName => {
+              const cleaned = subName.trim();
+              if (cleaned && cleaned !== 'N/A' && cleaned !== 'NULL' && cleaned.length > 1 && !productMap.has(cleaned.toUpperCase())) {
+                productMap.set(cleaned.toUpperCase(), {
+                  id: `job_${cleaned.toUpperCase()}`,
+                  name: cleaned.toUpperCase(),
+                  code: '',
+                  type: j.productType || 'General',
+                  category: '',
+                  charge: 0,
+                  unitSelection: 'Teeth'
+                });
+              }
+            });
+          }
+        });
+
+        const orderProducts = await prisma.order.findMany({
+          select: { productName: true, productType: true },
+          distinct: ['productName']
+        });
+        orderProducts.forEach(o => {
+          if (o.productName) {
+            o.productName.split(',').forEach(subName => {
+              const cleaned = subName.trim();
+              if (cleaned && cleaned !== 'N/A' && cleaned !== 'NULL' && cleaned.length > 1 && !productMap.has(cleaned.toUpperCase())) {
+                productMap.set(cleaned.toUpperCase(), {
+                  id: `ord_${cleaned.toUpperCase()}`,
+                  name: cleaned.toUpperCase(),
+                  code: '',
+                  type: o.productType || 'General',
+                  category: '',
+                  charge: 0,
+                  unitSelection: 'Teeth'
+                });
+              }
+            });
+          }
+        });
+      } catch (subErr) {
+        console.warn('Error fetching distinct job/order products:', subErr);
+      }
+    }
+
+    let products = Array.from(productMap.values()).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     
     if (search) {
       const s = search.toLowerCase();
@@ -2372,6 +4712,82 @@ app.post('/api/products', async (req, res) => {
     const product = await prisma.product.create({ data });
     res.status(201).json(product);
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/products/bulk-charges', async (req, res) => {
+  try {
+    const { priceBand, items, category } = req.body;
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'No items provided' });
+    }
+
+    const isStandard = (!priceBand || priceBand === 'Standard Charge' || priceBand === 'Standard');
+
+    await prisma.$transaction(async (tx) => {
+      for (const item of items) {
+        const standardChargeVal = item.charge !== undefined && item.charge !== null && item.charge !== '' ? (parseFloat(item.charge) || 0) : 0;
+        const bandChargeVal = item.bandCharge !== undefined && item.bandCharge !== null && item.bandCharge !== '' && !isNaN(Number(item.bandCharge)) ? Number(item.bandCharge) : null;
+        const codeVal = item.code !== undefined ? (item.code || null) : undefined;
+
+        let product = null;
+        if (item.id && !isNaN(Number(item.id))) {
+          product = await tx.product.findUnique({ where: { id: Number(item.id) } });
+        }
+        if (!product && item.name) {
+          product = await tx.product.findFirst({
+            where: { name: { equals: item.name, mode: 'insensitive' } }
+          });
+        }
+
+        if (product) {
+          const updateData = {};
+          if (codeVal !== undefined) updateData.code = codeVal;
+
+          if (isStandard) {
+            updateData.charge = standardChargeVal;
+          } else {
+            let bands = {};
+            if (product.priceBands) {
+              try {
+                bands = typeof product.priceBands === 'string' ? JSON.parse(product.priceBands) : product.priceBands;
+              } catch (e) {
+                bands = {};
+              }
+            }
+            if (bandChargeVal !== null) {
+              bands[priceBand] = bandChargeVal;
+            } else {
+              delete bands[priceBand];
+            }
+            updateData.priceBands = JSON.stringify(bands);
+          }
+
+          await tx.product.update({
+            where: { id: product.id },
+            data: updateData
+          });
+        } else if (item.name) {
+          const createData = {
+            name: item.name,
+            code: item.code || null,
+            type: item.type || category || 'General',
+            charge: standardChargeVal
+          };
+          if (!isStandard && bandChargeVal !== null) {
+            const bands = { [priceBand]: bandChargeVal };
+            createData.priceBands = JSON.stringify(bands);
+          }
+          await tx.product.create({ data: createData });
+        }
+      }
+    });
+
+    clearCachePattern('products');
+    res.json({ success: true, message: 'Charges updated successfully' });
+  } catch (error) {
+    console.error('Error in bulk-charges:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -2401,187 +4817,14 @@ app.delete('/api/products/:id', async (req, res) => {
   }
 });
 
-// --- MATERIALS CRUD (INVENTORY ITEMS) ---
-app.get('/api/materials', async (req, res) => {
-  try {
-    const { search, category } = req.query;
-    const where = {};
-    if (search) {
-      where.OR = [
-        { name: { contains: search } }
-      ];
-    }
-    if (category && category !== 'All') where.category = category;
-    
-    let materials = await prisma.material.findMany({ where, orderBy: { name: 'asc' } });
-    
-    // Auto-seed if empty for demo purposes
-    if (materials.length === 0 && !search && category === 'All') {
-        const demo = [
-            { name: '3D EXPANSION SCREW', category: 'ORTHO', stock: 2, unit: 'pc', minStock: 0 },
-            { name: '3D PRINTER FILM', category: 'RESINS', stock: 11, unit: 'pc', minStock: 0 },
-            { name: '3D PRINTER TANK', category: 'ZIRCON', stock: 1, unit: 'pc', minStock: 0 },
-            { name: 'ACRYLIC POWDER - BLACK 40 GM', category: 'ORTHO', stock: 1, unit: 'Bottle', minStock: 0 },
-            { name: 'ALGINATE ALGINPLUS (453 GM)', category: 'ACRYLIC', stock: 0, unit: 'Packet', minStock: 0 },
-            { name: 'BASE PASTE TUBE', category: 'CERAMIC', stock: 17, unit: 'Tube', minStock: 0 },
-            { name: 'BASE PLATE', category: 'ACRYLIC', stock: 17, unit: 'Box', minStock: 0 },
-        ];
-        for (const m of demo) {
-          await prisma.material.create({ data: m });
-        }
-        materials = await prisma.material.findMany({ where, orderBy: { name: 'asc' } });
-    }
-    // Map minStock to reorderLevel for UI parity
-    const mapped = materials.map(m => ({ ...m, reorderLevel: m.minStock || 0 }));
-    res.json(mapped);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.post('/api/materials', async (req, res) => {
-  try {
-    const data = { ...req.body };
-    if (data.stock !== undefined) data.stock = toNum(data.stock);
-    if (data.minStock !== undefined) data.minStock = toNum(data.minStock);
-    const material = await prisma.material.create({ data });
-    res.status(201).json(material);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.put('/api/materials/:id', async (req, res) => {
-  try {
-    const id = Number(req.params.id);
-    const data = { ...req.body };
-    if (data.stock !== undefined) data.stock = toNum(data.stock);
-    if (data.minStock !== undefined) data.minStock = toNum(data.minStock);
-    const material = await prisma.material.update({
-      where: { id },
-      data
-    });
-    res.json(material);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.delete('/api/materials/:id', async (req, res) => {
-  try {
-    const id = Number(req.params.id);
-    await prisma.material.delete({ where: { id } });
-    res.status(204).send();
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// --- SYSTEM SETTINGS CRUD ---
-app.get('/api/settings', async (req, res) => {
-  try {
-    const settings = await prisma.systemSetting.findMany();
-    const settingsObj = {};
-    for (const s of settings) {
-      try {
-        settingsObj[s.key] = JSON.parse(s.value);
-      } catch (e) {
-        settingsObj[s.key] = s.value;
-      }
-    }
-    res.json(settingsObj);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.get('/api/settings/:key', async (req, res) => {
-  try {
-    const setting = await prisma.systemSetting.findUnique({
-      where: { key: req.params.key }
-    });
-    if (!setting) return res.status(404).json({ error: 'Setting not found' });
-    try {
-      res.json({ key: setting.key, value: JSON.parse(setting.value) });
-    } catch (e) {
-      res.json({ key: setting.key, value: setting.value });
-    }
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.post('/api/settings', async (req, res) => {
-  try {
-    const { key, value } = req.body;
-    const valStr = typeof value === 'object' ? JSON.stringify(value) : String(value);
-    const setting = await prisma.systemSetting.upsert({
-      where: { key },
-      update: { value: valStr },
-      create: { key, value: valStr }
-    });
-    res.json(setting);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// --- SETTING LOOKUPS CRUD ---
-app.get('/api/lookups', async (req, res) => {
-  try {
-    const { type } = req.query;
-    const where = type ? { type } : {};
-    const lookups = await prisma.settingLookup.findMany({
-      where,
-      orderBy: { name: 'asc' }
-    });
-    res.json(lookups);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.post('/api/lookups', async (req, res) => {
-  try {
-    const { type, name, value } = req.body;
-    if (!type || !name) return res.status(400).json({ error: 'Missing type or name' });
-    const lookup = await prisma.settingLookup.create({
-      data: { type, name, value }
-    });
-    res.status(201).json(lookup);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.put('/api/lookups/:id', async (req, res) => {
-  try {
-    const id = Number(req.params.id);
-    const { name, value } = req.body;
-    const lookup = await prisma.settingLookup.update({
-      where: { id },
-      data: { name, value }
-    });
-    res.json(lookup);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.delete('/api/lookups/:id', async (req, res) => {
-  try {
-    const id = Number(req.params.id);
-    await prisma.settingLookup.delete({ where: { id } });
-    res.status(204).send();
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // --- DROPDOWN MANAGER CRUD ---
 app.get('/api/dropdowns', async (req, res) => {
   try {
     const { activeOnly, dropdownKey } = req.query;
+    const cacheKey = `dropdowns_${activeOnly || 'all'}_${dropdownKey || 'all'}`;
+    const cached = getCache(cacheKey);
+    if (cached) return res.json(cached);
+
     const where = {};
     if (activeOnly === 'true') {
       where.active = true;
@@ -2596,6 +4839,7 @@ app.get('/api/dropdowns', async (req, res) => {
         { id: 'asc' }
       ]
     });
+    setCache(cacheKey, options);
     res.json(options);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -2604,6 +4848,7 @@ app.get('/api/dropdowns', async (req, res) => {
 
 app.post('/api/dropdowns', async (req, res) => {
   try {
+    clearCachePattern('dropdowns');
     const { page, dropdownKey, dropdownLabel, optionLabel, optionValue, sortOrder, active } = req.body;
     if (!page || !dropdownKey || !optionLabel || !optionValue) {
       return res.status(400).json({ error: 'Page, dropdown key, option label, and option value are required' });
@@ -2697,42 +4942,6 @@ app.get('/api/pickup-requests', async (req, res) => {
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-app.get('/api/pickup-returns', async (req, res) => {
-  try {
-    const returns = await prisma.pickupReturn.findMany({
-      include: { order: { include: { client: true } } },
-      orderBy: { id: 'desc' }
-    });
-    res.json(returns);
-  } catch (error) { res.status(500).json({ error: error.message }); }
-});
-
-app.post('/api/pickup-returns', async (req, res) => {
-  try {
-    const { orderId, itemType, status, pickupDate } = req.body;
-    const ret = await prisma.pickupReturn.create({
-      data: {
-        orderId: Number(orderId),
-        itemType,
-        status,
-        pickupDate: pickupDate ? new Date(pickupDate) : null
-      }
-    });
-    res.status(201).json(ret);
-  } catch (error) { res.status(500).json({ error: error.message }); }
-});
-
-app.get('/api/materials', async (req, res) => {
-  try {
-    const materials = await prisma.material.findMany({
-      orderBy: { name: 'asc' }
-    });
-    res.json(materials);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // Startup Database Auto-Seeder Check for Materials
 async function ensureMaterialsSeeded() {
   try {
@@ -2788,18 +4997,18 @@ async function ensureDropdownsSeeded() {
         { page: 'Order', dropdownKey: 'order_type', dropdownLabel: 'Order Type', optionLabel: 'Repair', optionValue: 'Repair', sortOrder: 3 },
 
         // order_priority
-        { page: 'Order', dropdownKey: 'order_priority', dropdownLabel: 'Order Priority', optionLabel: 'Normal', optionValue: 'Normal', sortOrder: 1 },
-        { page: 'Order', dropdownKey: 'order_priority', dropdownLabel: 'Order Priority', optionLabel: 'Urgent', optionValue: 'Urgent', sortOrder: 2 },
+        { page: 'Order', dropdownKey: 'order_priority', dropdownLabel: 'Order Priority', optionLabel: 'ASAP', optionValue: 'ASAP', sortOrder: 1 },
+        { page: 'Order', dropdownKey: 'order_priority', dropdownLabel: 'Order Priority', optionLabel: 'Expedite Service', optionValue: 'Expedite Service', sortOrder: 2 },
+        { page: 'Order', dropdownKey: 'order_priority', dropdownLabel: 'Order Priority', optionLabel: 'Normal', optionValue: 'Normal', sortOrder: 3 },
+        { page: 'Order', dropdownKey: 'order_priority', dropdownLabel: 'Order Priority', optionLabel: 'Urgent', optionValue: 'Urgent', sortOrder: 4 },
+        { page: 'Order', dropdownKey: 'order_priority', dropdownLabel: 'Order Priority', optionLabel: 'Very Urgent', optionValue: 'Very Urgent', sortOrder: 5 },
 
         // hold_reason
-        { page: 'Order', dropdownKey: 'hold_reason', dropdownLabel: 'Hold Reason', optionLabel: 'Payment Pending', optionValue: 'Payment Pending', sortOrder: 1 },
-        { page: 'Order', dropdownKey: 'hold_reason', dropdownLabel: 'Hold Reason', optionLabel: 'Clarification Needed', optionValue: 'Clarification Needed', sortOrder: 2 },
-        { page: 'Order', dropdownKey: 'hold_reason', dropdownLabel: 'Hold Reason', optionLabel: 'Doctor Unavailable', optionValue: 'Doctor Unavailable', sortOrder: 3 },
-        { page: 'Order', dropdownKey: 'hold_reason', dropdownLabel: 'Hold Reason', optionLabel: 'Impression Issue', optionValue: 'Impression Issue', sortOrder: 4 },
-        { page: 'Order', dropdownKey: 'hold_reason', dropdownLabel: 'Hold Reason', optionLabel: 'Shade Issue', optionValue: 'Shade Issue', sortOrder: 5 },
-        { page: 'Order', dropdownKey: 'hold_reason', dropdownLabel: 'Hold Reason', optionLabel: 'Patient Not Available', optionValue: 'Patient Not Available', sortOrder: 6 },
-        { page: 'Order', dropdownKey: 'hold_reason', dropdownLabel: 'Hold Reason', optionLabel: 'Duplicate Order', optionValue: 'Duplicate Order', sortOrder: 7 },
-        { page: 'Order', dropdownKey: 'hold_reason', dropdownLabel: 'Hold Reason', optionLabel: 'Other', optionValue: 'Other', sortOrder: 8 },
+        { page: 'Order', dropdownKey: 'hold_reason', dropdownLabel: 'Hold Reason', optionLabel: 'Design not clear', optionValue: 'Design not clear', sortOrder: 1 },
+        { page: 'Order', dropdownKey: 'hold_reason', dropdownLabel: 'Hold Reason', optionLabel: 'Doctors Confirmation', optionValue: 'Doctors Confirmation', sortOrder: 2 },
+        { page: 'Order', dropdownKey: 'hold_reason', dropdownLabel: 'Hold Reason', optionLabel: 'Improper Impression', optionValue: 'Improper Impression', sortOrder: 3 },
+        { page: 'Order', dropdownKey: 'hold_reason', dropdownLabel: 'Hold Reason', optionLabel: 'Payment Pending', optionValue: 'Payment Pending', sortOrder: 4 },
+        { page: 'Order', dropdownKey: 'hold_reason', dropdownLabel: 'Hold Reason', optionLabel: 'Work Order Incomplete', optionValue: 'Work Order Incomplete', sortOrder: 5 },
 
         // shipment_status
         { page: 'Shipment', dropdownKey: 'shipment_status', dropdownLabel: 'Shipment Status', optionLabel: 'Created', optionValue: 'Created', sortOrder: 1 },
@@ -2866,8 +5075,8 @@ async function ensureDropdownsSeeded() {
 
         // inward_doc_type
         { page: 'Office', dropdownKey: 'inward_doc_type', dropdownLabel: 'Inward Document Type', optionLabel: 'Purchase', optionValue: 'Purchase', sortOrder: 1 },
-        { page: 'Office', dropdownKey: 'inward_doc_type', dropdownLabel: 'Inward Document Type', optionLabel: 'Return', optionValue: 'Return', sortOrder: 2 },
-        { page: 'Office', dropdownKey: 'inward_doc_type', dropdownLabel: 'Inward Document Type', optionLabel: 'Opening Balance', optionValue: 'Opening Balance', sortOrder: 3 },
+        { page: 'Office', dropdownKey: 'inward_doc_type', dropdownLabel: 'Inward Document Type', optionLabel: 'Goods Inward', optionValue: 'Goods Inward', sortOrder: 2 },
+        { page: 'Office', dropdownKey: 'inward_doc_type', dropdownLabel: 'Inward Document Type', optionLabel: 'Opening Stock', optionValue: 'Opening Stock', sortOrder: 3 },
 
         // outward_doc_type
         { page: 'Office', dropdownKey: 'outward_doc_type', dropdownLabel: 'Outward Document Type', optionLabel: 'Consumption', optionValue: 'Consumption', sortOrder: 1 },
@@ -2903,11 +5112,46 @@ async function ensureDropdownsSeeded() {
   }
 }
 
+async function backfillMissingModelNumbers() {
+  try {
+    const countResult = await prisma.$queryRaw`SELECT COUNT(*)::int as cnt FROM "Order" WHERE "modelNumber" IS NULL OR "modelNumber" = '';`;
+    const cnt = countResult && countResult[0] ? countResult[0].cnt : 0;
+
+    if (cnt > 0) {
+      console.log(`[Backfill] Found ${cnt} orders without model number. Performing fast batch auto-assignment...`);
+      const serialResult = await getNextAtomicSequence('model');
+      let startVal = serialResult.nextNum;
+
+      await prisma.$executeRawUnsafe(`
+        WITH numbered AS (
+          SELECT id, (${startVal} + ROW_NUMBER() OVER (ORDER BY id ASC) - 1)::text as generated_model
+          FROM "Order"
+          WHERE "modelNumber" IS NULL OR "modelNumber" = ''
+        )
+        UPDATE "Order"
+        SET "modelNumber" = numbered.generated_model
+        FROM numbered
+        WHERE "Order".id = numbered.id;
+      `);
+
+      const maxRows = await prisma.$queryRawUnsafe(`SELECT MAX(NULLIF(regexp_replace("modelNumber", '\\D', '', 'g'), '')::bigint) as max_val FROM "Order";`);
+      const maxVal = maxRows && maxRows[0] && maxRows[0].max_val ? Number(maxRows[0].max_val) : (startVal + cnt);
+      await prisma.$executeRawUnsafe(`SELECT setval('"sdl_model_seq"', ${maxVal}, true);`);
+
+      console.log(`[Backfill] Successfully auto-assigned ${cnt} model numbers in batch (sequence set to ${maxVal})!`);
+    }
+  } catch (err) {
+    console.error('[Backfill Error]', err.message);
+  }
+}
+
 const server = app.listen(PORT, async () => {
   console.log(`[${new Date().toLocaleTimeString()}] Server is successfully running on port ${PORT}`);
   console.log('Keep this window open to maintain server connection.');
   await ensureMaterialsSeeded();
   await ensureDropdownsSeeded();
+  await ensureInventoryTransactionsMigrated();
+  await backfillMissingModelNumbers();
 }).on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
     console.error(`Error: Port ${PORT} is already in use. Please close the other application or restart your computer.`);

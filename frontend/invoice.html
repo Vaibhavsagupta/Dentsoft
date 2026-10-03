@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="auth.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1280, minimum-scale=0.1, maximum-scale=10.0, user-scalable=yes">
+    <title>Invoice | Dentsoft</title>
+    <!-- Use html2pdf.js for high-quality PDF generation -->
+    <script src="html2pdf.bundle.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        @page { size: A4; margin: 0; }
+        
+        * { 
+            box-sizing: border-box; 
+            -webkit-print-color-adjust: exact; 
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f4f7f9;
+            color: #000;
+            font-size: 12px;
+            line-height: 1.2;
+        }
+
+        .invoice-container {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: #fff;
+            padding: calc(50px + 5mm);
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            border: none !important;
+            display: flex;
+            flex-direction: column;
+        }
+        .invoice-container::before {
+            content: "";
+            position: absolute;
+            top: 50px;
+            left: 50px;
+            right: 50px;
+            bottom: 50px;
+            border: 5px double #000;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* Header Layout */
+        .header-section {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            border-bottom: 3px solid #000;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+
+        .header-logo {
+            flex-shrink: 0;
+        }
+
+        .header-logo img {
+            height: 100px;
+            object-fit: contain;
+        }
+
+        .header-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .lab-name {
+            text-align: left;
+            font-size: 26px;
+            font-weight: bold;
+            margin: 0 0 5px 0;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .header-columns {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .lab-info {
+            font-size: 15px;
+            font-weight: normal;
+            line-height: 1.4;
+        }
+
+        .header-right {
+            text-align: left;
+            font-size: 15px;
+            font-weight: normal;
+            line-height: 1.4;
+            padding-right: 20px;
+        }
+
+        .invoice-title {
+            text-align: center;
+            font-size: 20px;
+            font-weight: 800;
+            margin: 10px 0;
+            text-transform: capitalize;
+        }
+
+        /* Meta Section Box */
+        .meta-container {
+            display: flex;
+            border: 2px solid #000;
+            margin-bottom: 20px;
+            min-height: 100px;
+        }
+
+        .client-box {
+            flex: 1.5;
+            padding: 10px;
+            border-right: 2px solid #000;
+        }
+
+        .client-name {
+            font-weight: 800;
+            font-size: 14px;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        .client-address {
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+
+        .invoice-meta-box {
+            flex: 1;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            gap: 6px;
+        }
+
+        .meta-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 800;
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+
+        .barcode-area {
+            text-align: right;
+            margin-top: auto;
+        }
+
+        .barcode-area img {
+            height: 30px;
+            max-width: 100%;
+        }
+
+        /* Table Styles */
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 2px solid #000 !important;
+            table-layout: fixed;
+        }
+
+        .invoice-table th {
+            border: 1px solid #000 !important;
+            padding: 8px 5px;
+            font-size: 9px;
+            font-weight: 700;
+            text-align: center;
+            background: #f8f8f8;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .invoice-table td {
+            border: 1px solid #000 !important;
+            padding: 6px 5px;
+            font-size: 9px;
+            font-weight: 500;
+            vertical-align: middle;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .requested-by-row td {
+            background: #fff;
+            padding: 4px 15px;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .teeth-chart {
+            display: table;
+            width: 100%;
+            max-width: 120px;
+            table-layout: fixed;
+            margin: 0 auto;
+            border-collapse: collapse;
+            font-size: 9px;
+            font-weight: 800;
+        }
+        .teeth-chart table,
+        .teeth-chart tr,
+        .teeth-chart td,
+        .invoice-container.html2pdf-printing-container .teeth-chart td {
+            border: none !important;
+        }
+        .teeth-row {
+            display: table-row;
+        }
+        .teeth-quad {
+            display: table-cell;
+            width: 50%;
+            height: 20px;
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+        .tooth-cell {
+            display: inline-block;
+            width: 12.5%;
+            text-align: center;
+            font-size: 9px;
+            font-weight: 800;
+        }
+        /* FDI Cross Borders - Aligned to midline */
+        .teeth-quad.ur { border-right: 1.5px solid #000; border-bottom: 1.5px solid #000; text-align: right; }
+        .teeth-quad.ul { border-bottom: 1.5px solid #000; text-align: left; }
+        .teeth-quad.lr { border-right: 1.5px solid #000; text-align: right; }
+        .teeth-quad.ll { text-align: left; }
+
+        /* Totals Row */
+        .total-summary-row td {
+            border-top: 2px solid #000;
+            font-weight: 800;
+            font-size: 11px;
+        }
+
+        /* Grand Total Box */
+        .grand-total-section {
+            display: flex;
+            border: 2px solid #000;
+            margin-top: 20px;
+            font-weight: 800;
+            font-size: 15px;
+        }
+
+        .words-box {
+            flex: 1.8;
+            padding: 10px;
+            border-right: 2px solid #000;
+        }
+
+        .amount-box {
+            flex: 1;
+            padding: 10px;
+            text-align: right;
+        }
+
+        .authorized-signatory {
+            margin-top: auto;
+            padding-top: 50px;
+            text-align: right;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        /* Action Buttons */
+        .actions {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 800;
+            font-size: 14px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            color: #fff;
+        }
+
+        .btn-print { background: #000; }
+        .btn-download { background: #2563eb; }
+        .btn:hover { transform: translateY(-2px); opacity: 0.9; }
+
+        /* Styles for forcing desktop layout during PDF generation */
+        body.html2pdf-printing {
+            width: 210mm !important;
+            min-width: 210mm !important;
+            padding: 0 !important;
+            background: #fff !important;
+            overflow: visible !important;
+        }
+        .invoice-container.html2pdf-printing-container {
+            width: 210mm !important;
+            min-height: 297mm !important;
+            padding: calc(50px + 15mm) !important;
+            box-shadow: none !important;
+            border: none !important;
+            margin: 0 auto !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+        .invoice-container.html2pdf-printing-container .header-columns {
+            display: flex !important;
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            align-items: flex-start !important;
+        }
+        .invoice-container.html2pdf-printing-container .header-left {
+            display: flex !important;
+            flex-direction: row !important;
+            width: 55% !important;
+            gap: 15px !important;
+        }
+        .invoice-container.html2pdf-printing-container .header-right {
+            width: 40% !important;
+            text-align: right !important;
+        }
+        .invoice-container.html2pdf-printing-container .meta-container {
+            display: flex !important;
+            flex-direction: row !important;
+        }
+        .invoice-container.html2pdf-printing-container .client-box {
+            border-right: 2px solid #000 !important;
+            border-bottom: none !important;
+        }
+        .invoice-container.html2pdf-printing-container .grand-total-section {
+            display: flex !important;
+            flex-direction: row !important;
+        }
+        .invoice-container.html2pdf-printing-container .words-box {
+            border-right: 2px solid #000 !important;
+            border-bottom: none !important;
+        }
+        .invoice-container.html2pdf-printing-container .invoice-table {
+            width: 100% !important;
+            table-layout: fixed !important;
+            border: 2px solid #000 !important;
+        }
+        .invoice-container.html2pdf-printing-container .invoice-table th {
+            white-space: normal !important;
+            word-wrap: break-word !important;
+            font-size: 11px !important;
+            padding: 8px 5px !important;
+            border: 1px solid #000 !important;
+        }
+        .invoice-container.html2pdf-printing-container .invoice-table td {
+            white-space: normal !important;
+            word-wrap: break-word !important;
+            font-size: 12px !important;
+            padding: 6px 5px !important;
+            border: 1px solid #000 !important;
+        }
+        .nowrap {
+            white-space: nowrap !important;
+            word-wrap: normal !important;
+            overflow-wrap: normal !important;
+        }
+        .invoice-container.html2pdf-printing-container .invoice-table th:nth-child(1) { width: 3% !important; }
+        .invoice-container.html2pdf-printing-container .invoice-table th:nth-child(2) { width: 7% !important; }
+        .invoice-container.html2pdf-printing-container .invoice-table th:nth-child(3) { width: 14% !important; }
+        .invoice-container.html2pdf-printing-container .invoice-table th:nth-child(4) { width: 13% !important; }
+        .invoice-container.html2pdf-printing-container .invoice-table th:nth-child(5) { width: 14% !important; }
+        .invoice-container.html2pdf-printing-container .invoice-table th:nth-child(6) { width: 21% !important; }
+        .invoice-container.html2pdf-printing-container .invoice-table th:nth-child(7) { width: 5% !important; }
+        .invoice-container.html2pdf-printing-container .invoice-table th:nth-child(8) { width: 11% !important; }
+        .invoice-container.html2pdf-printing-container .invoice-table th:nth-child(9) { width: 12% !important; }
+
+        @media print {
+            body { padding: 0; background: #fff; margin: 0; }
+            .invoice-container { 
+                box-shadow: none; 
+                border: none !important;
+                margin: 0 !important;
+                width: 210mm !important;
+                min-height: 297mm !important;
+                padding: calc(50px + 15mm) !important;
+            }
+            .actions { display: none; }
+        }
+    
+        .invoice-table, .invoice-table th, .invoice-table td { border: 1px solid #000; border-collapse: collapse; }
+        
+        @media print {
+            body { margin: 0; padding: 0; background: none; }
+            .invoice-container { width: 100%; border: none; padding: 0; margin: 0; box-shadow: none; }
+            .btn-action, .pdf-action { display: none !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .invoice-table, .invoice-table th, .invoice-table td { border: 1px solid #000 !important; border-collapse: collapse !important; }
+            .teeth-quad { border-color: #000 !important; }
+            .teeth-chart table, .teeth-chart tr, .teeth-chart td, .invoice-container.html2pdf-printing-container .teeth-chart td { border: none !important; }
+            .client-box, .words-box { border-bottom: 2px solid #000 !important; }
+        }
+
+        /* Bulletproof override to force remove nested borders inside teeth chart under all conditions */
+        .invoice-table td .teeth-chart td,
+        .invoice-container.html2pdf-printing-container .invoice-table td .teeth-chart td {
+            border: none !important;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="actions">
+        <button class="btn btn-download" onclick="downloadPDF()">DOWNLOAD PDF</button>
+    </div>
+
+    <div id="invoices-wrapper">
+        <!-- Rendered dynamically -->
+    </div>
+
+    <script>
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const API_BASE = (window.location.protocol === 'file:' || isLocalhost) ? 'http://localhost:5000/api' : window.location.origin + '/api';
+        const urlParams = new URLSearchParams(window.location.search);
+
+        function numberToWords(num) {
+            const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
+            const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+            const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+
+            if (num === 0) return 'Zero';
+
+            function convert(n) {
+                let s = '';
+                if (n >= 100) {
+                    s += ones[Math.floor(n / 100)] + ' Hundred ';
+                    n %= 100;
+                }
+                if (n >= 20) {
+                    s += tens[Math.floor(n / 10)] + ' ';
+                    n %= 10;
+                } else if (n >= 10) {
+                    s += teens[n - 10] + ' ';
+                    n = 0;
+                }
+                if (n > 0) {
+                    s += ones[n] + ' ';
+                }
+                return s;
+            }
+
+            let result = '';
+            if (num >= 1000) {
+                result += convert(Math.floor(num / 1000)) + 'Thousand ';
+                num %= 1000;
+            }
+            result += convert(num);
+            return result.trim() + ' only';
+        }
+
+        function createTeethGrid(selection) {
+            const parseSelection = (sel) => {
+                const quadrants = { 1: [], 2: [], 3: [], 4: [] };
+                if (!sel || String(sel).trim() === '') return quadrants;
+                let str = '';
+                if (Array.isArray(sel)) str = sel.join(',');
+                else if (typeof sel === 'object') {
+                    try { str = Object.values(sel).flat().join(','); } catch(e) { str = JSON.stringify(sel); }
+                } else str = String(sel);
+                str = str.replace(/[\[\]"']/g, '').trim();
+                if (!str || str === 'null' || str === 'undefined' || str === '-') return quadrants;
+
+                const tokens = str.split(/[,;\s]+/).map(s => s.trim().toUpperCase()).filter(Boolean);
+                tokens.forEach(t => {
+                    if (t.includes('-')) {
+                        const parts = t.split('-').map(p => parseInt(p)).filter(p => !isNaN(p));
+                        if (parts.length === 2) {
+                            const min = Math.min(parts[0], parts[1]);
+                            const max = Math.max(parts[0], parts[1]);
+                            for (let v = min; v <= max; v++) {
+                                let q = Math.floor(v / 10);
+                                const n = v % 10;
+                                if (q === 5) q = 1;
+                                if (q === 6) q = 2;
+                                if (q === 7) q = 3;
+                                if (q === 8) q = 4;
+                                if (quadrants[q] && n >= 1 && n <= 8 && !quadrants[q].includes(n)) quadrants[q].push(n);
+                            }
+                            return;
+                        }
+                    }
+                    if (t.startsWith('UR')) {
+                        const n = parseInt(t.replace('UR', ''));
+                        if (!isNaN(n) && n >= 1 && n <= 8 && !quadrants[1].includes(n)) quadrants[1].push(n);
+                        return;
+                    }
+                    if (t.startsWith('UL')) {
+                        const n = parseInt(t.replace('UL', ''));
+                        if (!isNaN(n) && n >= 1 && n <= 8 && !quadrants[2].includes(n)) quadrants[2].push(n);
+                        return;
+                    }
+                    if (t.startsWith('LL')) {
+                        const n = parseInt(t.replace('LL', ''));
+                        if (!isNaN(n) && n >= 1 && n <= 8 && !quadrants[3].includes(n)) quadrants[3].push(n);
+                        return;
+                    }
+                    if (t.startsWith('LR')) {
+                        const n = parseInt(t.replace('LR', ''));
+                        if (!isNaN(n) && n >= 1 && n <= 8 && !quadrants[4].includes(n)) quadrants[4].push(n);
+                        return;
+                    }
+                    const val = parseInt(t);
+                    if (isNaN(val)) return;
+                    if (val >= 11 && val <= 88) {
+                        let q = Math.floor(val / 10);
+                        const n = val % 10;
+                        if (q === 5) q = 1;
+                        if (q === 6) q = 2;
+                        if (q === 7) q = 3;
+                        if (q === 8) q = 4;
+                        if (quadrants[q] && n >= 1 && n <= 8 && !quadrants[q].includes(n)) quadrants[q].push(n);
+                    } else if (val >= 1 && val <= 8) {
+                        if (!quadrants[1].includes(val)) quadrants[1].push(val);
+                    }
+                });
+                return quadrants;
+            };
+
+            const renderFixedQuad = (slots, activeList) => {
+                return slots.map(n => {
+                    const active = activeList && activeList.includes(n);
+                    return `<span style="display:inline-block; width:7px; text-align:center; font-size:10px; font-weight:${active ? '700' : 'normal'}; font-family:Arial, Helvetica, sans-serif; color:${active ? '#000' : 'transparent'}; user-select:none;">${n}</span>`;
+                }).join('');
+            };
+
+            try {
+                const q = parseSelection(selection);
+                const ur = renderFixedQuad([8,7,6,5,4,3,2,1], q[1]);
+                const ul = renderFixedQuad([1,2,3,4,5,6,7,8], q[2]);
+                const lr = renderFixedQuad([8,7,6,5,4,3,2,1], q[4]);
+                const ll = renderFixedQuad([1,2,3,4,5,6,7,8], q[3]);
+
+                return `
+                    <div style="display:flex; justify-content:center; align-items:center; width:100%; margin:0 auto;">
+                        <table style="border-collapse:collapse !important; border:none !important; margin:0 auto; line-height:1.1; font-family:Arial, Helvetica, sans-serif;">
+                            <tbody>
+                                <tr>
+                                    <td style="border:none !important; border-right:1.5px solid #000 !important; border-bottom:1.5px solid #000 !important; padding:1px 4px 2px 2px !important; text-align:right !important; white-space:nowrap; height:13px; vertical-align:middle;">${ur}</td>
+                                    <td style="border:none !important; border-bottom:1.5px solid #000 !important; padding:1px 2px 2px 4px !important; text-align:left !important; white-space:nowrap; height:13px; vertical-align:middle;">${ul}</td>
+                                </tr>
+                                <tr>
+                                    <td style="border:none !important; border-right:1.5px solid #000 !important; padding:2px 4px 1px 2px !important; text-align:right !important; white-space:nowrap; height:13px; vertical-align:middle;">${lr}</td>
+                                    <td style="border:none !important; padding:2px 2px 1px 4px !important; text-align:left !important; white-space:nowrap; height:13px; vertical-align:middle;">${ll}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                `.trim();
+            } catch (e) {
+                return '';
+            }
+        }
+
+        async function buildInvoiceElement(id, type) {
+            let data = {};
+            let orders = [];
+
+            if (type === 'order') {
+                const res = await fetch(`${API_BASE}/orders/${id}`);
+                const orderData = await res.json();
+                data = {
+                    client: orderData.client,
+                    invoiceNumber: 'DRAFT-' + orderData.id,
+                    invoiceDate: new Date(),
+                    netAmount: orderData.totalAmount || orderData.price || 0
+                };
+                orders = [orderData];
+            } else {
+                const res = await fetch(`${API_BASE}/invoices/${id}`);
+                data = await res.json();
+                if (!data || data.error) throw new Error(data ? data.error : 'Invoice not found');
+                
+                orders = data.orders || [];
+                if (orders.length === 0 && data.netAmount > 0) {
+                    const ordersRes = await fetch(`${API_BASE}/orders?invoiceId=${data.id}`);
+                    orders = await ordersRes.json();
+                }
+            }
+
+            const clinicName = data.client ? data.client.name : 'Unknown Clinic';
+            const clinicAddress = data.client ? (data.client.address || 'SOHAR') : 'SOHAR';
+            const clinicEmail = (data.client && data.client.email) ? 'Email: ' + data.client.email : '';
+            const invNumber = data.invoiceNumber || '';
+            const invDate = new Date(data.invoiceDate).toLocaleDateString('en-GB');
+            const barcodeSrc = `https://barcodeapi.org/api/128/${invNumber}`;
+
+            let totalUnits = 0;
+            let computedTotalAmount = 0;
+            let rowsHtml = '';
+
+            if (orders.length > 0) {
+                const firstOrder = orders[0];
+                if (firstOrder.doctorName) {
+                    rowsHtml += `
+                        <tr class="requested-by-row">
+                            <td></td>
+                            <td colspan="8">Requested by Dr. ${firstOrder.doctorName.toUpperCase()}</td>
+                        </tr>
+                    `;
+                }
+
+                let itemIndex = 1;
+                orders.forEach((o, idx) => {
+                    const jobsToRender = (o.jobs && o.jobs.length > 0) ? o.jobs : [o];
+
+                    jobsToRender.forEach((job, jIdx) => {
+                        const units = job.units || 1;
+                        totalUnits += units;
+                        const price = job.totalAmount || job.price || 0;
+                        computedTotalAmount += price;
+                        const rate = (job.slab1Rate !== null && job.slab1Rate !== undefined && job.slab1Rate > 0) ? job.slab1Rate : (price / units);
+                        
+                        const displayOrderNum = o.orderNumber || o.id;
+                        const displayPatientName = o.patientName || '';
+                        const displayDate = o.finishDate ? new Date(o.finishDate).toLocaleDateString('en-GB') : (o.dueDate ? new Date(o.dueDate).toLocaleDateString('en-GB') : '');
+
+                        rowsHtml += `
+                            <tr>
+                                <td style="text-align:center;">${itemIndex++}</td>
+                                <td>${displayOrderNum}</td>
+                                <td>${displayPatientName}</td>
+                                <td style="text-align:center;">${displayDate}</td>
+                                <td>
+                                    ${job.productName || job.productType}
+                                    ${(job.shade1 || job.shade2 || job.shade3) ? `<br/><small style="font-size:10px; color:#444;">Shade: ${[job.shade1, job.shade2, job.shade3].filter(s => s).join(' / ')}</small>` : ''}
+                                </td>
+                                <td style="text-align: center !important; vertical-align: middle !important; padding: 4px 2px !important;">${createTeethGrid(job.teethSelection)}</td>
+                                <td style="text-align:center;">${units}</td>
+                                <td style="text-align:right;" class="nowrap">${rate.toFixed(3)}</td>
+                                <td style="text-align:right;" class="nowrap">${price.toFixed(3)}</td>
+                            </tr>
+                        `;
+                    });
+                });
+            } else {
+                rowsHtml = '<tr><td colspan="9" style="text-align:center; padding:20px;">No items found.</td></tr>';
+            }
+
+            const amountInt = Math.floor(computedTotalAmount);
+            const totalWords = 'OMR ' + numberToWords(amountInt);
+
+            const container = document.createElement('div');
+            container.className = 'invoice-container';
+            container.innerHTML = `
+                <!-- Header -->
+                <header class="header-section">
+                    <div class="header-logo">
+                        <img src="logo.jpeg" alt="Logo">
+                    </div>
+                    <div class="header-content">
+                        <h1 class="lab-name">SOHAR DENTAL LABORATORY</h1>
+                        <div class="header-columns">
+                            <div class="lab-info">
+                                <div>AL HAMBAR</div>
+                                <div>C.R.NO.3203549</div>
+                                <div>MOH NO. 1771</div>
+                                <div>SOHAR</div>
+                                <div>SULTANATE OF OMAN</div>
+                            </div>
+                            <div class="header-right">
+                                <div>Phone : +968 99622728, 92501576</div>
+                                <div>email : sohardentallab@gmail.com</div>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="invoice-title">Invoice</div>
+
+                <!-- Meta Info Box -->
+                <section class="meta-container">
+                    <div class="client-box">
+                        <div class="client-name">${clinicName}</div>
+                        <div class="client-address">${clinicAddress}</div>
+                        <div class="client-email" style="font-size: 11px; margin-top: 5px; color: #444;">${clinicEmail}</div>
+                    </div>
+                    <div class="invoice-meta-box">
+                        <div class="meta-row">
+                            <span>Invoice #.</span>
+                            <span class="inv-number-val">${invNumber}</span>
+                        </div>
+                        <div class="meta-row">
+                            <span>Invoice Date</span>
+                            <span>${invDate}</span>
+                        </div>
+                        <div class="barcode-area">
+                            <img src="${barcodeSrc}" alt="Barcode">
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Main Table (9 Columns) -->
+                <div class="table-responsive">
+                    <table class="invoice-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 3%;">#</th>
+                                <th style="width: 7%;">Order #</th>
+                                <th style="width: 14%;">Patient</th>
+                                <th style="width: 13%;">Finish Date</th>
+                                <th style="width: 14%;">Product</th>
+                                <th style="width: 21%;">Teeth #</th>
+                                <th style="width: 5%;" class="nowrap">Units</th>
+                                <th style="width: 11%;" class="nowrap">Rate /unit</th>
+                                <th style="width: 12%;" class="nowrap">Total Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                        </tbody>
+                        <tfoot>
+                            <tr class="total-summary-row">
+                                <td colspan="6" style="text-align: right; font-weight:800; font-size:13px;">Total :</td>
+                                <td style="text-align: center; font-weight:800;">${totalUnits}</td>
+                                <td></td>
+                                <td style="text-align: right; font-weight:800;">${computedTotalAmount.toFixed(3)}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <!-- Grand Total Bar -->
+                <div class="grand-total-section">
+                    <div class="words-box">
+                        Grand Total : <span>${totalWords}</span>
+                    </div>
+                    <div class="amount-box">
+                        OMR : <span>${computedTotalAmount.toFixed(3)}</span>
+                    </div>
+                </div>
+
+                <div class="authorized-signatory">Authorized Signatory</div>
+            `;
+
+            return { container, invNumber };
+        }
+
+        let renderedInvoices = [];
+
+        async function init() {
+            const idsParam = urlParams.get('ids') || urlParams.get('id');
+            const type = urlParams.get('type') || 'invoice';
+            if (!idsParam) return;
+
+            const ids = idsParam.split(',').map(s => s.trim()).filter(Boolean);
+            const wrapper = document.getElementById('invoices-wrapper');
+            wrapper.innerHTML = '';
+            renderedInvoices = [];
+
+            for (const currentId of ids) {
+                try {
+                    const { container, invNumber } = await buildInvoiceElement(currentId, type);
+                    wrapper.appendChild(container);
+                    renderedInvoices.push({ id: currentId, invNumber });
+                } catch (err) {
+                    console.error(`Error building invoice for ${currentId}:`, err);
+                }
+            }
+        }
+
+        async function downloadPDF() {
+            const containers = document.querySelectorAll('#invoices-wrapper .invoice-container');
+            if (containers.length === 0) return alert("No invoice to download.");
+
+            for (let i = 0; i < containers.length; i++) {
+                const element = containers[i];
+                document.body.classList.add('html2pdf-printing');
+                element.classList.add('html2pdf-printing-container');
+                const invNum = renderedInvoices[i] ? renderedInvoices[i].invNumber : (i + 1);
+                
+                const opt = {
+                    margin: 0,
+                    filename: `Invoice_${invNum}.pdf`,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+
+                try {
+                    await html2pdf().set(opt).from(element).save();
+                } catch (err) {
+                    console.error("PDF generation failed:", err);
+                } finally {
+                    element.classList.remove('html2pdf-printing-container');
+                    document.body.classList.remove('html2pdf-printing');
+                }
+            }
+        }
+
+        init().then(() => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('download') === 'true') {
+                setTimeout(() => {
+                    downloadPDF();
+                }, 500);
+            } else if (urlParams.get('print') === 'true') {
+                setTimeout(() => {
+                    window.print();
+                }, 600);
+            }
+        });
+    </script>
+</body>
+</html>

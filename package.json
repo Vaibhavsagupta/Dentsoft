@@ -1,4 +1,8 @@
 {
+  "name": "sohar-dental-lab",
+  "version": "1.0.0",
+  "description": "Developed by AIAutomation Lab",
+  "author": "AIAutomation Lab",
   "dependencies": {
     "jsdom": "^29.1.1",
     "tesseract.js": "^7.0.0"

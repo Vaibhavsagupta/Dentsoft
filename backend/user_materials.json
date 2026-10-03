@@ -1,5 +1,17 @@
 [
   {
+    "name": "3D EXPANSION SCREW",
+    "category": "ORTHO",
+    "stock": 10,
+    "unit": "pc",
+    "purchaseUnit": "pc",
+    "stdUnit": "pc",
+    "purchaseRate": 0,
+    "retailPrice": 0,
+    "minStock": 0,
+    "taxPercent": 0
+  },
+  {
     "name": "3D PRINTER FILM",
     "category": "Resins",
     "stock": 25,

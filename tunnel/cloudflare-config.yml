@@ -1,0 +1,7 @@
+tunnel: 45749be4-6069-4350-9d9f-c575e3895d56
+credentials-file: C:\Users\Vaibhav\.cloudflared\45749be4-6069-4350-9d9f-c575e3895d56.json
+
+ingress:
+  - hostname: sdl.sohardental.com
+    service: http://127.0.0.1:5000
+  - service: http_status:404

@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Client {
@@ -67,7 +67,7 @@ model Client {
 model PickupRequest {
   id             Int       @id @default(autoincrement())
   clientId       Int
-  client         Client    @relation(fields: [clientId], references: [id])
+  client         Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
   patientName    String?
   productType    String?
   doctorName     String?
@@ -77,6 +77,10 @@ model PickupRequest {
   notes          String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+
+  @@index([clientId])
+  @@index([status])
+  @@index([requestDate])
 }
 
 model Order {
@@ -85,7 +89,7 @@ model Order {
   orderType    String    @default("New") // New, Repeat, Repair
   
   clientId     Int
-  client       Client    @relation(fields: [clientId], references: [id])
+  client       Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
   doctorName   String?
   
   patientName  String
@@ -154,10 +158,10 @@ model Order {
   shippingStatus String?   @default("Pending") // Pending, Dispatched, Delivered, Returned
   
   shipmentNoteId Int?
-  shipmentNote   ShipmentNote? @relation(fields: [shipmentNoteId], references: [id])
+  shipmentNote   ShipmentNote? @relation(fields: [shipmentNoteId], references: [id], onDelete: SetNull)
   
   invoiceId    Int?
-  invoice      Invoice?  @relation(fields: [invoiceId], references: [id])
+  invoice      Invoice?  @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
   
   warranty     Warranty?
   pickupReturns PickupReturn[]
@@ -171,12 +175,22 @@ model Order {
   holdReason     String?
   cancelledOn    DateTime?
   cancelledReason String?
+
+  @@index([clientId])
+  @@index([status])
+  @@index([receivedDate])
+  @@index([dueDate])
+  @@index([invoiceId])
+  @@index([shipmentNoteId])
+  @@index([orderNumber])
+  @@index([clientId, status])
+  @@index([shippingStatus])
 }
 
 model OrderJob {
   id             Int      @id @default(autoincrement())
   orderId        Int
-  order          Order    @relation(fields: [orderId], references: [id])
+  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   
   productType    String    
   productName    String?   
@@ -201,23 +215,28 @@ model OrderJob {
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([productName])
 }
 
 model Media {
   id        Int      @id @default(autoincrement())
   orderId   Int
-  order     Order    @relation(fields: [orderId], references: [id])
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   url       String
   filename  String?
   mimetype  String?
   createdAt DateTime @default(now())
+
+  @@index([orderId])
 }
 
 model ShipmentNote {
   id             Int       @id @default(autoincrement())
   noteNumber     String    @unique
   clientId       Int
-  client         Client    @relation(fields: [clientId], references: [id])
+  client         Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
   noteDate       DateTime  @default(now())
   type           String    @default("Final") // Final, TryIn
   status         String    @default("Created") // Created, Printed, Dispatched, Delivered
@@ -232,6 +251,10 @@ model ShipmentNote {
   
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+
+  @@index([clientId])
+  @@index([status])
+  @@index([noteDate])
 }
 
 model DeliveryPlan {
@@ -246,25 +269,32 @@ model DeliveryPlan {
   
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+
+  @@index([driverId])
+  @@index([status])
+  @@index([planDate])
 }
 
 model PickupReturn {
   id             Int       @id @default(autoincrement())
   orderId        Int
-  order          Order     @relation(fields: [orderId], references: [id])
+  order          Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
   itemType       String?   // Impression, Wax Trial, etc.
   status         String    @default("Pending Pickup") // Pending Pickup, Received at Lab
   pickupDate     DateTime?
   receivedDate   DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+
+  @@index([orderId])
+  @@index([status])
 }
 
 model Invoice {
   id            Int       @id @default(autoincrement())
   invoiceNumber String    @unique
   clientId      Int
-  client         Client    @relation(fields: [clientId], references: [id])
+  client         Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
   invoiceDate   DateTime  @default(now())
   dueDate       DateTime?
   grossAmount     Float     @default(0)
@@ -278,6 +308,10 @@ model Invoice {
   adjustments    Adjustment[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  @@index([clientId])
+  @@index([status])
+  @@index([invoiceDate])
 }
 
 model Receipt {
@@ -285,7 +319,7 @@ model Receipt {
   receiptNumber String    @unique
   receiptDate   DateTime  @default(now())
   clientId      Int
-  client        Client    @relation(fields: [clientId], references: [id])
+  client        Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
   amount        Float
   appliedAmount Float     @default(0)
   creditAmount  Float     @default(0)
@@ -296,8 +330,15 @@ model Receipt {
   bankName      String?
   reference     String?   // Transaction ID
   notes         String?
+  status        String    @default("Active") // Active, Cancelled
+  cancelledOn   DateTime?
+  cancelledReason String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  @@index([clientId])
+  @@index([receiptDate])
+  @@index([status])
 }
 
 model Adjustment {
@@ -305,14 +346,19 @@ model Adjustment {
   adjustmentNumber String    @unique
   date           DateTime  @default(now())
   clientId       Int
-  client         Client    @relation(fields: [clientId], references: [id])
+  client         Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
   invoiceId      Int?
-  invoice        Invoice?  @relation(fields: [invoiceId], references: [id])
+  invoice        Invoice?  @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
   type           String    // Credit, Debit
   amount         Float
   reason         String?
+  notes          String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+
+  @@index([clientId])
+  @@index([invoiceId])
+  @@index([date])
 }
 
 model Expense {
@@ -327,12 +373,15 @@ model Expense {
   category    String?  @default("General")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([date])
+  @@index([paidTo])
 }
 
 model Warranty {
   id              Int      @id @default(autoincrement())
   orderId         Int      @unique
-  order           Order    @relation(fields: [orderId], references: [id])
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   durationYears   Int
   startDate       DateTime @default(now())
   terms           String?
@@ -371,6 +420,30 @@ model Material {
   taxPercent   Float?   @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  inventoryTransactions InventoryTransaction[]
+
+  @@index([category])
+  @@index([name])
+}
+
+model InventoryTransaction {
+  id           Int       @id @default(autoincrement())
+  docNumber    String?
+  type         String    // Inward, Outward, Adjustment
+  materialId   Int
+  material     Material  @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  materialName String?
+  quantity     Float
+  date         DateTime  @default(now())
+  supplier     String?
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([materialId])
+  @@index([type])
+  @@index([date])
 }
 
 model Product {
@@ -396,6 +469,9 @@ model Product {
   options          String?  // JSON string representing Product Options table
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+
+  @@index([name])
+  @@index([type])
 }
 
 model ProductType {
@@ -421,6 +497,8 @@ model SettingLookup {
   name      String
   value     String?
   createdAt DateTime @default(now())
+
+  @@index([type])
 }
 
 model DropdownOption {
@@ -434,5 +512,8 @@ model DropdownOption {
   active        Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  @@index([dropdownKey])
+  @@index([page])
 }
 

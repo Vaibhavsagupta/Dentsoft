@@ -1,0 +1,1713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="auth.js"></script>
+    <script src="searchable_select.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1280, minimum-scale=0.1, maximum-scale=10.0, user-scalable=yes">
+    <title>Dentsoft | New Client</title>
+    <link rel="stylesheet" href="styles.css?v=6.3.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="transitions.js?v=6.3.0"></script>
+    <style>
+        body { 
+            background: #fff; 
+            font-family: Arial, Helvetica, sans-serif; 
+            color: #000; 
+            margin: 0; 
+            padding: 0; 
+            font-size: 12px;
+            font-weight: 400;
+            font-style: normal;
+            line-height: 15px;
+            min-width: 1200px;
+            overflow-x: auto;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .client-form-wrapper {
+            max-width: 960px;
+            width: 95%;
+            margin: 15px auto 40px auto;
+            background: #ffffff;
+            box-sizing: border-box;
+        }
+
+        /* Outer Box */
+        .lc-main-frame {
+            border: 2px solid #222222;
+            background: #ffffff;
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        /* Top Header Section inside frame */
+        .lc-top-section {
+            padding: 8px 12px;
+            display: grid;
+            grid-template-columns: 140px minmax(0, 1fr);
+            column-gap: 15px;
+            align-items: flex-start;
+            background: #ffffff;
+            box-sizing: border-box;
+        }
+
+        .lc-title-heading {
+            font-size: 20px;
+            font-weight: 700;
+            font-style: normal;
+            color: #111;
+            margin: 0;
+            line-height: 1.2;
+            padding-top: 2px;
+            letter-spacing: -0.5px;
+        }
+
+        .lc-top-grid {
+            display: grid;
+            grid-template-columns: 70px minmax(0, 1.8fr) minmax(0, 1.3fr);
+            column-gap: 12px;
+            row-gap: 6px;
+            min-width: 0;
+        }
+        .lc-top-grid > div {
+            min-width: 0;
+        }
+
+        .lc-input, .lc-select {
+            height: 24px !important;
+            min-height: 24px !important;
+            padding: 2px 6px;
+            border: 1px solid #999999;
+            border-radius: 2px;
+            font-size: 12px !important;
+            font-weight: 400;
+            font-style: normal;
+            line-height: 16px !important;
+            font-family: Arial, Helvetica, sans-serif;
+            box-sizing: border-box;
+            outline: none;
+            color: #000;
+            background: #fff;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+        }
+        .lc-select {
+            text-overflow: ellipsis;
+        }
+        .lc-input:focus, .lc-select:focus {
+            border-color: #0056b3;
+        }
+
+        .lc-label {
+            display: block;
+            font-size: 12px !important;
+            font-weight: 600;
+            font-style: normal;
+            line-height: 15px !important;
+            color: #222;
+            margin-bottom: 2px;
+            font-family: Arial, Helvetica, sans-serif;
+            white-space: nowrap;
+        }
+        .lc-label u {
+            text-decoration: underline;
+        }
+
+        /* Mid Section 2 Columns */
+        .lc-body-section {
+            border-top: 2px solid #222222;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+            background: #ffffff;
+            box-sizing: border-box;
+        }
+
+        .lc-col-left {
+            border-right: 1px solid #777777;
+            padding: 8px 12px;
+            box-sizing: border-box;
+            min-width: 0;
+        }
+
+        .lc-col-right {
+            padding: 8px 12px;
+            box-sizing: border-box;
+            min-width: 0;
+        }
+        .lc-col-right > div {
+            min-width: 0;
+        }
+
+        .lc-tab-primary {
+            border: 1px solid #ff007f !important;
+            color: #ff007f !important;
+            background: #ffffff !important;
+            font-size: 12px !important;
+            font-weight: bold !important;
+            font-style: normal !important;
+            line-height: 15px !important;
+            padding: 3px 14px;
+            font-family: Arial, sans-serif;
+            cursor: pointer;
+            outline: none;
+            display: inline-block;
+        }
+        .lc-tab-locations {
+            border: 1px solid #777777 !important;
+            color: #000000 !important;
+            background: #d8d8d8 !important;
+            font-size: 12px !important;
+            font-weight: 400 !important;
+            font-style: normal !important;
+            line-height: 15px !important;
+            padding: 3px 14px;
+            font-family: Arial, sans-serif;
+            cursor: pointer;
+            outline: none;
+            display: inline-block;
+        }
+
+        .lc-row-divider {
+            border-bottom: 1px solid #c0c0c0;
+            margin: 6px 0;
+        }
+
+        .lc-btn-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            height: 26px !important;
+            min-height: 26px !important;
+            padding: 0 14px;
+            background: #f4f4f4;
+            border: 1px solid #777777;
+            color: #0056b3;
+            font-size: 12px !important;
+            font-weight: 400;
+            font-style: normal;
+            line-height: 15px !important;
+            font-family: Arial, sans-serif;
+            cursor: pointer;
+            border-radius: 2px;
+            box-shadow: 1px 1px 2px rgba(0,0,0,0.15);
+            text-decoration: none;
+        }
+        .lc-btn-action:hover {
+            background: #e5e5e5;
+        }
+        .lc-btn-action u {
+            text-decoration: underline;
+        }
+
+        .lc-sq-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            background: #f0f0f0;
+            border: 1px solid #777777;
+            color: #0056b3;
+            font-weight: 400;
+            font-style: normal;
+            font-size: 12px !important;
+            line-height: 15px !important;
+            cursor: pointer;
+            text-decoration: none;
+            border-radius: 1px;
+        }
+        .lc-sq-btn:hover {
+            background: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Global App Header -->
+    <header style="background: linear-gradient(to bottom, #f5f5f5 0%, #e1e1e1 100%); border-bottom: 1px solid #999; height: 46px; display: flex; justify-content: space-between; align-items: flex-end; padding: 0 12px; font-family: Arial, sans-serif; user-select: none; position: relative;">
+        <div style="display: flex; align-items: flex-end; gap: 8px; height: 100%;">
+            <a href="index.html" style="display: flex; align-items: center; gap: 6px; margin-bottom: 5px; margin-right: 10px; text-decoration: none;">
+                <img src="logo.jpeg" alt="Logo" style="height: 30px; width: 30px; object-fit: contain;">
+                <span style="white-space: nowrap; color: #1e293b; font-weight: bold; font-size: 13px; font-family: Arial, sans-serif;">Dentsoft</span>
+            </a>
+
+            <nav style="display: flex; align-items: flex-end; height: 100%;">
+                <a href="index.html" style="color: #333; border-right: 1px solid #ccc; padding: 3px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-decoration: none; font-size: 11px; height: calc(100% - 4px);">
+                    <i class="fa-solid fa-house" style="font-size: 13px; color: #555; margin-bottom: 2px;"></i>
+                    <span>Home</span>
+                </a>
+                <a href="clients.html" style="background: #ffffff; border: 1px solid #aaa; border-bottom: 1px solid #ffffff; font-weight: bold; color: #ec4899; border-radius: 3px 3px 0 0; padding: 3px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-decoration: none; font-size: 11px; margin-bottom: -1px; height: calc(100% - 2px);">
+                    <i class="fa-solid fa-user-group" style="font-size: 13px; color: #ec4899; margin-bottom: 2px;"></i>
+                    <span>Clients</span>
+                </a>
+                <a href="orders.html" style="color: #333; border-right: 1px solid #ccc; padding: 3px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-decoration: none; font-size: 11px; height: calc(100% - 4px);">
+                    <i class="fa-solid fa-folder-closed" style="font-size: 13px; color: #555; margin-bottom: 2px;"></i>
+                    <span>Orders</span>
+                </a>
+                <a href="shipments.html" style="color: #333; border-right: 1px solid #ccc; padding: 3px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-decoration: none; font-size: 11px; height: calc(100% - 4px);">
+                    <i class="fa-solid fa-plane" style="font-size: 13px; color: #555; margin-bottom: 2px;"></i>
+                    <span>Shipments</span>
+                </a>
+                <a href="accounts.html" style="color: #333; padding: 3px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-decoration: none; font-size: 11px; height: calc(100% - 4px);">
+                    <i class="fa-solid fa-file-invoice-dollar" style="font-size: 13px; color: #555; margin-bottom: 2px;"></i>
+                    <span>Accounts</span>
+                </a>
+            </nav>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 6px;">
+            <a href="office.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #333; font-size: 11px;">
+                <i class="fa-solid fa-book-open" style="font-size: 13px; color: #555; margin-bottom: 2px;"></i>
+                <span>Office</span>
+            </a>
+            <a href="reports.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #333; font-size: 11px;">
+                <i class="fa-solid fa-chart-column" style="font-size: 13px; color: #555; margin-bottom: 2px;"></i>
+                <span>Reports</span>
+            </a>
+        </div>
+    </header>
+
+    <div class="client-form-wrapper">
+        <form id="edit-client-page-form" onsubmit="saveClientForm(event)">
+            <!-- MAIN RECTANGULAR BOX -->
+            <div class="lc-main-frame">
+                <!-- TOP HEADER SECTION -->
+                <div class="lc-top-section">
+                    <!-- Title -->
+                    <div>
+                        <h2 id="page-title" class="lc-title-heading">New Client</h2>
+                    </div>
+
+                    <!-- Top Fields 2-Row Grid -->
+                    <div class="lc-top-grid">
+                        <!-- Row 1: Salutation, Name, Contact Person + Add Doctor -->
+                        <div>
+                            <label class="lc-label">Salutation</label>
+                            <select id="ec-salutation" class="lc-select" style="width: 100%;">
+                                <option value=""></option>
+                                <option value="Dr.">Dr.</option>
+                                <option value="Mr.">Mr.</option>
+                                <option value="Ms.">Ms.</option>
+                                <option value="Mrs.">Mrs.</option>
+                                <option value="Prof.">Prof.</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="lc-label">Name</label>
+                            <input type="text" id="ec-name" required class="lc-input" style="width: 100%;">
+                        </div>
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1px;">
+                                <label class="lc-label" style="margin-bottom: 0;">Contact Person</label>
+                                <a href="javascript:void(0)" id="add-doctor-link" onclick="openAddDoctorModal(event)" style="font-size: 11px; color: #0056b3; text-decoration: none;">Add Doctor</a>
+                            </div>
+                            <input type="text" id="ec-contact" class="lc-input" style="width: 100%;">
+                        </div>
+
+                        <!-- Row 2: Code, Reg. #, Working Hours, Sales Manager -->
+                        <div>
+                            <label class="lc-label">Code</label>
+                            <input type="text" id="ec-code" class="lc-input" readonly tabindex="-1" style="width: 100%; background: #e9e9e9; color: #333; cursor: not-allowed;" value="00441">
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px;">
+                            <div>
+                                <label class="lc-label">Reg. #</label>
+                                <input type="text" id="ec-reg" class="lc-input" style="width: 100%;">
+                            </div>
+                            <div>
+                                <label class="lc-label">Working Hours</label>
+                                <input type="text" id="ec-hours" class="lc-input" style="width: 100%;">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="lc-label">Sales Manager</label>
+                            <div style="display: flex; align-items: center; height: 20px;">
+                                <a href="javascript:void(0)" id="ec-manager-link" onclick="openSalesManagerModal()" style="font-size: 11px; color: #0056b3; text-decoration: none;">Select ...</a>
+                                <input type="hidden" id="ec-manager" value="">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MAIN BODY SECTION (2 COLUMNS) -->
+                <div class="lc-body-section">
+                    <!-- LEFT COLUMN -->
+                    <div class="lc-col-left">
+                        <!-- Tabs -->
+                        <div style="display: flex; gap: 2px; margin-bottom: 5px;">
+                            <button type="button" id="tab-btn-primary" onclick="switchAddressTab('primary')" class="lc-tab-primary">Primary Address</button>
+                            <button type="button" id="tab-btn-locations" onclick="switchAddressTab('locations')" class="lc-tab-locations">Locations</button>
+                        </div>
+
+                        <!-- Primary Address Tab View -->
+                        <div id="tab-content-primary">
+                            <!-- Address Line 1 -->
+                            <input type="text" id="ec-address1" class="lc-input" style="width: 100%; margin-bottom: 3px;">
+                            <!-- Address Line 2 -->
+                            <input type="text" id="ec-address2" class="lc-input" style="width: 100%; margin-bottom: 3px;">
+                            
+                            <!-- Area -->
+                            <input type="text" id="ec-area" placeholder="Area" class="lc-input" style="width: 100%; margin-bottom: 3px; color: #777;">
+                            
+                            <!-- City, Pin -->
+                            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 4px; margin-bottom: 5px;">
+                                <input type="text" id="ec-city" placeholder="City" class="lc-input" style="color: #777;">
+                                <input type="text" id="ec-pincode" placeholder="Pin" class="lc-input" style="color: #777;">
+                            </div>
+
+                            <!-- Office Phone -->
+                            <label class="lc-label">Office <u>P</u>hone</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 5px;">
+                                <input type="text" id="ec-phone1" class="lc-input">
+                                <input type="text" id="ec-phone2" class="lc-input">
+                            </div>
+
+                            <!-- Cell Phone -->
+                            <label class="lc-label"><u>C</u>ell Phone</label>
+                            <div style="display: flex; align-items: center; gap: 3px; margin-bottom: 5px;">
+                                <input type="text" id="ec-cell1" class="lc-input" style="flex: 1;">
+                                <i class="fa-solid fa-circle-info" style="color: #0088cc; font-size: 12px; cursor: pointer;" title="SMS alert primary number"></i>
+                                <input type="text" id="ec-cell2" class="lc-input" style="flex: 1;">
+                            </div>
+
+                            <!-- Res Phone -->
+                            <label class="lc-label">Res <u>P</u>hone</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 5px;">
+                                <input type="text" id="ec-resphone1" class="lc-input">
+                                <input type="text" id="ec-resphone2" class="lc-input">
+                            </div>
+
+                            <!-- Email -->
+                            <label class="lc-label">Email</label>
+                            <div style="display: flex; align-items: center; gap: 3px; margin-bottom: 6px;">
+                                <input type="email" id="ec-email" class="lc-input" style="flex: 1;">
+                                <button type="button" class="lc-sq-btn" onclick="addExtraEmail()" title="Add another email">+</button>
+                            </div>
+
+                            <!-- Send Welcome Message -->
+                            <div style="font-size: 11px; color: #222; display: flex; align-items: center; gap: 4px;">
+                                <span>Send Welcome Message</span>
+                                <label style="display: inline-flex; align-items: center; gap: 2px; cursor: pointer;">
+                                    <input type="checkbox" id="ec-welcome" style="margin: 0;"> Email
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Locations Tab View -->
+                        <div id="tab-content-locations" style="display: none; padding: 6px 0;">
+                            <div style="margin-bottom: 8px;">
+                                <button type="button" id="btn-new-location" onclick="openAddLocationModal()" style="display: inline-flex; align-items: center; gap: 4px; background: #0070ba; color: #ffffff; border: 1px solid #005a96; border-radius: 2px; padding: 4px 10px; font-size: 11px; font-weight: bold; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.15);" onmouseover="this.style.background='#005a96'" onmouseout="this.style.background='#0070ba'">
+                                    <i class="fa-solid fa-plus" style="font-size: 10px;"></i> New Location
+                                </button>
+                            </div>
+                            <div id="locations-list-container" style="border: 1px solid #d0d0d0; background: #fafafa; min-height: 180px; max-height: 240px; overflow-y: auto; padding: 4px; border-radius: 2px;">
+                                <div id="locations-empty-msg" style="color: #888; font-size: 11px; padding: 16px; text-align: center;">No additional locations added yet. Click &quot;+ New Location&quot; to add one.</div>
+                                <div id="locations-cards-list" style="display: flex; flex-direction: column; gap: 4px;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COLUMN -->
+                    <div class="lc-col-right">
+                        <!-- Row 1: Delivery Method, Route, Default Delivery Agent -->
+                        <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 6px; margin-bottom: 4px;">
+                            <div>
+                                <label class="lc-label"><u>D</u>elivery Method</label>
+                                <select id="ec-delivery" class="lc-select" style="width: 100%;">
+                                    <option value=""></option>
+                                    <option value="LOGISTICS TEAM">LOGISTICS TEAM</option>
+                                    <option value="Courier">Courier</option>
+                                    <option value="Delivery Boy">Delivery Boy</option>
+                                    <option value="Doctors Pickup">Doctors Pickup</option>
+                                    <option value="Mail">Mail</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="lc-label"><u>R</u>oute</label>
+                                <select id="ec-route" class="lc-select" style="width: 100%;">
+                                    <option value=""></option>
+                                    <option value="Default">Default</option>
+                                    <option value="Muscat Route">Muscat Route</option>
+                                    <option value="Sohar Route">Sohar Route</option>
+                                    <option value="Salalah Route">Salalah Route</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="lc-label">Default Delivery Agent</label>
+                                <select id="ec-agent" class="lc-select" style="width: 100%;">
+                                    <option value=""></option>
+                                    <option value="SADDAM">SADDAM</option>
+                                    <option value="DRIVER 1">DRIVER 1</option>
+                                    <option value="DRIVER 2">DRIVER 2</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Row 2: Collection Centre -->
+                        <div style="margin-bottom: 4px; width: 45%;">
+                            <label class="lc-label">Collection Centre</label>
+                            <select id="ec-collection" class="lc-select" style="width: 100%;">
+                                <option value=""></option>
+                                <option value="Main Lab">Main Lab</option>
+                            </select>
+                        </div>
+
+                        <!-- Row 3: Regular Visits -->
+                        <div style="margin-bottom: 4px;">
+                            <div style="display: flex; align-items: flex-end; gap: 12px;">
+                                <div>
+                                    <label class="lc-label" style="margin-bottom: 2px;">Regular Visits</label>
+                                    <div style="display: flex; align-items: center; gap: 3px;">
+                                        <input type="checkbox" id="visit-enabled" style="margin: 0;" onchange="toggleRegularVisits()">
+                                        <input type="text" id="ec-visittime" placeholder="--:--" class="lc-input" style="width: 44px; height: 18px; padding: 0 2px; font-size: 10px; text-align: center; color: #333; background:#f0f0f0;" disabled>
+                                    </div>
+                                </div>
+                                <div id="visit-days-wrap" style="display: flex; align-items: flex-end; gap: 6px; font-size: 11px; opacity: 0.4; pointer-events: none;">
+                                    <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 15px;">
+                                        <span style="font-size: 11px; color: #222; font-family: Arial, sans-serif; line-height: 1;">Su</span>
+                                        <input type="checkbox" class="visit-day" value="Su" style="margin: 0;" disabled>
+                                    </div>
+                                    <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 15px;">
+                                        <span style="font-size: 11px; color: #222; font-family: Arial, sans-serif; line-height: 1;">Mo</span>
+                                        <input type="checkbox" class="visit-day" value="Mo" style="margin: 0;" disabled>
+                                    </div>
+                                    <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 15px;">
+                                        <span style="font-size: 11px; color: #222; font-family: Arial, sans-serif; line-height: 1;">Tu</span>
+                                        <input type="checkbox" class="visit-day" value="Tu" style="margin: 0;" disabled>
+                                    </div>
+                                    <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 15px;">
+                                        <span style="font-size: 11px; color: #222; font-family: Arial, sans-serif; line-height: 1;">We</span>
+                                        <input type="checkbox" class="visit-day" value="We" style="margin: 0;" disabled>
+                                    </div>
+                                    <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 15px;">
+                                        <span style="font-size: 11px; color: #222; font-family: Arial, sans-serif; line-height: 1;">Th</span>
+                                        <input type="checkbox" class="visit-day" value="Th" style="margin: 0;" disabled>
+                                    </div>
+                                    <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 15px;">
+                                        <span style="font-size: 11px; color: #222; font-family: Arial, sans-serif; line-height: 1;">Fr</span>
+                                        <input type="checkbox" class="visit-day" value="Fr" style="margin: 0;" disabled>
+                                    </div>
+                                    <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 15px;">
+                                        <span style="font-size: 11px; color: #222; font-family: Arial, sans-serif; line-height: 1;">Sa</span>
+                                        <input type="checkbox" class="visit-day" value="Sa" style="margin: 0;" disabled>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="lc-row-divider"></div>
+
+                        <!-- Row 4: Price Band, Tax ID -->
+                        <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; margin-bottom: 4px;">
+                            <div>
+                                <label class="lc-label">Price <u>B</u>and</label>
+                                <!-- View 1: Select Dropdown + Plus Button (Matching 1st Image) -->
+                                <div id="priceband-select-wrap" style="display: flex; align-items: center; gap: 3px;">
+                                    <select id="ec-priceband" class="lc-select" style="flex: 1;">
+                                        <option value=""></option>
+                                        <option value="Favorite Clients">Favorite Clients</option>
+                                        <option value="International">International</option>
+                                        <option value="Laboratory">Laboratory</option>
+                                        <option value="Out of State">Out of State</option>
+                                        <option value="PFM-7">PFM-7</option>
+                                        <option value="Regular">Regular</option>
+                                        <option value="RPD 3+1">RPD 3+1</option>
+                                        <option value="Sensitive">Sensitive</option>
+                                        <option value="ZIRCON 8">ZIRCON 8</option>
+                                    </select>
+                                    <a href="javascript:void(0)" onclick="showAddPriceBandInput()" style="color: #0056b3; font-size: 13px; text-decoration: none;" title="Add Price Band"><i class="fa-solid fa-square-plus"></i></a>
+                                </div>
+                                <!-- View 2: Inline Input + Save & Undo Icons (Matching 2nd Image) -->
+                                <div id="priceband-input-wrap" style="display: none; align-items: center; gap: 4px;">
+                                    <input type="text" id="new-priceband-input" placeholder="New Price Band" class="lc-input" style="flex: 1; height: 20px; font-size: 11px; padding: 0 4px;" onkeydown="if(event.key==='Enter'){event.preventDefault(); saveNewPriceBandInline();}">
+                                    <a href="javascript:void(0)" onclick="saveNewPriceBandInline()" style="color: #0056b3; text-decoration: none; font-size: 14px; display: inline-flex; align-items: center;" title="Save"><i class="fa-solid fa-floppy-disk"></i></a>
+                                    <a href="javascript:void(0)" onclick="hideAddPriceBandInput()" style="color: #0056b3; text-decoration: none; font-size: 13px; display: inline-flex; align-items: center;" title="Cancel"><i class="fa-solid fa-rotate-left"></i></a>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="lc-label">Tax ID</label>
+                                <input type="text" id="ec-taxid" class="lc-input" style="width: 100%;">
+                            </div>
+                        </div>
+
+                        <!-- Row 5: Tax Exemption, This is a Dental Lab -->
+                        <div style="display: flex; gap: 15px; margin-bottom: 4px; font-size: 11px;">
+                            <label style="display: inline-flex; align-items: center; gap: 3px; cursor: pointer;">
+                                <input type="checkbox" id="ec-taxexempt" style="margin: 0;"> Tax Exemption
+                            </label>
+                            <label style="display: inline-flex; align-items: center; gap: 3px; cursor: pointer;">
+                                <input type="checkbox" id="ec-isdentallab" style="margin: 0;"> This is a Dental Lab
+                            </label>
+                        </div>
+
+                        <div class="lc-row-divider"></div>
+
+                        <!-- Row 6: Credit Limit, Payment Terms, Opening Balance -->
+                        <div style="display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.3fr); gap: 6px; margin-bottom: 4px;">
+                            <div>
+                                <label class="lc-label"><u>C</u>redit Limit</label>
+                                <input type="number" id="ec-credit" value="0" step="0.001" class="lc-input" style="width: 100%;">
+                            </div>
+                            <div>
+                                <label class="lc-label">Payment Terms</label>
+                                <div style="display: flex; align-items: center; gap: 3px;">
+                                    <input type="number" id="ec-terms" value="0" class="lc-input" style="width: 40px;">
+                                    <span style="font-size: 11px; color: #222;">Days</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="lc-label">Opening <u>B</u>alance</label>
+                                <div style="display: flex; align-items: center; gap: 3px;">
+                                    <input type="number" id="ec-openbal" value="0" step="0.001" class="lc-input" style="width: 50px;">
+                                    <label style="display: inline-flex; align-items: center; gap: 1px; font-size: 10px;"><input type="radio" name="ec-baltype" value="Dr" checked style="margin: 0;"> Dr</label>
+                                    <label style="display: inline-flex; align-items: center; gap: 1px; font-size: 10px;"><input type="radio" name="ec-baltype" value="Cr" style="margin: 0;"> Cr</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="lc-row-divider"></div>
+
+                        <!-- Row 7: Bill To -->
+                        <div style="margin-bottom: 4px; position: relative;">
+                            <label class="lc-label" style="margin-bottom: 2px;">Bill To</label>
+                            <div style="display: flex; align-items: center; gap: 4px;">
+                                <!-- Dropdown trigger button box (Matching Image 1) -->
+                                <div id="billto-dropdown-btn" onclick="toggleBillToDropdown(event)" style="flex: 1; display: flex; align-items: center; border: 1px solid #7ea9db; border-radius: 3px; background: #fff; height: 22px; cursor: pointer; user-select: none; box-sizing: border-box; overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);">
+                                    <span id="ec-billto-display" style="flex: 1; padding: 0 6px; font-size: 11px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: Arial, sans-serif;">Select a client</span>
+                                    <div style="width: 18px; height: 100%; background: linear-gradient(to bottom, #f6f6f6, #dcdcdc); border-left: 1px solid #b5b5b5; display: flex; align-items: center; justify-content: center; color: #555; font-size: 8px;">
+                                        &#9662;
+                                    </div>
+                                </div>
+                                <input type="hidden" id="ec-billto" value="Self">
+                                <i class="fa-solid fa-circle-info" style="color: #007bff; font-size: 14px; cursor: pointer;" title="Bill To Account"></i>
+                            </div>
+
+                            <!-- Dropdown Panel with Search (Matching Image 2) -->
+                            <div id="billto-dropdown-panel" style="display: none; position: absolute; top: calc(100% + 2px); left: 0; width: calc(100% - 18px); min-width: 250px; background: #fff; border: 1px solid #3388ee; border-radius: 3px; box-shadow: 0 4px 12px rgba(0,0,0,0.18); z-index: 1000; box-sizing: border-box; padding: 4px;">
+                                <!-- Search Input with Magnifier Icon -->
+                                <div style="display: flex; align-items: center; border: 1px solid #7ea9db; border-radius: 2px; padding: 2px 4px; background: #fff; margin-bottom: 4px;">
+                                    <input type="text" id="billto-search-input" placeholder="" oninput="filterBillToClients()" style="flex: 1; border: none; outline: none; font-size: 11px; font-family: Arial, sans-serif; padding: 1px 0;">
+                                    <i class="fa-solid fa-magnifying-glass" style="color: #888; font-size: 11px; margin-left: 4px;"></i>
+                                </div>
+                                <!-- Scrollable List of Clients -->
+                                <div id="billto-client-list" style="max-height: 180px; overflow-y: auto; font-family: Arial, sans-serif; font-size: 11px;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="lc-row-divider"></div>
+
+                        <!-- Row 8: Categories -->
+                        <div style="margin-bottom: 4px;">
+                            <label class="lc-label">Categories</label>
+                            <!-- View 1: Select Dropdown + Plus Button (Matching 1st Image) -->
+                            <div id="category-select-wrap" style="display: flex; align-items: center; gap: 3px;">
+                                <select id="ec-categories" class="lc-select" style="flex: 1; color: #888;" onchange="this.style.color = this.value ? '#111' : '#888'">
+                                    <option value="" style="color: #888;">Select associated category</option>
+                                    <option value="Favorite" style="color: #111;">Favorite</option>
+                                    <option value="Price Conscious" style="color: #111;">Price Conscious</option>
+                                    <option value="Regular" style="color: #111;">Regular</option>
+                                    <option value="VIP" style="color: #111;">VIP</option>
+                                    <option value="Balance Amount" style="color: #111;">Balance Amount</option>
+                                </select>
+                                <a href="javascript:void(0)" onclick="showAddCategoryInput()" style="color: #0056b3; font-size: 13px; text-decoration: none;" title="Add Category"><i class="fa-solid fa-square-plus"></i></a>
+                            </div>
+                            <!-- View 2: Inline Input + Save & Undo Icons (Matching 2nd Image) -->
+                            <div id="category-input-wrap" style="display: none; align-items: center; gap: 4px;">
+                                <input type="text" id="new-category-input" placeholder="New Client Category" class="lc-input" style="flex: 1; height: 20px; font-size: 11px; padding: 0 4px;" onkeydown="if(event.key==='Enter'){event.preventDefault(); saveNewCategoryInline();}">
+                                <a href="javascript:void(0)" onclick="saveNewCategoryInline()" style="color: #0056b3; text-decoration: none; font-size: 14px; display: inline-flex; align-items: center;" title="Save"><i class="fa-solid fa-floppy-disk"></i></a>
+                                <a href="javascript:void(0)" onclick="hideAddCategoryInput()" style="color: #0056b3; text-decoration: none; font-size: 13px; display: inline-flex; align-items: center;" title="Cancel"><i class="fa-solid fa-rotate-left"></i></a>
+                            </div>
+                        </div>
+
+                        <div class="lc-row-divider"></div>
+
+                        <!-- Row 9: Notes -->
+                        <div>
+                            <label class="lc-label"><u>N</u>otes</label>
+                            <textarea id="ec-notes" class="lc-input" style="width: 100%; height: 34px; padding: 2px 4px; font-family: Arial, sans-serif; font-size: 11px; resize: none;"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BOTTOM ACTION BUTTONS BAR -->
+            <div style="display: flex; justify-content: flex-end; align-items: center; gap: 8px; font-family: Arial, sans-serif; margin-top: 8px;">
+                <button type="button" id="btn-delete-client" onclick="deleteClient()" class="lc-btn-action" style="display: none; border-color: #ef4444; color: #ef4444; margin-right: auto;">
+                    <i class="fa-solid fa-trash-can" style="color: #ef4444;"></i> Delete
+                </button>
+                <button type="button" onclick="saveClientForm(event, true)" class="lc-btn-action">
+                    <i class="fa-solid fa-plus" style="color: #0056b3; font-size: 11px;"></i> <span>Save and <u>N</u>ew Order</span>
+                </button>
+                <button type="submit" class="lc-btn-action">
+                    <i class="fa-solid fa-check" style="color: #0056b3; font-size: 11px;"></i> <span><u>S</u>ave</span>
+                </button>
+                <button type="button" onclick="window.location.href='clients.html'" class="lc-btn-action">
+                    <i class="fa-solid fa-rotate-left" style="color: #0056b3; font-size: 11px;"></i> <span><u>C</u>ancel</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ADD DOCTOR POPUP MODAL (Centered with background overlay) -->
+    <div id="add-doctor-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.35); z-index: 10000; justify-content: center; align-items: center; font-family: Arial, sans-serif;">
+        <div id="add-doctor-card" style="background: #ffffff; border: 1px solid #d0d0d0; border-radius: 4px; box-shadow: 0 8px 24px rgba(0,0,0,0.25); width: 360px; padding: 12px 16px 14px 16px; box-sizing: border-box;" onclick="event.stopPropagation()">
+            <!-- Header: Title + Close Icon -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-weight: bold; font-size: 13px; color: #111;">Add Doctor</span>
+                <span onclick="closeAddDoctorModal()" style="cursor: pointer; font-size: 18px; color: #bbb; line-height: 1;" onmouseover="this.style.color='#666'" onmouseout="this.style.color='#bbb'">&times;</span>
+            </div>
+            <div style="height: 1px; background: #eee; margin-bottom: 10px;"></div>
+
+            <!-- Row 1: Name & Cell Phone -->
+            <div style="display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 10px; margin-bottom: 10px;">
+                <div>
+                    <label style="display: block; font-size: 11px; color: #111; margin-bottom: 2px;">Name</label>
+                    <input type="text" id="new-doctor-name" class="lc-input" style="width: 100%; height: 22px; font-size: 11px; padding: 0 4px;" onkeydown="if(event.key==='Enter') confirmAddDoctor(); if(event.key==='Escape') closeAddDoctorModal();">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 11px; color: #111; margin-bottom: 2px;">Cell Phone</label>
+                    <input type="text" id="new-doctor-cell" class="lc-input" style="width: 100%; height: 22px; font-size: 11px; padding: 0 4px;" onkeydown="if(event.key==='Enter') confirmAddDoctor(); if(event.key==='Escape') closeAddDoctorModal();">
+                </div>
+            </div>
+
+            <!-- Row 2: Design Preferences -->
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 11px; color: #111; margin-bottom: 2px;">Design Preferences</label>
+                <input type="text" id="new-doctor-prefs" class="lc-input" style="width: 100%; height: 22px; font-size: 11px; padding: 0 4px;" onkeydown="if(event.key==='Enter') confirmAddDoctor(); if(event.key==='Escape') closeAddDoctorModal();">
+            </div>
+
+            <!-- Action Buttons: OK and Cancel -->
+            <div style="display: flex; gap: 8px;">
+                <button type="button" onclick="confirmAddDoctor()" style="min-width: 56px; height: 26px; padding: 0 14px; font-size: 11px; color: #0056b3; background: #fff; border: 1px solid #d0d0d0; border-radius: 2px; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.05);" onmouseover="this.style.background='#f0f4f8'" onmouseout="this.style.background='#fff'">OK</button>
+                <button type="button" onclick="closeAddDoctorModal()" style="min-width: 56px; height: 26px; padding: 0 14px; font-size: 11px; color: #555; background: #fff; border: 1px solid #d0d0d0; border-radius: 2px; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.05);" onmouseover="this.style.background='#f0f4f8'" onmouseout="this.style.background='#fff'">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SALES MANAGER POPUP MODAL -->
+    <div id="sales-manager-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); z-index:99999; justify-content:center; align-items:center; font-family: Arial, sans-serif;">
+        <div style="background:#fff; border:2px solid #222; width:360px; padding:15px; box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #ddd; padding-bottom:6px;">
+                <h3 style="margin:0; font-size:14px; font-weight:bold; color:#000;">Select Sales Manager</h3>
+                <button type="button" onclick="document.getElementById('sales-manager-modal').style.display='none'" style="background:none; border:none; font-size:16px; cursor:pointer; color:#666;">✕</button>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label class="lc-label">Sales Manager Name</label>
+                <input type="text" id="custom-sales-manager-input" placeholder="Type name or select below" class="lc-input" style="width:100%; margin-bottom:8px;">
+                <div style="display:flex; flex-direction:column; gap:4px; max-height:140px; overflow-y:auto; border:1px solid #ccc; padding:4px;">
+                    <div onclick="selectManagerValue('Varghese')" style="padding:4px 6px; cursor:pointer; font-size:12px;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='none'">Varghese</div>
+                    <div onclick="selectManagerValue('Ahmed')" style="padding:4px 6px; cursor:pointer; font-size:12px;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='none'">Ahmed</div>
+                    <div onclick="selectManagerValue('Saddam')" style="padding:4px 6px; cursor:pointer; font-size:12px;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='none'">Saddam</div>
+                </div>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:8px;">
+                <button type="button" onclick="document.getElementById('sales-manager-modal').style.display='none'" class="lc-btn-action">Cancel</button>
+                <button type="button" onclick="applyCustomSalesManager()" class="lc-btn-action"><i class="fa-solid fa-check"></i> Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD CLIENT LOCATION POPUP MODAL (Matching 2nd Reference Image) -->
+    <div id="add-location-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.35); z-index: 10000; justify-content: center; align-items: center; font-family: Arial, sans-serif;">
+        <div id="add-location-card" style="background: #ffffff; border: 1px solid #c0c0c0; border-radius: 3px; box-shadow: 0 8px 30px rgba(0,0,0,0.25); width: 560px; max-width: 95vw; box-sizing: border-box; overflow: hidden;" onclick="event.stopPropagation()">
+            <!-- Modal Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px 8px 16px;">
+                <span id="loc-modal-title" style="font-weight: bold; font-size: 13px; color: #111;">Add Client Location</span>
+                <span onclick="closeAddLocationModal()" style="cursor: pointer; font-size: 18px; color: #aaa; font-weight: bold; line-height: 1;" onmouseover="this.style.color='#444'" onmouseout="this.style.color='#aaa'">&times;</span>
+            </div>
+            <div style="height: 1px; background: #e5e5e5; margin: 0 16px 12px 16px;"></div>
+
+            <!-- 2-Column Body -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 0 16px 16px 16px;">
+                <!-- Left Column -->
+                <div>
+                    <!-- Name -->
+                    <div style="margin-bottom: 8px;">
+                        <label class="lc-label">Name</label>
+                        <input type="text" id="loc-name" class="lc-input" style="width: 100%; height: 22px;">
+                    </div>
+
+                    <!-- Address -->
+                    <div style="margin-bottom: 8px;">
+                        <label class="lc-label">Address</label>
+                        <input type="text" id="loc-address1" class="lc-input" style="width: 100%; height: 22px; margin-bottom: 3px;">
+                        <input type="text" id="loc-address2" class="lc-input" style="width: 100%; height: 22px; margin-bottom: 3px;">
+                        <input type="text" id="loc-area" placeholder="Area" class="lc-input" style="width: 100%; height: 22px; margin-bottom: 3px; color: #777;">
+                        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 4px;">
+                            <input type="text" id="loc-city" placeholder="City" class="lc-input" style="height: 22px; color: #777;">
+                            <input type="text" id="loc-pin" placeholder="Pin" class="lc-input" style="height: 22px; color: #777;">
+                        </div>
+                    </div>
+
+                    <!-- Map Location -->
+                    <div>
+                        <label class="lc-label">Map Location</label>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-top: 2px;">
+                            <span style="font-weight: bold; font-size: 13px; color: #111;">?</span>
+                            <button type="button" onclick="editMapLocation()" style="background: #ffffff; border: 1px solid #7ea9db; border-radius: 2px; padding: 2px 10px; font-size: 11px; color: #0056b3; cursor: pointer;" onmouseover="this.style.background='#f0f4f8'" onmouseout="this.style.background='#ffffff'">Edit</button>
+                            <input type="hidden" id="loc-map-coords" value="">
+                            <span id="loc-map-status" style="font-size: 10px; color: #28a745; display: none;"><i class="fa-solid fa-check"></i> Set</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div>
+                    <!-- Contact Person -->
+                    <div style="margin-bottom: 8px;">
+                        <label class="lc-label">Contact Person</label>
+                        <input type="text" id="loc-contact" class="lc-input" style="width: 100%; height: 22px;">
+                    </div>
+
+                    <!-- Office Phone -->
+                    <div style="margin-bottom: 8px;">
+                        <label class="lc-label">Office Phone</label>
+                        <input type="text" id="loc-phone" class="lc-input" style="width: 100%; height: 22px;">
+                    </div>
+
+                    <!-- Cell Phone -->
+                    <div style="margin-bottom: 8px;">
+                        <label class="lc-label">Cell Phone</label>
+                        <input type="text" id="loc-cell" class="lc-input" style="width: 100%; height: 22px;">
+                    </div>
+
+                    <!-- Working Hours -->
+                    <div style="margin-bottom: 8px;">
+                        <label class="lc-label">Working Hours</label>
+                        <input type="text" id="loc-hours" class="lc-input" style="width: 100%; height: 22px;">
+                    </div>
+
+                    <!-- Route -->
+                    <div style="margin-bottom: 8px;">
+                        <label class="lc-label">Route</label>
+                        <select id="loc-route" class="lc-select" style="width: 100%; height: 22px;">
+                            <option value=""></option>
+                            <option value="Default">Default</option>
+                            <option value="Muscat Route">Muscat Route</option>
+                            <option value="Sohar Route">Sohar Route</option>
+                            <option value="Salalah Route">Salalah Route</option>
+                        </select>
+                    </div>
+
+                    <!-- Default Delivery Agent -->
+                    <div style="margin-bottom: 8px;">
+                        <label class="lc-label">Default Delivery Agent</label>
+                        <select id="loc-agent" class="lc-select" style="width: 100%; height: 22px;">
+                            <option value=""></option>
+                            <option value="SADDAM">SADDAM</option>
+                            <option value="DRIVER 1">DRIVER 1</option>
+                            <option value="DRIVER 2">DRIVER 2</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Bar -->
+            <div style="background: #f7f7f7; border-top: 1px solid #e5e5e5; padding: 10px 16px; display: flex; gap: 8px;">
+                <button type="button" onclick="saveClientLocation()" style="min-width: 56px; height: 26px; padding: 0 16px; font-size: 11px; color: #0056b3; background: #fff; border: 1px solid #c0c0c0; border-radius: 2px; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.05);" onmouseover="this.style.background='#eef4fb'" onmouseout="this.style.background='#fff'">OK</button>
+                <button type="button" onclick="closeAddLocationModal()" style="min-width: 56px; height: 26px; padding: 0 16px; font-size: 11px; color: #0056b3; background: #fff; border: 1px solid #c0c0c0; border-radius: 2px; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.05);" onmouseover="this.style.background='#eef4fb'" onmouseout="this.style.background='#fff'">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        
+        let clientId = null;
+        let clientData = null;
+
+        function getClientIdFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('id');
+        }
+
+        let allBillToClients = [];
+
+        async function initEditClientPage() {
+            await Promise.all([loadPriceBandLookups(), loadCategoryLookups(), loadAllClientsForBillTo()]);
+            clientId = getClientIdFromURL();
+            if (clientId) {
+                document.getElementById('page-title').textContent = 'Edit Client';
+                document.title = 'Dentsoft | Edit Client';
+                const delBtn = document.getElementById('btn-delete-client');
+                if (delBtn) delBtn.style.display = 'inline-flex';
+                await loadClientDetails(clientId);
+            } else {
+                document.getElementById('page-title').textContent = 'New Client';
+                document.title = 'Dentsoft | New Client';
+                await loadNextClientCode();
+            }
+        }
+
+        async function loadPriceBandLookups() {
+            try {
+                const res = await fetch(`${API_BASE}/lookups?type=price_band`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const sel = document.getElementById('ec-priceband');
+                    if (sel && Array.isArray(data)) {
+                        const existingValues = Array.from(sel.options).map(o => o.value.toLowerCase());
+                        data.forEach(item => {
+                            if (item.name && !existingValues.includes(item.name.trim().toLowerCase())) {
+                                const opt = document.createElement('option');
+                                opt.value = item.name.trim();
+                                opt.textContent = item.name.trim();
+                                sel.appendChild(opt);
+                            }
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function loadCategoryLookups() {
+            try {
+                const res = await fetch(`${API_BASE}/lookups?type=category`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const sel = document.getElementById('ec-categories');
+                    if (sel && Array.isArray(data)) {
+                        const existingValues = Array.from(sel.options).map(o => o.value.toLowerCase());
+                        data.forEach(item => {
+                            if (item.name && !existingValues.includes(item.name.trim().toLowerCase())) {
+                                const opt = document.createElement('option');
+                                opt.value = item.name.trim();
+                                opt.textContent = item.name.trim();
+                                sel.appendChild(opt);
+                            }
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function loadNextClientCode() {
+            try {
+                const res = await fetch(`${API_BASE}/clients/next-code`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.nextCode) {
+                        document.getElementById('ec-code').value = data.nextCode;
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function switchAddressTab(tab) {
+            const btnPrim = document.getElementById('tab-btn-primary');
+            const btnLoc = document.getElementById('tab-btn-locations');
+            const viewPrim = document.getElementById('tab-content-primary');
+            const viewLoc = document.getElementById('tab-content-locations');
+
+            if (tab === 'primary') {
+                btnPrim.className = 'lc-tab-primary';
+                btnLoc.className = 'lc-tab-locations';
+                viewPrim.style.display = 'block';
+                viewLoc.style.display = 'none';
+            } else {
+                btnPrim.className = 'lc-tab-locations';
+                btnLoc.className = 'lc-tab-primary';
+                viewPrim.style.display = 'none';
+                viewLoc.style.display = 'block';
+            }
+        }
+
+        let clientLocations = [];
+        let editingLocationIndex = -1;
+
+        function openAddLocationModal(index = -1) {
+            editingLocationIndex = index;
+            const modal = document.getElementById('add-location-modal');
+            const titleEl = document.getElementById('loc-modal-title');
+            if (!modal) return;
+
+            syncLocationDropdowns();
+
+            if (index >= 0 && clientLocations[index]) {
+                const loc = clientLocations[index];
+                if (titleEl) titleEl.textContent = 'Edit Client Location';
+                document.getElementById('loc-name').value = loc.name || '';
+                document.getElementById('loc-address1').value = loc.address1 || '';
+                document.getElementById('loc-address2').value = loc.address2 || '';
+                document.getElementById('loc-area').value = loc.area || '';
+                document.getElementById('loc-city').value = loc.city || '';
+                document.getElementById('loc-pin').value = loc.pin || '';
+                document.getElementById('loc-contact').value = loc.contactPerson || '';
+                document.getElementById('loc-phone').value = loc.officePhone || '';
+                document.getElementById('loc-cell').value = loc.cellPhone || '';
+                document.getElementById('loc-hours').value = loc.workingHours || '';
+                document.getElementById('loc-route').value = loc.route || '';
+                document.getElementById('loc-agent').value = loc.defaultDeliveryAgent || '';
+                document.getElementById('loc-map-coords').value = loc.mapLocation || '';
+                const st = document.getElementById('loc-map-status');
+                if (st) st.style.display = loc.mapLocation ? 'inline-block' : 'none';
+            } else {
+                if (titleEl) titleEl.textContent = 'Add Client Location';
+                document.getElementById('loc-name').value = '';
+                document.getElementById('loc-address1').value = '';
+                document.getElementById('loc-address2').value = '';
+                document.getElementById('loc-area').value = '';
+                document.getElementById('loc-city').value = '';
+                document.getElementById('loc-pin').value = '';
+                document.getElementById('loc-contact').value = '';
+                document.getElementById('loc-phone').value = '';
+                document.getElementById('loc-cell').value = '';
+                document.getElementById('loc-hours').value = '';
+                document.getElementById('loc-route').value = document.getElementById('ec-route') ? document.getElementById('ec-route').value : '';
+                document.getElementById('loc-agent').value = document.getElementById('ec-agent') ? document.getElementById('ec-agent').value : '';
+                document.getElementById('loc-map-coords').value = '';
+                const st = document.getElementById('loc-map-status');
+                if (st) st.style.display = 'none';
+            }
+
+            modal.style.display = 'flex';
+            setTimeout(() => document.getElementById('loc-name').focus(), 50);
+        }
+
+        function closeAddLocationModal() {
+            const modal = document.getElementById('add-location-modal');
+            if (modal) modal.style.display = 'none';
+            editingLocationIndex = -1;
+        }
+
+        function syncLocationDropdowns() {
+            const ecRoute = document.getElementById('ec-route');
+            const locRoute = document.getElementById('loc-route');
+            if (ecRoute && locRoute && ecRoute.options.length > 0) {
+                const curVal = locRoute.value;
+                locRoute.innerHTML = '';
+                Array.from(ecRoute.options).forEach(opt => {
+                    const newOpt = document.createElement('option');
+                    newOpt.value = opt.value;
+                    newOpt.textContent = opt.textContent;
+                    locRoute.appendChild(newOpt);
+                });
+                locRoute.value = curVal;
+            }
+
+            const ecAgent = document.getElementById('ec-agent');
+            const locAgent = document.getElementById('loc-agent');
+            if (ecAgent && locAgent && ecAgent.options.length > 0) {
+                const curVal = locAgent.value;
+                locAgent.innerHTML = '';
+                Array.from(ecAgent.options).forEach(opt => {
+                    const newOpt = document.createElement('option');
+                    newOpt.value = opt.value;
+                    newOpt.textContent = opt.textContent;
+                    locAgent.appendChild(newOpt);
+                });
+                locAgent.value = curVal;
+            }
+        }
+
+        function editMapLocation() {
+            const curVal = document.getElementById('loc-map-coords').value;
+            const res = prompt('Enter Google Maps URL or GPS Coordinates (Lat, Long):', curVal || '');
+            if (res !== null) {
+                document.getElementById('loc-map-coords').value = res.trim();
+                const st = document.getElementById('loc-map-status');
+                if (st) st.style.display = res.trim() ? 'inline-block' : 'none';
+            }
+        }
+
+        function saveClientLocation() {
+            const name = document.getElementById('loc-name').value.trim();
+            if (!name) {
+                alert('Location Name is required');
+                document.getElementById('loc-name').focus();
+                return;
+            }
+
+            const locData = {
+                name: name,
+                address1: document.getElementById('loc-address1').value.trim(),
+                address2: document.getElementById('loc-address2').value.trim(),
+                area: document.getElementById('loc-area').value.trim(),
+                city: document.getElementById('loc-city').value.trim(),
+                pin: document.getElementById('loc-pin').value.trim(),
+                contactPerson: document.getElementById('loc-contact').value.trim(),
+                officePhone: document.getElementById('loc-phone').value.trim(),
+                cellPhone: document.getElementById('loc-cell').value.trim(),
+                workingHours: document.getElementById('loc-hours').value.trim(),
+                route: document.getElementById('loc-route').value,
+                defaultDeliveryAgent: document.getElementById('loc-agent').value,
+                mapLocation: document.getElementById('loc-map-coords').value.trim()
+            };
+
+            if (editingLocationIndex >= 0 && editingLocationIndex < clientLocations.length) {
+                clientLocations[editingLocationIndex] = locData;
+            } else {
+                clientLocations.push(locData);
+            }
+
+            renderLocationsList();
+            closeAddLocationModal();
+        }
+
+        function renderLocationsList() {
+            const container = document.getElementById('locations-cards-list');
+            const emptyMsg = document.getElementById('locations-empty-msg');
+            if (!container) return;
+
+            if (!clientLocations || clientLocations.length === 0) {
+                if (emptyMsg) emptyMsg.style.display = 'block';
+                container.innerHTML = '';
+                return;
+            }
+
+            if (emptyMsg) emptyMsg.style.display = 'none';
+
+            container.innerHTML = clientLocations.map((loc, idx) => {
+                const addrParts = [loc.address1, loc.address2, loc.area, loc.city, loc.pin].filter(Boolean).join(', ');
+                const phoneParts = [loc.officePhone, loc.cellPhone].filter(Boolean).join(' / ');
+                return `
+                    <div style="display: flex; align-items: center; justify-content: space-between; background: #ffffff; border: 1px solid #dcdcdc; border-radius: 2px; padding: 6px 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                        <div style="flex: 1; min-width: 0; padding-right: 8px;">
+                            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+                                <span style="font-weight: bold; font-size: 11px; color: #0056b3;">${escapeHtml(loc.name)}</span>
+                                ${loc.route ? `<span style="font-size: 9px; background: #eef4fb; color: #0056b3; padding: 1px 4px; border-radius: 2px; border: 1px solid #c7dcf7;">${escapeHtml(loc.route)}</span>` : ''}
+                            </div>
+                            <div style="font-size: 10px; color: #444; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                ${addrParts ? `<span>${escapeHtml(addrParts)}</span>` : '<span style="color: #999;">No address details</span>'}
+                            </div>
+                            <div style="font-size: 10px; color: #666; display: flex; gap: 8px; margin-top: 1px;">
+                                ${loc.contactPerson ? `<span><i class="fa-regular fa-user" style="font-size: 9px;"></i> ${escapeHtml(loc.contactPerson)}</span>` : ''}
+                                ${phoneParts ? `<span><i class="fa-solid fa-phone" style="font-size: 9px;"></i> ${escapeHtml(phoneParts)}</span>` : ''}
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 4px;">
+                            <button type="button" onclick="openAddLocationModal(${idx})" title="Edit Location" style="background: none; border: 1px solid #c0c0c0; border-radius: 2px; padding: 2px 6px; cursor: pointer; color: #0056b3; font-size: 10px;" onmouseover="this.style.background='#f0f4f8'" onmouseout="this.style.background='none'">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <button type="button" onclick="deleteClientLocation(${idx})" title="Delete Location" style="background: none; border: 1px solid #c0c0c0; border-radius: 2px; padding: 2px 6px; cursor: pointer; color: #dc3545; font-size: 10px;" onmouseover="this.style.background='#fdf0f0'" onmouseout="this.style.background='none'">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function deleteClientLocation(idx) {
+            if (idx < 0 || idx >= clientLocations.length) return;
+            const item = clientLocations[idx];
+            if (confirm(`Remove location "${item.name}"?`)) {
+                clientLocations.splice(idx, 1);
+                renderLocationsList();
+            }
+        }
+
+        function openAddDoctorModal(event) {
+            if (event) event.stopPropagation();
+            const modal = document.getElementById('add-doctor-modal');
+            if (!modal) return;
+            modal.style.display = 'flex';
+            document.getElementById('new-doctor-name').value = '';
+            document.getElementById('new-doctor-cell').value = '';
+            document.getElementById('new-doctor-prefs').value = '';
+            setTimeout(() => document.getElementById('new-doctor-name').focus(), 50);
+        }
+
+        function closeAddDoctorModal() {
+            const modal = document.getElementById('add-doctor-modal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function confirmAddDoctor() {
+            const docName = document.getElementById('new-doctor-name').value.trim();
+            const docCell = document.getElementById('new-doctor-cell').value.trim();
+            const docPrefs = document.getElementById('new-doctor-prefs').value.trim();
+
+            if (docName) {
+                const formattedName = docName.toLowerCase().startsWith('dr.') || docName.toLowerCase().startsWith('dr ') ? docName : `Dr. ${docName}`;
+                const currentContact = document.getElementById('ec-contact').value.trim();
+                document.getElementById('ec-contact').value = currentContact ? `${currentContact}, ${formattedName}` : formattedName;
+            }
+
+            if (docCell) {
+                const cell1 = document.getElementById('ec-cell1');
+                const cell2 = document.getElementById('ec-cell2');
+                if (cell1 && !cell1.value.trim()) {
+                    cell1.value = docCell;
+                } else if (cell2 && !cell2.value.trim()) {
+                    cell2.value = docCell;
+                }
+            }
+
+            if (docPrefs) {
+                const notes = document.getElementById('ec-notes');
+                if (notes) {
+                    const curNotes = notes.value.trim();
+                    const prefText = `Doctor Preferences (${docName || 'Doctor'}): ${docPrefs}`;
+                    notes.value = curNotes ? `${curNotes}\n${prefText}` : prefText;
+                }
+            }
+
+            closeAddDoctorModal();
+        }
+
+        function openSalesManagerModal() {
+            document.getElementById('sales-manager-modal').style.display = 'flex';
+            document.getElementById('custom-sales-manager-input').focus();
+        }
+
+        function selectManagerValue(name) {
+            document.getElementById('custom-sales-manager-input').value = name;
+            applyCustomSalesManager();
+        }
+
+        function applyCustomSalesManager() {
+            const val = document.getElementById('custom-sales-manager-input').value.trim();
+            document.getElementById('ec-manager').value = val;
+            document.getElementById('ec-manager-link').textContent = val || 'Select ...';
+            document.getElementById('sales-manager-modal').style.display = 'none';
+        }
+
+        function showAddPriceBandInput() {
+            const selWrap = document.getElementById('priceband-select-wrap');
+            const inpWrap = document.getElementById('priceband-input-wrap');
+            const input = document.getElementById('new-priceband-input');
+            if (selWrap) selWrap.style.display = 'none';
+            if (inpWrap) inpWrap.style.display = 'flex';
+            if (input) {
+                input.value = '';
+                input.focus();
+            }
+        }
+
+        function hideAddPriceBandInput() {
+            const selWrap = document.getElementById('priceband-select-wrap');
+            const inpWrap = document.getElementById('priceband-input-wrap');
+            const input = document.getElementById('new-priceband-input');
+            if (inpWrap) inpWrap.style.display = 'none';
+            if (selWrap) selWrap.style.display = 'flex';
+            if (input) input.value = '';
+        }
+
+        async function saveNewPriceBandInline() {
+            const input = document.getElementById('new-priceband-input');
+            if (!input) return;
+            const val = input.value.trim();
+            if (!val) {
+                hideAddPriceBandInput();
+                return;
+            }
+            
+            const sel = document.getElementById('ec-priceband');
+            if (sel) {
+                let exists = false;
+                for (let opt of sel.options) {
+                    if (opt.value.toLowerCase() === val.toLowerCase()) {
+                        sel.value = opt.value;
+                        exists = true;
+                        break;
+                    }
+                }
+                if (!exists) {
+                    const opt = document.createElement('option');
+                    opt.value = val;
+                    opt.textContent = val;
+                    sel.appendChild(opt);
+                    sel.value = val;
+                }
+            }
+
+            // Persist to backend lookup
+            try {
+                await fetch(`${API_BASE}/lookups`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: 'price_band', name: val })
+                });
+            } catch(e) {}
+
+            hideAddPriceBandInput();
+        }
+
+        function showAddCategoryInput() {
+            const selWrap = document.getElementById('category-select-wrap');
+            const inpWrap = document.getElementById('category-input-wrap');
+            const input = document.getElementById('new-category-input');
+            if (selWrap) selWrap.style.display = 'none';
+            if (inpWrap) inpWrap.style.display = 'flex';
+            if (input) {
+                input.value = '';
+                input.focus();
+            }
+        }
+
+        function hideAddCategoryInput() {
+            const selWrap = document.getElementById('category-select-wrap');
+            const inpWrap = document.getElementById('category-input-wrap');
+            const input = document.getElementById('new-category-input');
+            if (inpWrap) inpWrap.style.display = 'none';
+            if (selWrap) selWrap.style.display = 'flex';
+            if (input) input.value = '';
+        }
+
+        async function saveNewCategoryInline() {
+            const input = document.getElementById('new-category-input');
+            if (!input) return;
+            const val = input.value.trim();
+            if (!val) {
+                hideAddCategoryInput();
+                return;
+            }
+            
+            const sel = document.getElementById('ec-categories');
+            if (sel) {
+                let exists = false;
+                for (let opt of sel.options) {
+                    if (opt.value.toLowerCase() === val.toLowerCase()) {
+                        sel.value = opt.value;
+                        exists = true;
+                        break;
+                    }
+                }
+                if (!exists) {
+                    const opt = document.createElement('option');
+                    opt.value = val;
+                    opt.textContent = val;
+                    sel.appendChild(opt);
+                    sel.value = val;
+                }
+                sel.style.color = sel.value ? '#111' : '#888';
+            }
+
+            // Persist to backend lookup
+            try {
+                await fetch(`${API_BASE}/lookups`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: 'category', name: val })
+                });
+            } catch(e) {}
+
+            hideAddCategoryInput();
+        }
+
+        function addExtraEmail() {
+            const extra = prompt('Enter secondary Email address:');
+            if (extra && extra.trim()) {
+                const cur = document.getElementById('ec-email').value.trim();
+                document.getElementById('ec-email').value = cur ? `${cur}, ${extra.trim()}` : extra.trim();
+            }
+        }
+
+        async function loadAllClientsForBillTo() {
+            try {
+                const res = await fetch(`${API_BASE}/clients?simple=true&limit=all`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const clientList = Array.isArray(data) ? data : (data.data || []);
+                    const names = new Set();
+                    clientList.forEach(c => {
+                        if (c.name && c.name.trim()) names.add(c.name.trim());
+                    });
+                    const sorted = Array.from(names).sort((a, b) => a.localeCompare(b));
+                    allBillToClients = [
+                        { id: 'Self', name: 'Self' },
+                        ...sorted.filter(n => n.toLowerCase() !== 'self').map(n => ({ id: n, name: n }))
+                    ];
+                    renderBillToList('');
+                }
+            } catch (e) {
+                console.error('Failed to load clients for Bill To:', e);
+            }
+        }
+
+        function toggleBillToDropdown(e) {
+            if (e) e.stopPropagation();
+            const panel = document.getElementById('billto-dropdown-panel');
+            if (!panel) return;
+            const isOpen = panel.style.display === 'block';
+            if (isOpen) {
+                closeBillToDropdown();
+            } else {
+                panel.style.display = 'block';
+                const searchInp = document.getElementById('billto-search-input');
+                if (searchInp) {
+                    searchInp.value = '';
+                    renderBillToList('');
+                    setTimeout(() => searchInp.focus(), 50);
+                }
+            }
+        }
+
+        function closeBillToDropdown() {
+            const panel = document.getElementById('billto-dropdown-panel');
+            if (panel) panel.style.display = 'none';
+        }
+
+        function filterBillToClients() {
+            const searchInp = document.getElementById('billto-search-input');
+            const q = searchInp ? searchInp.value : '';
+            renderBillToList(q);
+        }
+
+        function renderBillToList(filter = '') {
+            const listEl = document.getElementById('billto-client-list');
+            if (!listEl) return;
+            const q = filter.trim().toLowerCase();
+            const currentVal = (document.getElementById('ec-billto') ? document.getElementById('ec-billto').value : '').toLowerCase();
+            
+            let matched = allBillToClients.filter(c => !q || c.name.toLowerCase().includes(q));
+            
+            if (matched.length === 0) {
+                listEl.innerHTML = '<div style="padding: 6px; color: #888; text-align: center; font-size: 11px;">No clients found</div>';
+                return;
+            }
+
+            listEl.innerHTML = matched.map((c, idx) => {
+                const isSelected = currentVal ? (c.name.toLowerCase() === currentVal) : (idx === 0 && !filter);
+                return `
+                    <div class="billto-item" onclick="selectBillToClient('${escapeHtml(c.name).replace(/'/g, "\\'")}')" 
+                         style="padding: 4px 6px; cursor: pointer; text-transform: uppercase; font-size: 11px; color: ${isSelected ? '#fff' : '#111'}; background: ${isSelected ? '#2972d7' : 'transparent'}; border-radius: 2px;"
+                         onmouseover="if(!this.dataset.selected){this.style.background='#2972d7'; this.style.color='#fff';}"
+                         onmouseout="if(!this.dataset.selected){this.style.background='transparent'; this.style.color='#111';}"
+                         data-selected="${isSelected ? 'true' : ''}">
+                        ${escapeHtml(c.name)}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function selectBillToClient(name) {
+            document.getElementById('ec-billto').value = name;
+            const disp = document.getElementById('ec-billto-display');
+            if (disp) {
+                disp.textContent = name;
+                disp.style.color = name ? '#111' : '#888';
+            }
+            closeBillToDropdown();
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        document.addEventListener('click', function(e) {
+            const panel = document.getElementById('billto-dropdown-panel');
+            const btn = document.getElementById('billto-dropdown-btn');
+            if (panel && panel.style.display === 'block') {
+                if (!panel.contains(e.target) && !btn.contains(e.target)) {
+                    closeBillToDropdown();
+                }
+            }
+
+            const docModal = document.getElementById('add-doctor-modal');
+            if (docModal && docModal.style.display === 'flex') {
+                if (e.target === docModal) {
+                    closeAddDoctorModal();
+                }
+            }
+
+            const locModal = document.getElementById('add-location-modal');
+            if (locModal && locModal.style.display === 'flex') {
+                if (e.target === locModal) {
+                    closeAddLocationModal();
+                }
+            }
+        });
+
+        async function loadClientDetails(id) {
+            try {
+                const res = await fetch(`${API_BASE}/clients/${id}`);
+                if (!res.ok) {
+                    alert('Client not found');
+                    window.location.href = 'clients.html';
+                    return;
+                }
+                clientData = await res.json();
+                
+                const setVal = (fieldId, val) => {
+                    const el = document.getElementById(fieldId);
+                    if (el) {
+                        if (el.tagName === 'SELECT' && val) {
+                            let exists = false;
+                            for (let opt of el.options) {
+                                if (opt.value.toLowerCase() === String(val).toLowerCase()) {
+                                    el.value = opt.value;
+                                    exists = true;
+                                    break;
+                                }
+                            }
+                            if (!exists) {
+                                const opt = document.createElement('option');
+                                opt.value = val;
+                                opt.textContent = val;
+                                el.appendChild(opt);
+                                el.value = val;
+                            }
+                            if (fieldId === 'ec-categories') {
+                                el.style.color = el.value ? '#111' : '#888';
+                            }
+                        } else {
+                            el.value = val !== undefined && val !== null ? val : '';
+                            if (fieldId === 'ec-categories' && el.tagName === 'SELECT') {
+                                el.style.color = el.value ? '#111' : '#888';
+                            }
+                        }
+                    }
+                };
+
+                setVal('ec-salutation', clientData.salutation !== undefined && clientData.salutation !== null ? clientData.salutation : '');
+                setVal('ec-name', clientData.name);
+                setVal('ec-contact', clientData.contactPerson);
+                setVal('ec-code', clientData.code || clientData.clientCode);
+                setVal('ec-reg', clientData.regNum || clientData.regNo);
+                setVal('ec-hours', clientData.workingHours);
+                
+                if (clientData.salesManager) {
+                    setVal('ec-manager', clientData.salesManager);
+                    document.getElementById('ec-manager-link').textContent = clientData.salesManager;
+                }
+
+                setVal('ec-address1', clientData.address || clientData.address1);
+                setVal('ec-address2', clientData.address2);
+                setVal('ec-area', clientData.area);
+                setVal('ec-city', clientData.city);
+                setVal('ec-pincode', clientData.pinCode || clientData.pincode);
+
+                setVal('ec-phone1', clientData.phone || clientData.officePhone1);
+                setVal('ec-phone2', clientData.phone2 || clientData.officePhone2);
+                setVal('ec-cell1', clientData.cellPhone || clientData.cell);
+                setVal('ec-cell2', clientData.cellPhone2 || clientData.cell2);
+                setVal('ec-resphone1', clientData.resPhone1);
+                setVal('ec-resphone2', clientData.resPhone2);
+                setVal('ec-email', clientData.email);
+
+                setVal('ec-delivery', clientData.deliveryMethod || 'LOGISTICS TEAM');
+                setVal('ec-route', clientData.route || 'Default');
+                setVal('ec-agent', clientData.defaultDeliveryAgent || clientData.deliveryAgent);
+                setVal('ec-collection', clientData.collectionCentre);
+                setVal('ec-priceband', clientData.priceBand || 'Regular');
+                setVal('ec-taxid', clientData.taxId);
+                setVal('ec-credit', clientData.creditLimit || 0);
+                setVal('ec-terms', clientData.paymentTermsDays || clientData.paymentTerms || 0);
+                setVal('ec-openbal', clientData.openingBalance || 0);
+                setVal('ec-categories', clientData.categories);
+                
+                clientLocations = [];
+                if (clientData.notes && clientData.notes.includes('<!--LOCATIONS_JSON:')) {
+                    try {
+                        const locRegex = new RegExp('<!--LOCATIONS_JSON:([\\s\\S]*?)-->');
+                        const match = clientData.notes.match(locRegex);
+                        if (match && match[1]) {
+                            clientLocations = JSON.parse(match[1]);
+                        }
+                        const cleanNotes = clientData.notes.replace(locRegex, '').trim();
+                        setVal('ec-notes', cleanNotes);
+                    } catch(e) {
+                        setVal('ec-notes', clientData.notes);
+                    }
+                } else {
+                    setVal('ec-notes', clientData.notes);
+                }
+                renderLocationsList();
+
+                if (clientData.billTo) {
+                    setVal('ec-billto', clientData.billTo);
+                    const disp = document.getElementById('ec-billto-display');
+                    if (disp) {
+                        disp.textContent = clientData.billTo;
+                        disp.style.color = '#111';
+                    }
+                }
+
+                if (clientData.openingBalanceType === 'Cr') {
+                    const r = document.querySelector('input[name="ec-baltype"][value="Cr"]');
+                    if (r) r.checked = true;
+                }
+
+                if (clientData.taxExemption) document.getElementById('ec-taxexempt').checked = true;
+                if (clientData.isDentalLab) document.getElementById('ec-isdentallab').checked = true;
+
+                if (clientData.regularVisits) {
+                    try {
+                        const visits = JSON.parse(clientData.regularVisits);
+                        if (visits.enabled !== false && (visits.time || (visits.days && visits.days.length > 0))) {
+                            document.getElementById('visit-enabled').checked = true;
+                            if (visits.time) document.getElementById('ec-visittime').value = visits.time;
+                        }
+                        if (Array.isArray(visits.days)) {
+                            document.querySelectorAll('.visit-day').forEach(cb => {
+                                if (visits.days.includes(cb.value)) cb.checked = true;
+                            });
+                        }
+                    } catch(e) {}
+                }
+                toggleRegularVisits();
+
+                document.title = `Dentsoft | Edit Client - ${(clientData.name || '').toUpperCase()}`;
+            } catch (err) {
+                console.error(err);
+                alert('Error loading client data');
+            }
+        }
+
+        function toggleRegularVisits() {
+            const isEnabled = document.getElementById('visit-enabled') ? document.getElementById('visit-enabled').checked : false;
+            const timeInput = document.getElementById('ec-visittime');
+            const dayCheckboxes = document.querySelectorAll('.visit-day');
+            const daysWrap = document.getElementById('visit-days-wrap');
+            
+            if (timeInput) {
+                timeInput.disabled = !isEnabled;
+                timeInput.style.backgroundColor = isEnabled ? '#ffffff' : '#f0f0f0';
+                timeInput.style.color = isEnabled ? '#000000' : '#888888';
+                timeInput.style.cursor = isEnabled ? 'text' : 'not-allowed';
+            }
+            
+            dayCheckboxes.forEach(cb => {
+                cb.disabled = !isEnabled;
+                cb.style.cursor = isEnabled ? 'pointer' : 'not-allowed';
+            });
+
+            if (daysWrap) {
+                daysWrap.style.opacity = isEnabled ? '1' : '0.4';
+                daysWrap.style.pointerEvents = isEnabled ? 'auto' : 'none';
+            }
+        }
+
+        async function saveClientForm(e, andNewOrder = false) {
+            if (e && e.preventDefault) e.preventDefault();
+            
+            const getVal = (fieldId) => {
+                const el = document.getElementById(fieldId);
+                return el ? el.value.trim() : '';
+            };
+
+            const name = getVal('ec-name');
+            if (!name) {
+                alert('Client Name is required');
+                document.getElementById('ec-name').focus();
+                return;
+            }
+
+            const balTypeEl = document.querySelector('input[name="ec-baltype"]:checked');
+
+            const selectedDays = [];
+            document.querySelectorAll('.visit-day:checked').forEach(cb => selectedDays.push(cb.value));
+            const regularVisitsObj = {
+                enabled: document.getElementById('visit-enabled').checked,
+                time: getVal('ec-visittime'),
+                days: selectedDays
+            };
+
+            let notesText = getVal('ec-notes');
+            if (clientLocations && clientLocations.length > 0) {
+                notesText = `${notesText ? notesText + '\n\n' : ''}<!--LOCATIONS_JSON:${JSON.stringify(clientLocations)}-->`;
+            }
+
+            const payload = {
+                salutation: getVal('ec-salutation') || '',
+                name: name,
+                contactPerson: getVal('ec-contact'),
+                code: getVal('ec-code'),
+                regNum: getVal('ec-reg'),
+                workingHours: getVal('ec-hours'),
+                salesManager: getVal('ec-manager'),
+
+                address: getVal('ec-address1'),
+                address2: getVal('ec-address2'),
+                area: getVal('ec-area'),
+                city: getVal('ec-city'),
+                pinCode: getVal('ec-pincode'),
+
+                phone: getVal('ec-phone1'),
+                phone2: getVal('ec-phone2'),
+                cellPhone: getVal('ec-cell1'),
+                cellPhone2: getVal('ec-cell2'),
+                email: getVal('ec-email'),
+
+                deliveryMethod: getVal('ec-delivery') || 'LOGISTICS TEAM',
+                route: getVal('ec-route') || 'Default',
+                defaultDeliveryAgent: getVal('ec-agent'),
+                collectionCentre: getVal('ec-collection'),
+                priceBand: getVal('ec-priceband') || 'Regular',
+                taxId: getVal('ec-taxid'),
+
+                taxExemption: document.getElementById('ec-taxexempt').checked,
+                isDentalLab: document.getElementById('ec-isdentallab').checked,
+                regularVisits: JSON.stringify(regularVisitsObj),
+
+                creditLimit: parseFloat(getVal('ec-credit')) || 0,
+                paymentTermsDays: parseInt(getVal('ec-terms'), 10) || 0,
+                openingBalance: parseFloat(getVal('ec-openbal')) || 0,
+                openingBalanceType: balTypeEl ? balTypeEl.value : 'Dr',
+                billTo: getVal('ec-billto') || 'Self',
+                categories: getVal('ec-categories'),
+                notes: notesText,
+                status: 'Active'
+            };
+
+            try {
+                const url = clientId ? `${API_BASE}/clients/${clientId}` : `${API_BASE}/clients`;
+                const method = clientId ? 'PUT' : 'POST';
+
+                const res = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    const saved = await res.json();
+                    alert(clientId ? 'Client updated successfully!' : 'New Client created successfully!');
+                    if (andNewOrder) {
+                        const targetId = clientId || saved.id;
+                        window.location.href = `new-order.html?clientId=${targetId}`;
+                    } else {
+                        window.location.href = 'clients.html';
+                    }
+                } else {
+                    const err = await res.json().catch(() => ({}));
+                    alert('Failed to save client: ' + (err.error || res.statusText || 'Server error'));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error saving client data: ' + err.message);
+            }
+        }
+
+        async function deleteClient() {
+            if (!clientId) return;
+            if (!confirm(`Are you sure you want to delete this client (${clientData ? clientData.name : ''})? This action cannot be undone.`)) {
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/clients/${clientId}`, { method: 'DELETE' });
+                if (res.ok) {
+                    alert('Client deleted successfully!');
+                    window.location.href = 'clients.html';
+                } else {
+                    const err = await res.json();
+                    alert('Failed to delete client: ' + (err.error || 'Server error'));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error deleting client.');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initEditClientPage);
+    </script>
+</body>
+</html>

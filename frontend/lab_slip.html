@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="auth.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1280, minimum-scale=0.1, maximum-scale=10.0, user-scalable=yes">
+    <title>Lab Slip | Dentsoft</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 10mm;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #525659;
+            color: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .no-print-toolbar {
+            width: 210mm;
+            max-width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 8px 14px;
+            background: #323639;
+            border-radius: 4px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+
+        .toolbar-btn {
+            background: #007bff;
+            color: #fff;
+            border: none;
+            padding: 6px 16px;
+            font-size: 13px;
+            font-weight: bold;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .toolbar-btn:hover {
+            background: #0056b3;
+        }
+        .toolbar-btn-secondary {
+            background: #6c757d;
+        }
+        .toolbar-btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .slip-container {
+            width: 210mm;
+            min-height: 297mm;
+            background: #fff;
+            padding: 15mm;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .slip-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            font-size: 11px;
+            line-height: 1.35;
+        }
+
+        .slip-header-left h1 {
+            margin: 0 0 3px 0;
+            font-size: 15px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            color: #000;
+        }
+
+        .slip-header-right {
+            text-align: right;
+        }
+
+        .slip-title {
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+            margin: 10px 0 8px 0;
+            color: #000;
+        }
+
+        .grid-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            margin-bottom: 10px;
+        }
+
+        .grid-table td, .grid-table th {
+            border: 1px solid #000;
+            padding: 3px 6px;
+            vertical-align: middle;
+        }
+
+        .palmer-box {
+            border: 1px solid #000;
+            margin-bottom: 10px;
+            font-size: 11px;
+        }
+
+        .palmer-header {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 6px;
+            border-bottom: 1px solid #000;
+            font-weight: bold;
+        }
+
+        .palmer-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            text-align: center;
+            padding: 4px 0;
+        }
+
+        .palmer-quadrant {
+            display: flex;
+            justify-content: space-around;
+            padding: 2px 4px;
+            font-size: 11px;
+            font-family: Arial, sans-serif;
+        }
+
+        .palmer-quadrant span {
+            display: inline-block;
+            width: 14px;
+            text-align: center;
+        }
+
+        .palmer-quadrant span.active-tooth {
+            font-weight: bold;
+            color: #000;
+            text-decoration: underline;
+            background: #e0e0e0;
+            border-radius: 2px;
+        }
+
+        .palmer-top-left {
+            border-right: 1.5px solid #000;
+            border-bottom: 1.5px solid #000;
+        }
+
+        .palmer-top-right {
+            border-bottom: 1.5px solid #000;
+        }
+
+        .palmer-bottom-left {
+            border-right: 1.5px solid #000;
+        }
+
+        .palmer-bottom-right {
+        }
+
+        .comments-line {
+            font-size: 11px;
+            margin: 8px 0 10px 0;
+            border-bottom: 1px solid #000;
+            padding-bottom: 4px;
+            font-weight: normal;
+        }
+
+        .bottom-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            font-size: 11px;
+            margin-top: 5px;
+        }
+
+        .enclosure-shade-box table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .enclosure-shade-box table td, .enclosure-shade-box table th {
+            border: 1px solid #000;
+            padding: 3px 6px;
+        }
+
+        .checklist-box {
+            display: grid;
+            grid-template-columns: 1.1fr 1.2fr;
+            gap: 10px;
+            font-size: 10.5px;
+        }
+
+        .checklist-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .checklist-table th {
+            text-align: left;
+            border-bottom: 1px solid #000;
+            padding: 2px 0;
+            font-weight: bold;
+        }
+
+        .checklist-table td {
+            padding: 3px 0;
+            border-bottom: 1px dotted #ccc;
+        }
+
+        .underlined-line {
+            display: inline-block;
+            width: 100%;
+            border-bottom: 1px solid #000;
+            min-height: 12px;
+        }
+
+        @media print {
+            body {
+                background: #fff;
+                padding: 0;
+            }
+            .no-print-toolbar {
+                display: none !important;
+            }
+            .slip-container {
+                box-shadow: none;
+                width: 100%;
+                min-height: auto;
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="no-print-toolbar">
+        <span style="color: #fff; font-weight: bold; font-size: 14px;" id="toolbar-title">Lab Slip</span>
+        <div style="display: flex; gap: 8px;">
+            <button class="toolbar-btn" onclick="window.print()">Print Lab Slip</button>
+            <button class="toolbar-btn toolbar-btn-secondary" onclick="window.close()">Close</button>
+        </div>
+    </div>
+
+    <div class="slip-container" id="slip-content">
+        <!-- Header -->
+        <div class="slip-header">
+            <div class="slip-header-left">
+                <h1>SOHAR DENTAL LABORATORY</h1>
+                <div>AL HAMBAR, C.R.NO. 3203549,</div>
+                <div>MOH NO. 1771,</div>
+                <div>WEST SOHAR Pin - 311</div>
+            </div>
+            <div class="slip-header-right">
+                <div>Phone : +96899622728</div>
+                <div>email : sohardental@gmail.com</div>
+            </div>
+        </div>
+
+        <div class="slip-title">Lab Slip</div>
+
+        <!-- Main Info Table -->
+        <table class="grid-table">
+            <tbody>
+                <tr>
+                    <td style="width: 12%; font-weight: bold;">Order #</td>
+                    <td style="width: 25%; font-weight: bold;" id="ls-order-no"></td>
+                    <td style="width: 15%; font-weight: bold;">Model #</td>
+                    <td style="width: 20%;" id="ls-model-no"></td>
+                    <td style="width: 13%; font-weight: bold;">Order Date</td>
+                    <td style="width: 15%;" id="ls-order-date"></td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold;">Due Date</td>
+                    <td style="font-weight: bold;" id="ls-due-date"></td>
+                    <td style="font-weight: bold;">Patient</td>
+                    <td id="ls-patient-name"></td>
+                    <td style="font-weight: bold;">Printed</td>
+                    <td id="ls-printed-date" style="font-size: 10px;"></td>
+                </tr>
+                <tr>
+                    <td colspan="4" style="font-weight: bold; text-transform: uppercase;" id="ls-client-name"></td>
+                    <td colspan="2" style="font-weight: bold; text-transform: uppercase;" id="ls-client-city"></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Products List with Palmer Teeth Grid -->
+        <div id="ls-products-container">
+            <!-- Dynamic Products will be rendered here -->
+        </div>
+
+        <!-- Comments Line -->
+        <div class="comments-line">
+            <strong>Comments :</strong> <span id="ls-comments"></span>
+        </div>
+
+        <!-- Bottom Split Section (Enclosures / Process / Stages) -->
+        <div class="bottom-section">
+            <!-- Left: Enclosures & Shade -->
+            <div class="enclosure-shade-box">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 75%; text-align: left;">Enclosure</th>
+                            <th style="width: 25%; text-align: center;">#</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ls-enclosures-body">
+                        <tr><td style="height: 18px;"></td><td></td></tr>
+                    </tbody>
+                </table>
+
+                <table style="margin-top: 8px;">
+                    <tbody>
+                        <tr>
+                            <td style="width: 30%; font-weight: bold; vertical-align: top;">Shade</td>
+                            <td style="height: 26px; vertical-align: top;" id="ls-shade-info"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Right: Process & Stages Checklists -->
+            <div class="checklist-box">
+                <div>
+                    <table class="checklist-table">
+                        <thead>
+                            <tr>
+                                <th colspan="2">Process</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="width: 60px;">Assigned to</td>
+                                <td style="text-align: right; font-weight: bold;" id="ls-assigned-to">-</td>
+                            </tr>
+                            <tr>
+                                <td>Wax Trial</td>
+                                <td><span class="underlined-line"></span></td>
+                            </tr>
+                            <tr>
+                                <td>Metal / Coping Trial</td>
+                                <td><span class="underlined-line"></span></td>
+                            </tr>
+                            <tr>
+                                <td>Bisque Trial</td>
+                                <td><span class="underlined-line"></span></td>
+                            </tr>
+                            <tr>
+                                <td>Finish</td>
+                                <td><span class="underlined-line"></span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div>
+                    <table class="checklist-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 45%;">Stage</th>
+                                <th style="width: 55%; text-align: right;">Checked by</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Model</td>
+                                <td><span class="underlined-line"></span></td>
+                            </tr>
+                            <tr>
+                                <td>Waxup</td>
+                                <td><span class="underlined-line"></span></td>
+                            </tr>
+                            <tr>
+                                <td>Metal</td>
+                                <td><span class="underlined-line"></span></td>
+                            </tr>
+                            <tr>
+                                <td>Ceramic</td>
+                                <td><span class="underlined-line"></span></td>
+                            </tr>
+                            <tr>
+                                <td>CAD/CAM</td>
+                                <td><span class="underlined-line"></span></td>
+                            </tr>
+                            <tr>
+                                <td>Cast Partial</td>
+                                <td><span class="underlined-line"></span></td>
+                            </tr>
+                            <tr>
+                                <td>Denture</td>
+                                <td><span class="underlined-line"></span></td>
+                            </tr>
+                            <tr>
+                                <td>Misc</td>
+                                <td><span class="underlined-line"></span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')
+            ? 'http://localhost:5000/api'
+            : '/api';
+
+        function formatDateMon(d) {
+            if (!d) return '';
+            const dt = new Date(d);
+            if (isNaN(dt.getTime())) return '';
+            const day = dt.getDate();
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            return `${day} ${months[dt.getMonth()]}`;
+        }
+
+        function formatPrintedDateTime() {
+            const dt = new Date();
+            const day = dt.getDate();
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            let hours = dt.getHours();
+            const minutes = String(dt.getMinutes()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            const hoursStr = String(hours).padStart(2, '0');
+            return `${day} ${months[dt.getMonth()]}, ${hoursStr}:${minutes} ${ampm}`;
+        }
+
+        async function loadLabSlip() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const orderId = urlParams.get('id');
+            if (!orderId) {
+                alert('No Order ID specified');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/orders/${orderId}`);
+                if (!res.ok) throw new Error('Order not found');
+                const order = await res.json();
+
+                document.title = `LabSlip_${order.orderNumber || order.id}`;
+                document.getElementById('toolbar-title').textContent = `Lab Slip - Order #${order.orderNumber || order.id}`;
+
+                // Header Info
+                document.getElementById('ls-order-no').textContent = order.orderNumber || order.id;
+                document.getElementById('ls-model-no').textContent = order.modelNumber || order.modelNo || '';
+                document.getElementById('ls-order-date').textContent = formatDateMon(order.receivedDate || order.orderDate || order.createdAt);
+                document.getElementById('ls-due-date').textContent = formatDateMon(order.dueDate);
+                document.getElementById('ls-patient-name').textContent = (order.patientName || '').toUpperCase();
+                document.getElementById('ls-printed-date').textContent = formatPrintedDateTime();
+
+                const clientName = order.client ? order.client.name : (order.clientName || '');
+                const clientCity = order.client ? (order.client.city || order.client.area || order.client.route || 'SOHAR') : 'SOHAR';
+                document.getElementById('ls-client-name').textContent = clientName.toUpperCase();
+                document.getElementById('ls-client-city').textContent = clientCity.toUpperCase();
+
+                // Products & Teeth
+                const prodContainer = document.getElementById('ls-products-container');
+                let jobs = order.jobs || [];
+                if (jobs.length === 0 && (order.productName || order.productType)) {
+                    jobs = [{
+                        productName: order.productName || order.productType,
+                        productType: order.productType || 'General',
+                        units: order.units || 1,
+                        teeth: order.teeth || []
+                    }];
+                }
+
+                if (jobs.length === 0) {
+                    jobs = [{
+                        productName: 'PFM',
+                        productType: 'PFM',
+                        units: 1,
+                        teeth: []
+                    }];
+                }
+
+                let productsHTML = '';
+                jobs.forEach((job, idx) => {
+                    const prodName = job.productName || job.product || job.productType || 'PRODUCT';
+                    const prodType = job.productType || job.type || 'PFM';
+                    const units = job.units !== undefined ? job.units : 1;
+                    const selectedTeeth = Array.isArray(job.teeth) ? job.teeth.map(String) : (job.teeth ? String(job.teeth).split(',') : []);
+
+                    const isUpperRight = (n) => selectedTeeth.includes(`1${n}`) || selectedTeeth.includes(`UR${n}`) || selectedTeeth.includes(`UR_${n}`) || selectedTeeth.includes(String(n));
+                    const isUpperLeft = (n) => selectedTeeth.includes(`2${n}`) || selectedTeeth.includes(`UL${n}`) || selectedTeeth.includes(`UL_${n}`) || selectedTeeth.includes(String(n));
+                    const isLowerRight = (n) => selectedTeeth.includes(`4${n}`) || selectedTeeth.includes(`LR${n}`) || selectedTeeth.includes(`LR_${n}`) || selectedTeeth.includes(String(n));
+                    const isLowerLeft = (n) => selectedTeeth.includes(`3${n}`) || selectedTeeth.includes(`LL${n}`) || selectedTeeth.includes(`LL_${n}`) || selectedTeeth.includes(String(n));
+
+                    productsHTML += `
+                        <div class="palmer-box">
+                            <div class="palmer-header">
+                                <div>${idx + 1} ${prodName.toUpperCase()}</div>
+                                <div>${prodType.toUpperCase()}</div>
+                                <div>Units ${units}</div>
+                            </div>
+                            <div class="palmer-grid">
+                                <div class="palmer-quadrant palmer-top-left">
+                                    ${[8,7,6,5,4,3,2,1].map(n => `<span class="${isUpperRight(n) ? 'active-tooth' : ''}">${n}</span>`).join('')}
+                                </div>
+                                <div class="palmer-quadrant palmer-top-right">
+                                    ${[1,2,3,4,5,6,7,8].map(n => `<span class="${isUpperLeft(n) ? 'active-tooth' : ''}">${n}</span>`).join('')}
+                                </div>
+                                <div class="palmer-quadrant palmer-bottom-left">
+                                    ${[8,7,6,5,4,3,2,1].map(n => `<span class="${isLowerRight(n) ? 'active-tooth' : ''}">${n}</span>`).join('')}
+                                </div>
+                                <div class="palmer-quadrant palmer-bottom-right">
+                                    ${[1,2,3,4,5,6,7,8].map(n => `<span class="${isLowerLeft(n) ? 'active-tooth' : ''}">${n}</span>`).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                prodContainer.innerHTML = productsHTML;
+
+                // Comments
+                document.getElementById('ls-comments').textContent = order.notes || order.shadeNotes || '';
+
+                // Enclosures
+                const enclosuresBody = document.getElementById('ls-enclosures-body');
+                const enclosures = order.enclosures || [];
+                if (Array.isArray(enclosures) && enclosures.length > 0) {
+                    enclosuresBody.innerHTML = enclosures.map(e => `
+                        <tr>
+                            <td>${typeof e === 'string' ? e : (e.name || e.type || '')}</td>
+                            <td style="text-align:center;">${e.count || 1}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    enclosuresBody.innerHTML = `
+                        <tr><td style="height: 18px;"></td><td></td></tr>
+                    `;
+                }
+
+                // Shade
+                const shadeMain = order.shade || order.shadeMain || order.shade1 || '';
+                const shadeNotes = order.shadeNotes || '';
+                document.getElementById('ls-shade-info').textContent = [shadeMain, shadeNotes].filter(Boolean).join(' - ');
+
+                // Assigned To
+                const assigned = order.technician || order.assignedTo || '-';
+                document.getElementById('ls-assigned-to').textContent = assigned;
+
+            } catch (err) {
+                console.error(err);
+                alert('Error loading order details');
+            }
+        }
+
+        window.onload = loadLabSlip;
+    </script>
+</body>
+</html>

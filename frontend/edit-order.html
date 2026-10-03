@@ -1,0 +1,2884 @@
+ <!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <script src="auth.js"></script>
+    <script src="searchable_select.js"></script>
+    <script src="global_datepicker.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1280, minimum-scale=0.1, maximum-scale=10.0, user-scalable=yes">
+    <title>Lab Command | Edit Order</title>
+    <link rel="stylesheet" href="styles.css?v=6.3.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            background: #fff;
+            border: 1px solid #ccc;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin: 0 0 20px 0;
+            color: #222;
+        }
+
+        h2 {
+            font-size: 16px;
+            margin: 0 0 10px 0;
+            color: #444;
+        }
+
+        .classic-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        .classic-table th {
+            background: #e9ecef;
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+            font-size: 17px !important;
+            font-weight: 400 !important;
+            font-style: normal !important;
+            line-height: 18px !important;
+        }
+
+        .classic-table td {
+            border: 1px solid #ccc;
+            padding: 8px;
+        }
+
+        .classic-table tr:hover {
+            background: #f8f9fa;
+            cursor: pointer;
+        }
+
+        /* Step 2 Form Styles */
+        .order-header-box {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2px;
+            background: #ccc;
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+        }
+
+        .order-header-box>div {
+            background: #fff;
+            padding: 10px;
+        }
+
+        .field-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+
+        .field-row label {
+            width: 70px;
+            color: #666;
+        }
+
+        .field-row input,
+        .field-row select {
+            padding: 3px;
+            border: 1px solid #ccc;
+            flex: 1;
+            font-size: 12px;
+        }
+
+        .balance-box {
+            border: 1px solid #d63384;
+            color: #d63384;
+            padding: 2px 8px;
+            font-weight: 700;
+        }
+
+        .section-bar {
+            background: #dee2e6;
+            padding: 5px 10px;
+            font-weight: 700;
+            font-size: 13px;
+            border: 1px solid #ccc;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        /* Teeth Selector Styles */
+        .teeth-selector-container {
+            border: 2px solid #666;
+            background: #fff;
+            margin-top: 10px;
+            padding: 15px;
+            position: relative;
+        }
+
+        .teeth-grid {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+            user-select: none;
+        }
+
+        .teeth-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            border-bottom: 1px solid #444;
+            padding: 10px 0;
+        }
+
+        .teeth-row:last-child {
+            border-bottom: none;
+        }
+
+        .teeth-quadrant {
+            display: flex;
+            gap: 8px;
+        }
+
+        .tooth-num {
+            color: #0056b3;
+            font-weight: 700;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px;
+            width: 25px;
+            text-align: center;
+        }
+
+        .tooth-num.selected {
+            background: #ec4899;
+            color: #fff;
+            border-radius: 4px;
+        }
+
+        #teeth-selection-area .teeth-quadrant {
+            display: flex;
+            gap: 6px;
+        }
+
+        #teeth-selection-area .tooth-num {
+            color: #0056b3;
+            font-weight: bold;
+            font-size: 13px;
+            cursor: pointer;
+            padding: 0;
+            width: 18px;
+            height: 18px;
+            line-height: 18px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        #teeth-selection-area .tooth-num.selected {
+            background: #ec4899;
+            color: #fff !important;
+            border-radius: 50%;
+        }
+
+        .divider-v {
+            width: 2px;
+            background: #444;
+            height: 40px;
+        }
+
+        .teeth-footer {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+            font-size: 13px;
+            align-items: center;
+        }
+
+        .footer-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .footer-field input {
+            width: 80px;
+            padding: 4px;
+            border: 1px solid #ccc;
+        }
+
+        .btn-actions {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-pink {
+            background: #ec4899;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .btn-outline {
+            background: #fff;
+            border: 1px solid #ccc;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .tab-btn {
+            padding: 8px 25px;
+            border: 1px solid #666;
+            background: #e5e7eb;
+            cursor: pointer;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .tab-btn.active {
+            background: #fff;
+            border-bottom: none;
+            font-weight: bold;
+        }
+
+        .tab-btn.log-btn {
+            border-color: #ec4899;
+            color: #ec4899;
+            background: transparent;
+        }
+
+        .tab-btn.log-btn.active {
+            background: #fff5f8;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            /* Changed via JS to flex */
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 4px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+    <script src="transitions.js?v=6.0.0"></script>
+    <!-- Cache buster 1780828418763 -->
+</head>
+
+<body>
+     <header style="background: linear-gradient(to bottom, #f5f5f5 0%, #e1e1e1 100%); border-bottom: 1px solid #999; height: 46px; display: flex; justify-content: space-between; align-items: flex-end; padding: 0 12px; font-family: Arial, sans-serif; user-select: none; position: relative;">
+        <!-- Left Section: Logo & Navigation Tabs -->
+        <div style="display: flex; align-items: flex-end; gap: 8px; height: 100%;">
+            <a href="index.html" style="display: flex; align-items: center; gap: 6px; margin-bottom: 5px; margin-right: 10px; text-decoration: none;">
+                <img src="logo.jpeg" alt="Logo" style="height: 30px; width: 30px; object-fit: contain;">
+                <span style="white-space: nowrap; color: #1e293b; font-weight: bold; font-size: 13px; font-family: Arial, sans-serif;">Dentsoft</span>
+            </a>
+
+            <nav style="display: flex; align-items: flex-end; height: 100%;">
+                <!-- Home Tab -->
+                <a href="index.html" style="color: #333; border-right: 1px solid #ccc; padding: 3px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-decoration: none; font-size: 11px; height: calc(100% - 4px);">
+                    <i class="fa-solid fa-house" style="font-size: 13px; color: #555; margin-bottom: 2px;"></i>
+                    <span>Home</span>
+                </a>
+
+                <!-- Clients Tab -->
+                <a href="clients.html" style="color: #333; border-right: 1px solid #ccc; padding: 3px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-decoration: none; font-size: 11px; height: calc(100% - 4px);">
+                    <i class="fa-solid fa-user-group" style="font-size: 13px; color: #555; margin-bottom: 2px;"></i>
+                    <span>Clients</span>
+                </a>
+
+                <!-- Orders Tab (Active) -->
+                <a href="orders.html" style="background: #ffffff; border: 1px solid #aaa; border-bottom: 1px solid #ffffff; font-weight: bold; color: #ec4899; border-radius: 3px 3px 0 0; padding: 3px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-decoration: none; font-size: 11px; margin-bottom: -1px; height: calc(100% - 2px);">
+                    <i class="fa-solid fa-folder-closed" style="font-size: 13px; color: #ec4899; margin-bottom: 2px;"></i>
+                    <span>Orders</span>
+                </a>
+
+                <!-- Shipments Tab -->
+                <a href="shipments.html" style="color: #333; border-right: 1px solid #ccc; padding: 3px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-decoration: none; font-size: 11px; height: calc(100% - 4px);">
+                    <i class="fa-solid fa-plane" style="font-size: 13px; color: #555; margin-bottom: 2px;"></i>
+                    <span>Shipments</span>
+                </a>
+
+                <!-- Accounts Tab -->
+                <a href="accounts.html" style="color: #333; padding: 3px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-decoration: none; font-size: 11px; height: calc(100% - 4px);">
+                    <i class="fa-solid fa-file-invoice-dollar" style="font-size: 13px; color: #555; margin-bottom: 2px;"></i>
+                    <span>Accounts</span>
+                </a>
+            </nav>
+        </div>
+
+        <!-- Right Section: Office, Reports & Lab Dropdown -->
+        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 6px;">
+            <a href="office.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #333; font-size: 11px;">
+                <i class="fa-solid fa-book-open" style="font-size: 13px; color: #555; margin-bottom: 2px;"></i>
+                <span>Office</span>
+            </a>
+
+            <a href="reports.html" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #333; font-size: 11px;">
+                <i class="fa-solid fa-chart-column" style="font-size: 13px; color: #555; margin-bottom: 2px;"></i>
+                <span>Reports</span>
+            </a>
+
+            <div style="position: relative;">
+                <button onclick="toggleHeaderLabDropdown(event)" style="background: linear-gradient(to bottom, #b8b8b8 0%, #999999 100%); border: 1px solid #666; color: #ffffff; font-size: 11px; font-weight: bold; font-family: Arial, sans-serif; padding: 4px 10px; border-radius: 2px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.4);">
+                    <span>SOHAR DENTAL LA...</span>
+                    <span style="font-size: 8px;">▼</span>
+                </button>
+
+                <div id="header-lab-dropdown-menu" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 4px; background: #ffffff; border: 1px solid #999999; box-shadow: 0 4px 12px rgba(0,0,0,0.25); z-index: 999999; min-width: 145px; font-size: 12px; font-family: Arial, sans-serif; border-radius: 2px;">
+                    <a href="javascript:void(0)" style="display: block; padding: 6px 12px; color: #0056b3; text-decoration: none; font-size: 12px;">sohardentallab</a>
+                    <div style="border-bottom: 1px solid #e5e7eb; margin: 2px 0;"></div>
+                    <a href="settings.html" style="display: block; padding: 6px 12px; color: #0056b3; text-decoration: none; font-size: 12px;">Settings</a>
+                    <a href="javascript:void(0)" onclick="alert('No new messages')" style="display: block; padding: 6px 12px; color: #0056b3; text-decoration: none; font-size: 12px;">Messages</a>
+                    <div style="border-bottom: 1px solid #e5e7eb; margin: 2px 0;"></div>
+                    <a href="javascript:void(0)" onclick="if(window.logout) window.logout(); else window.location.href='login.html';" style="display: block; padding: 6px 12px; color: #0056b3; text-decoration: none; font-size: 12px;">Logout</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <h1>Edit Order</h1>
+
+        <!-- STEP 1 -->
+        <div id="step-1">
+            <h2 style="font-size: 13px; color:#666;">Select Client</h2>
+            <div style="margin-bottom:15px; display:flex; gap:10px;">
+                <input type="text" id="client-search" placeholder="Search clients.."
+                    style="padding:5px; border:1px solid #ccc; width:250px;">
+                <button class="btn-outline" onclick="location.href='clients.html'">+ New Client</button>
+            </div>
+            <table class="classic-table">
+                <thead>
+                    <tr>
+                        <th>Sr</th>
+                        <th>Name</th>
+                        <th>Code</th>
+                        <th>Price Band</th>
+                        <th>Bill To</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="client-table-body">
+                    <tr><td colspan="6" style="text-align:center; padding: 20px; color: #666; font-weight: 500;"><i class="fas fa-spinner fa-spin" style="margin-right: 8px; color: #ec4899;"></i>Loading clients... (Connecting to server, please wait up to 1 minute on first load of the day)</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- STEP 2 -->
+        <div id="step-2" style="display: none;">
+            <!-- Tab Buttons at the Top -->
+            <div style="display:flex; justify-content: flex-end; gap:10px; margin-bottom:10px;">
+                <button type="button" id="btn-tab-detail" class="tab-btn active"
+                    onclick="showTab('detail')">Detail</button>
+                <button type="button" id="btn-tab-images" class="tab-btn" onclick="showTab('images')">Add
+                    Images</button>
+                <button type="button" id="btn-tab-log" class="tab-btn log-btn" onclick="showTab('log')">Log</button>
+            </div>
+
+            <div class="order-header-box">
+                <div style="display:grid; grid-template-columns: 1.5fr 1fr; gap:20px;">
+                    <div>
+                        <div class="field-row"><label>Order Date</label><input type="date" id="order-date-input"
+                                style="flex:1; padding:4px;"></div>
+                        <div class="field-row">
+                            <label>Due Date</label>
+                            <input type="date" id="due-date-input" style="flex:1; padding:4px;">
+                            <span style="margin: 0 5px;">@</span>
+                            <select style="width:100px; padding:4px;">
+                                <option value=""></option>
+                                <option>Morning</option>
+                                <option>Afternoon</option>
+                                <option>Evening</option>
+                            </select>
+                        </div>
+                        <div class="field-row">
+                            <label>Date In</label>
+                            <input type="date" id="date-in-input" style="flex:1; padding:4px;">
+                            <span style="margin: 0 5px;">@</span>
+                            <select style="width:100px; padding:4px;">
+                                <option value=""></option>
+                                <option>Morning</option>
+                                <option>Afternoon</option>
+                                <option>Evening</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="field-row"><label>Model #</label><input type="text" id="model-number-input"
+                                style="flex:1; padding:4px;"></div>
+                        <div class="field-row"><label>Order #</label><input type="text" id="order-number-display"
+                                value="27729" readonly style="flex:1; padding:4px; background:#f3f4f6;"></div>
+                    </div>
+                </div>
+                <div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px; position: relative;">
+                        <div style="font-size:14px; display: flex; align-items: center; gap: 6px;">
+                            Client <b id="display-client-name" style="color:#0056b3;">360 CARE MEDICAL...</b> 
+                            <i class="fas fa-info-circle" style="color:#007bff; cursor: pointer;" onclick="toggleClientInfoPanel()"></i>
+                        </div>
+                        <div id="client-info-panel" style="display: none; margin-top: 5px; padding: 10px; background: #f3f4f6; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; line-height: 1.4; color: #4b5563; position: absolute; top: 25px; left: 0; z-index: 100; width: 300px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"></div>
+                        <div>Balance <span class="balance-box">0.000</span></div>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:12px;">
+                        <div>
+                            <div class="field-row"><label>Patient</label><input type="text" id="patient-name"
+                                    placeholder="Enter patient name"
+                                    style="border: 1px solid #d63384; background: #fff5f8;"></div>
+                            <div style="margin-top:5px;">Price Band: Regular</div>
+                            <div>Bill To: Self</div>
+                        </div>
+                        <div>
+                            <div>Invoice #: <span id="display-invoice-num" style="font-weight:700; color:#10b981;">Not
+                                    invoiced</span></div>
+                            <div>Shipment #: <span id="display-shipment-num" style="font-weight:700; color:#10b981;">Not
+                                    created</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Area for Tabs -->
+            <div id="tab-detail-content">
+                <div id="added-jobs-list" style="margin-bottom:15px; font-size:12px; display:none;">
+                    <div class="section-bar">Order Items / Jobs</div>
+                    <div id="jobs-container"
+                        style="border:1px solid #ccc; padding:10px; background:#fff; border-top:none;"></div>
+                </div>
+                <div id="product-selection-area">
+                    <div
+                        style="display:flex; gap:10px; padding:10px; background:#f8f9fa; border:1px solid #ccc; margin-bottom:10px;">
+                        <div style="display:flex; flex-direction:column; font-size:11px; color:#666;">
+                            <label>Search Product</label>
+                            <input type="text" id="product-search" placeholder="Name / Code"
+                                style="padding:4px; border:1px solid #ccc; width:300px;" oninput="refreshProducts()">
+                        </div>
+                        <div style="display:flex; flex-direction:column; font-size:11px; color:#666;">
+                            <label>Filter by Type</label>
+                            <select id="product-type-filter" style="padding:4px; border:1px solid #ccc; width:200px;"
+                                onchange="refreshProducts()">
+                                <option>All Product Types</option>
+                            </select>
+                        </div>
+                        <div style="display:flex; align-items:flex-end;">
+                            <button class="btn-action"
+                                style="padding:6px 12px; font-size:11px; background:#10b981; color:#fff; border:none; border-radius:4px; cursor:pointer;"
+                                onclick="openQuickProductModal()">+ Add New Product</button>
+                        </div>
+                    </div>
+                    <table class="classic-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Name</th>
+                                <th>Product type</th>
+                                <th>Charge</th>
+                            </tr>
+                        </thead>
+                        <tbody id="product-table-body"></tbody>
+                    </table>
+                </div>
+
+                <!-- Teeth Selection Area (Displayed when selecting a product) -->
+                <div id="teeth-selection-area" style="display: none; padding: 12px 0; font-family: Arial, sans-serif;">
+                    <!-- Centered 460px Container Matching Reference Image -->
+                    <div style="width: 460px; margin: 0 auto;">
+                        <!-- Badges Row -->
+                        <div style="display: flex; align-items: center; margin-bottom: 6px;">
+                            <span id="selected-product-category-badge" style="border: 1px solid #333; padding: 1px 6px; font-size: 12px; color: #000; background: #fff;">Ortho</span>
+                            <span id="selected-product-type-badge" style="border: 1px solid #333; padding: 1px 6px; font-size: 12px; color: #000; background: #fff; margin-left: 35px;">ORTHO</span>
+                        </div>
+
+                        <!-- Product Title & Actions Row -->
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                            <span id="selected-product-name" style="font-weight: bold; font-size: 13px; color: #000;">2D EXPANSION SCREW</span>
+                            <button type="button" onclick="cancelTeethSelection()" style="border: 1px solid #ccc; background: #fff; color: #007bff; font-size: 11px; padding: 1px 6px; border-radius: 2px; cursor: pointer;">Change</button>
+                            <input type="text" id="job-number-input" placeholder="Job #" style="width: 55px; height: 18px; border: 1px solid #ccc; background: #fff; font-size: 11px; color: #222; padding: 1px 4px; margin-left: 20px; box-sizing: border-box; border-radius: 2px;">
+                        </div>
+
+                        <!-- Teeth Selector Box (460px width) -->
+                        <div style="width: 460px; border: 2px solid #555; background: #fff; box-sizing: border-box; margin-bottom: 8px;">
+                            <!-- Grey Header Bar with Select Teeth & Quick Select -->
+                            <div style="background: #d4d4d4; padding: 2px 8px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #555; font-size: 12px; color: #111;">
+                                <span>Select Teeth</span>
+                                <div style="position: relative; display: inline-block;">
+                                    <a href="javascript:void(0)" onclick="toggleQuickSelectMenu(event)" style="color: #0056b3; font-size: 11px; text-decoration: none;">Quick Select <span style="font-size: 9px;">▼</span></a>
+                                    <div id="quick-select-dropdown" style="display: none; position: absolute; right: 0; top: 100%; background: #fff; border: 1px solid #999; box-shadow: 0 2px 6px rgba(0,0,0,0.2); z-index: 1000; min-width: 100px; font-size: 11px;">
+                                        <a href="javascript:void(0)" onclick="selectArch('upper'); toggleQuickSelectMenu(event);" style="display: block; padding: 4px 8px; color: #0056b3; text-decoration: none;">Upper Arch</a>
+                                        <a href="javascript:void(0)" onclick="selectArch('lower'); toggleQuickSelectMenu(event);" style="display: block; padding: 4px 8px; color: #0056b3; text-decoration: none;">Lower Arch</a>
+                                        <a href="javascript:void(0)" onclick="clearTeeth(); toggleQuickSelectMenu(event);" style="display: block; padding: 4px 8px; color: #0056b3; text-decoration: none;">Clear All</a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 4-Quadrant 50/50 Cross Layout (Guaranteed Perfect Dead Center) -->
+                            <div style="padding: 14px 10px; user-select: none;">
+                                <!-- Top Half (Upper Arch) -->
+                                <div style="display: flex; width: 100%; border-bottom: 1px solid #333;">
+                                    <!-- Upper Left (18..11) -->
+                                    <div class="teeth-quadrant" id="upper-left" style="width: 50%; display: flex; justify-content: flex-end; align-items: center; gap: 7px; padding: 4px 12px 6px 0; border-right: 1px solid #333; box-sizing: border-box;">
+                                        <div class="tooth-num" onclick="toggleTooth(this, 18)">8</div>
+                                        <div class="tooth-num" onclick="toggleTooth(this, 17)">7</div>
+                                        <div class="tooth-num" onclick="toggleTooth(this, 16)">6</div>
+                                        <div class="tooth-num" onclick="toggleTooth(this, 15)">5</div>
+                                        <div class="tooth-num" onclick="toggleTooth(this, 14)">4</div>
+                                        <div class="tooth-num" onclick="toggleTooth(this, 13)">3</div>
+                                        <div class="tooth-num" onclick="toggleTooth(this, 12)">2</div>
+                                        <div class="tooth-num" onclick="toggleTooth(this, 11)">1</div>
+                                    </div>
+                                    <!-- Upper Right (21..28) -->
+                                    <div class="teeth-quadrant" id="upper-right" style="width: 50%; display: flex; justify-content: flex-start; align-items: center; gap: 7px; padding: 4px 0 6px 12px; box-sizing: border-box;">
+                                        <div class="tooth-num" onclick="toggleTooth(this, 21)">1</div>
+                                        <div class="tooth-num" onclick="toggleTooth(this, 22)">2</div>
+                                        <div class="tooth-num" onclick="toggleTooth(this, 23)">3</div>
+                                        <div class="tooth-num" onclick="toggleTooth(this, 24)">4</div>
+                                        <div class="tooth-num" onclick="toggleTooth(this, 25)">5</div>
+                                        <div class="tooth-num" onclick="toggleTooth(this, 26)">6</div>
+                                        <div class="tooth-num" onclick="toggleTooth(this, 27)">7</div>
+                                        <div class="tooth-num" onclick="toggleTooth(this, 28)">8</div>
+                                    </div>
+                                </div>
+                                <!-- Bottom Half (Lower Arch) -->
+                                <div style="display: flex; width: 100%;">
+                                    <!-- Lower Left (48..41) -->
+                                    <div class="teeth-quadrant" id="lower-left" style="width: 50%; display: flex; justify-content: flex-end; align-items: center; gap: 7px; padding: 6px 12px 4px 0; border-right: 1px solid #333; box-sizing: border-box;">
+                                        <div class="tooth-num" onclick="toggleTooth(this, 48)">8</div>
+                                        <div class="tooth-num" onclick="toggleTooth(this, 47)">7</div>
+                                        <div class="tooth-num" onclick="toggleTooth(this, 46)">6</div>
+                                        <div class="tooth-num" onclick="toggleTooth(this, 45)">5</div>
+                                        <div class="tooth-num" onclick="toggleTooth(this, 44)">4</div>
+                                        <div class="tooth-num" onclick="toggleTooth(this, 43)">3</div>
+                                        <div class="tooth-num" onclick="toggleTooth(this, 42)">2</div>
+                                        <div class="tooth-num" onclick="toggleTooth(this, 41)">1</div>
+                                    </div>
+                                    <!-- Lower Right (31..38) -->
+                                    <div class="teeth-quadrant" id="lower-right" style="width: 50%; display: flex; justify-content: flex-start; align-items: center; gap: 7px; padding: 6px 0 4px 12px; box-sizing: border-box;">
+                                        <div class="tooth-num" onclick="toggleTooth(this, 31)">1</div>
+                                        <div class="tooth-num" onclick="toggleTooth(this, 32)">2</div>
+                                        <div class="tooth-num" onclick="toggleTooth(this, 33)">3</div>
+                                        <div class="tooth-num" onclick="toggleTooth(this, 34)">4</div>
+                                        <div class="tooth-num" onclick="toggleTooth(this, 35)">5</div>
+                                        <div class="tooth-num" onclick="toggleTooth(this, 36)">6</div>
+                                        <div class="tooth-num" onclick="toggleTooth(this, 37)">7</div>
+                                        <div class="tooth-num" onclick="toggleTooth(this, 38)">8</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Inputs Row directly below the teeth box -->
+                        <div style="width: 460px; display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 6px; font-size: 11px;">
+                            <div style="display: flex; gap: 10px; align-items: flex-start;">
+                                <div style="display: flex; flex-direction: column; gap: 2px;">
+                                    <label style="color: #333; font-size: 11px;">Teeth</label>
+                                    <input type="text" id="selected-teeth-list" oninput="handleTeethManualInput(this.value)" style="width: 45px; padding: 1px 3px; font-size: 11px; border: 1px solid #ccc; height: 18px; box-sizing: border-box;">
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 2px;">
+                                    <label style="color: #333; font-size: 11px;">Units</label>
+                                    <input type="number" id="unit-count" value="0" oninput="updateTeethUI(false, false, true)" style="width: 35px; padding: 1px 3px; font-size: 11px; border: 1px solid #ccc; height: 18px; box-sizing: border-box;">
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 2px;" id="footer-unit-rate-container">
+                                    <label style="color: #333; font-size: 11px;">Unit Rate</label>
+                                    <input type="number" id="unit-rate" value="0" oninput="updateTeethUI(true)" style="width: 65px; padding: 1px 3px; font-size: 11px; border: 1px solid #ccc; height: 18px; box-sizing: border-box;">
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 2px;" id="footer-total-price-container">
+                                    <label id="total-or-gross-label" style="color: #333; font-size: 11px;">Gross Amt</label>
+                                    <span id="gross-amount-display" style="font-size: 12px; color: #000; height: 18px; line-height: 18px; min-width: 25px;">0</span>
+                                    <input type="hidden" id="total-price" value="0">
+                                </div>
+                            </div>
+                            <a href="javascript:void(0)" onclick="toggleDiscountSection()" id="discount-link-btn" style="color: #0056b3; font-size: 12px; text-decoration: none; margin-top: 14px;">Discount</a>
+                        </div>
+
+                        <!-- Discount Box (Bordered Box, Matching Reference Screenshot) -->
+                        <div id="discount-box" style="display: none; width: 460px; border: 1px solid #777; background: #fff; padding: 4px 8px; box-sizing: border-box; margin-bottom: 6px; font-size: 11px;">
+                            <div style="display: flex; gap: 15px; align-items: flex-start;">
+                                <div style="display: flex; flex-direction: column; gap: 2px;">
+                                    <label style="color: #333; font-size: 11px;">Disc. Type</label>
+                                    <select id="disc-type" onchange="calculateDiscount('type')" style="width: 75px; height: 20px; font-size: 11px; padding: 1px; border: 1px solid #ccc; box-sizing: border-box; background: #fff;">
+                                        <option value="Percent">Percent</option>
+                                        <option value="Amount">Amount</option>
+                                    </select>
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 2px;">
+                                    <label style="color: #333; font-size: 11px;">Disc. %</label>
+                                    <input type="number" step="any" id="disc-percent" placeholder="Disc. %" oninput="calculateDiscount('percent')" style="width: 60px; height: 20px; font-size: 11px; padding: 1px 4px; border: 1px solid #ccc; box-sizing: border-box;">
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 2px;">
+                                    <label style="color: #333; font-size: 11px;">Disc. Amt</label>
+                                    <input type="number" step="any" id="disc-amt" placeholder="Disc. A" oninput="calculateDiscount('amount')" style="width: 60px; height: 20px; font-size: 11px; padding: 1px 4px; border: 1px solid #ccc; box-sizing: border-box;">
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 2px;">
+                                    <label style="color: #333; font-size: 11px;">Total</label>
+                                    <span id="net-total-display" style="font-size: 12px; color: #000; height: 20px; line-height: 20px; min-width: 25px;">0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Slabs for RPD Products -->
+                        <div id="slabs-container" style="display: none; border: 1px solid #ccc; padding: 10px; margin-top: 6px; font-size: 13px; background: #fafafa; width: 460px; box-sizing: border-box;">
+                            <div style="font-weight: bold; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;"><span>Slabs</span><div style="font-weight: normal;"><label style="margin-right: 5px; font-weight: 600;">Total Units:</label><input type="number" id="slab-total-units" value="0" min="0" style="width: 60px; padding: 4px; border: 1px solid #ccc; border-radius: 4px;" oninput="document.getElementById('unit-count').value = this.value; updateTeethUI(false, true)"></div></div>
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <span>First Tooth (<span id="slab1-units-display" style="font-weight: bold;">0 / 1</span> Unit) @</span>
+                                <input type="number" step="any" id="slab1-rate" value="17" style="width: 70px; padding: 4px; border: 1px solid #ccc;" oninput="updateTeethUI()" onchange="updateTeethUI()">
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <span>Remaining Teeth (<span id="slab2-units-display" style="font-weight: bold;">0</span> Units) @</span>
+                                <input type="number" step="any" id="slab2-rate" value="2" style="width: 70px; padding: 4px; border: 1px solid #ccc;" oninput="updateTeethUI()" onchange="updateTeethUI()">
+                                <span>per unit</span>
+                            </div>
+                            <div style="font-weight: bold; font-size: 14px; color: #b91c1c; border-top: 1px dashed #ccc; padding-top: 8px;">
+                                Total Slab Charge: <span id="slab-total-display">0.00</span>
+                            </div>
+                        </div>
+
+                        <div id="custom-unit-text-container" style="display: none; margin-top: 6px; width: 460px; box-sizing: border-box;">
+                            <label style="font-weight: 600; font-size: 12px; color: #333;">Unit Description (if no teeth selected)</label>
+                            <textarea id="custom-unit-text" rows="2" style="width: 100%; padding: 4px; border: 1px solid #ccc;" placeholder="E.g. Upper right 3, 4, 5..."></textarea>
+                        </div>
+
+                        <!-- Action Buttons Row -->
+                        <div style="margin-top: 8px; display: flex; gap: 6px;">
+                            <button type="button" onclick="saveAndAddNewJob()" style="background: #e9ecef; border: 1px solid #ccc; padding: 2px 8px; font-size: 11px; cursor: pointer; color: #222; border-radius: 2px;">Save and Add New Job</button>
+                            <button type="button" onclick="confirmTeeth()" style="background: #e9ecef; border: 1px solid #ccc; padding: 2px 10px; font-size: 11px; cursor: pointer; color: #222; border-radius: 2px;">OK</button>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Dashed Divider & Centered Cancel Button -->
+                    <div style="border-top: 1px dashed #ccc; margin-top: 20px; padding-top: 8px; text-align: center;">
+                        <button type="button" onclick="cancelTeethSelection()" style="background: transparent; border: none; color: #007bff; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-undo" style="font-size: 11px;"></i> Cancel</button>
+                    </div>
+                </div>
+
+                <!-- New detailed order options area -->
+                <div id="order-details-area"
+                    style="display:none; margin-top:20px; border-top: 1px solid #ddd; padding-top: 20px;">
+                    <div style="display:flex; gap:20px;">
+                        <div style="flex:3;">
+                            <div
+                                style="display:grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap:10px; margin-bottom:10px; font-size:12px; box-sizing:border-box;">
+                                <div class="form-group"><label>Shade 1</label><input type="text" id="shade1"
+                                        list="shade-list" style="width:100%; padding:4px; box-sizing:border-box;"></div>
+                                <div class="form-group"><label>Shade 2</label><input type="text" id="shade2"
+                                        list="shade-list" style="width:100%; padding:4px; box-sizing:border-box;"></div>
+                                <div class="form-group"><label>Shade 3</label><input type="text" id="shade3"
+                                        list="shade-list" style="width:100%; padding:4px; box-sizing:border-box;"></div>
+                                <div class="form-group"><label>Shade Notes</label><input type="text" id="shade-notes"
+                                        style="width:100%; padding:4px; box-sizing:border-box;"></div>
+                            </div>
+                            <div id="dynamic-product-options" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap:10px; margin-bottom:10px; font-size:12px; box-sizing:border-box;"></div>
+                            <div
+                                style="display:grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap:10px; margin-bottom:10px; font-size:12px; box-sizing:border-box;">
+                                <div class="form-group"><label>Priority</label><select id="priority"
+                                        style="width:100%; padding:4px; box-sizing:border-box;">
+                                        <option>Normal</option>
+                                        <option>Urgent</option>
+                                    </select></div>
+                                <div class="form-group" style="display:flex; align-items:center; gap:5px;"><input
+                                        type="checkbox" id="io-scan"><label for="io-scan">I O Scan</label></div>
+                                <div class="form-group"><label>Articulator Tag</label><input type="text"
+                                        id="articulator-tag" style="width:100%; padding:4px; box-sizing:border-box;"></div>
+                                <div class="form-group"><label>Additional Amount</label><input type="number"
+                                        id="additional-amount" value="0" style="width:100%; padding:4px; box-sizing:border-box;"></div>
+                            </div>
+                        </div>
+                        <div style="flex:2; border:1px solid #ddd; padding:10px; background:#f9fafb;">
+                            <table style="width:100%; border-collapse:collapse; font-size:11px;">
+                                <thead>
+                                    <tr style="border-bottom:1px solid #ddd; text-align:left;">
+                                        <th># TryIn</th>
+                                        <th>Scheduled</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tryins-table-body">
+                                    <tr style="border-bottom:1px solid #eee;">
+                                        <td style="padding:5px 0;">1 Wax Trial</td>
+                                        <td><input type="date" id="tryin-wax-date"
+                                                style="width:90%; padding:2px; font-size:10px; border:1px solid #ccc; border-radius:3px;">
+                                        </td>
+                                        <td style="font-weight:700;"><span
+                                                style="color:red; font-size:14px; cursor:pointer;">&times;</span> In
+                                            Process</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid #eee;">
+                                        <td style="padding:5px 0;">2 Metal/Coping Trial</td>
+                                        <td><input type="date" id="tryin-metal-date"
+                                                style="width:90%; padding:2px; font-size:10px; border:1px solid #ccc; border-radius:3px;">
+                                        </td>
+                                        <td style="font-weight:700;"><span
+                                                style="color:red; font-size:14px; cursor:pointer;">&times;</span>
+                                            Waiting</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:5px 0;">3 Bisque Trial</td>
+                                        <td><input type="date" id="tryin-bisque-date"
+                                                style="width:90%; padding:2px; font-size:10px; border:1px solid #ccc; border-radius:3px;">
+                                        </td>
+                                        <td style="font-weight:700;"><span
+                                                style="color:red; font-size:14px; cursor:pointer;">&times;</span>
+                                            Waiting</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div
+                        style="display:grid; grid-template-columns: 2fr 1fr 1.5fr; gap:10px; margin-bottom:10px; font-size:12px; margin-top:10px;">
+                        <div class="form-group"><label>Patient Name</label><input type="text" id="patient-name-detail"
+                                style="width:100%; padding:4px;" placeholder="Patient Name"></div>
+                        <div class="form-group"><label>Delivery Method</label><select id="delivery-method"
+                                style="width:100%; padding:4px;">
+                                <option value=""></option>
+                                <option>LOGISTICS TEAM</option>
+                                <option>Courier</option>
+                                <option>Delivery Boy</option>
+                                <option>Doctors Pickup</option>
+                                <option>Mail</option>
+                            </select></div>
+                        <div class="form-group">
+                            <label>Status</label>
+                            <div style="display:flex; gap:5px; align-items:center;">
+                                <select id="order-status" style="flex:1; padding:4px;" onchange="handleStatusChange()">
+                                    <option>New</option>
+                                    <option>In Production</option>
+                                    <option>Complete</option>
+                                    <option>On Hold</option>
+                                    <option>Try In</option>
+                                    <option>Cancelled</option>
+                                </select>
+                                <span style="font-size:11px; color:#666;">on</span>
+                                <input type="date" id="status-date"
+                                    style="width:110px; padding:2px; font-size:10px; border:1px solid #ccc; border-radius:3px;">
+                            </div>
+                            <div id="hold-reason-area" style="display:none; margin-top:10px;">
+                                <label id="reason-label" style="display:block; margin-bottom:5px;">Hold Reason</label>
+                                <select id="hold-reason" style="width:100%; padding:4px;">
+                                    <option value=""></option>
+                                    <option value="Design not clear">Design not clear</option>
+                                    <option value="Doctors Confirmation">Doctors Confirmation</option>
+                                    <option value="Improper Impression">Improper Impression</option>
+                                    <option value="Payment Pending">Payment Pending</option>
+                                    <option value="Work Order Incomplete">Work Order Incomplete</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap:10px; margin-bottom:10px; font-size:12px;">
+                        <div class="form-group"><label>Pan/Tray #</label><input type="text" id="pan-tray"
+                                style="width:100%; padding:4px;"></div>
+                        <div class="form-group"><label>Assign To</label><select id="assign-to"
+                                style="width:100%; padding:4px;" onchange="handleStaffChange(this)">
+                                <option></option>
+                            </select></div>
+                        <div class="form-group"><label>Manufacturer</label><select id="manufacturer"
+                                style="width:100%; padding:4px;">
+                                <option>In house Lab</option>
+                            </select></div>
+                        <div class="form-group" style="display:flex; align-items:flex-end;"><a href="javascript:void(0)"
+                                style="color:#0056b3; text-decoration:none;" onclick="openEnclosuresModal()">Add
+                                Enclosures</a> <span id="enclosures-summary"
+                                style="font-size:10px; margin-left:10px; color:#666;"></span></div>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap:10px; font-size:12px;">
+                        <div class="form-group"><label>Department</label><select id="department"
+                                style="width:100%; padding:4px;">
+                                <option value=""></option>
+                                <option>Acrylic</option>
+                                <option>Admin</option>
+                                <option>Metal</option>
+                                <option>Mould and Die</option>
+                                <option>Orthodontic</option>
+                                <option>OUTBOX</option>
+                                <option>Porcelain</option>
+                                <option>Quality</option>
+                                <option>Wax</option>
+                            </select></div>
+                        <div class="form-group"><label>Work Type</label>
+                            <div style="display:flex; gap:5px; align-items:center;">
+                                <label><input type="radio" name="workType" value="New" checked> New</label>
+                                <label><input type="radio" name="workType" value="Repeat"> Repeat</label>
+                                <label><input type="radio" name="workType" value="Repair"> Repair</label>
+                            </div>
+                        </div>
+                        <div class="form-group"><label>Sub Doctor</label>
+                            <select id="sub-doctor" style="width:100%; padding:4px;"
+                                onchange="handleDoctorChange(this)">
+                                <option value="">Primary Doctor</option>
+                                <option value="__add_new__" style="font-weight:bold; color:#3b82f6;">+ Add New Doctor...
+                                </option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label>Drop Location</label><input type="text" id="drop-location"
+                                placeholder="Primary Address" style="width:100%; padding:4px;"></div>
+                    </div>
+                </div><!-- End tab-detail-content -->
+
+                <div id="tab-images-content" style="display:none;">
+                    <div style="border:1px solid #999; margin-top:10px;">
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; background:#f9fafb; padding:5px 15px; border-bottom:1px solid #999;">
+                            <h3 style="font-size:16px; margin:0; font-weight:700; color:#333;">Documents</h3>
+                            <div style="display:flex; gap:5px;">
+                                <button type="button" class="btn-outline"
+                                    style="font-size:11px; padding:4px 10px; color:#0056b3; background:#f8f9fa; border:1px solid #ccc; border-radius:4px;"
+                                    onclick="showTab('detail')"><i class="fas fa-reply"></i> Return to Order
+                                    Details</button>
+                                <input type="file" id="order-image-input" style="display:none;" multiple
+                                    accept="image/*">
+                                <button type="button" class="btn-outline"
+                                    style="font-size:11px; padding:4px 10px; color:#0056b3; background:#f8f9fa; border:1px solid #ccc; border-radius:4px;"
+                                    onclick="document.getElementById('order-image-input').click()"><i
+                                        class="fas fa-image"></i> Add Image</button>
+                                <button type="button" class="btn-outline"
+                                    style="font-size:11px; padding:4px 10px; color:#0056b3; background:#f8f9fa; border:1px solid #ccc; border-radius:4px;"><i
+                                        class="fas fa-camera"></i> WebCam</button>
+                            </div>
+                        </div>
+                        <div style="padding:60px 20px; text-align:center; background:#fff;">
+                            <div style="border:1px solid #333; display:inline-block; padding:20px 40px;">
+                                <p style="font-weight:700; margin:0; font-size:18px; color:#333;">It's easy</p>
+                                <p style="margin:8px 0 0 0; font-size:14px; color:#333;">Add, Edit and Organize
+                                    documents</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-log-content" style="display:none;">
+                    <div style="border:1px solid #999; margin-top:10px;">
+                        <div
+                            style="background:#e5e7eb; padding:5px 15px; border-bottom:1px solid #999; text-align:center;">
+                            <h3 style="font-size:16px; margin:0; font-weight:700; color:#333;">Order Log</h3>
+                        </div>
+                        <div style="display:flex; justify-content:flex-end; padding:10px 15px;">
+                            <button type="button" class="btn-outline"
+                                style="font-size:11px; padding:4px 10px; color:#0056b3; background:#f8f9fa; border:1px solid #ccc; border-radius:4px;"
+                                onclick="showTab('detail')"><i class="fas fa-reply"></i> Return to Order
+                                Details</button>
+                        </div>
+                        <div style="padding:40px 20px; text-align:center;">
+                            <p style="font-size:18px; color:#333; margin:20px 0;">No Order Logs found</p>
+                        </div>
+                        <div style="display:flex; justify-content:center; gap:10px; padding:20px;">
+                            <button type="button" class="btn-outline"
+                                style="font-size:12px; color:#0056b3; border:1px solid #ccc; background:#f8f9fa; padding:5px 15px; border-radius:4px;">Add
+                                Client Notes</button>
+                            <button type="button" class="btn-outline"
+                                style="font-size:12px; color:#0056b3; border:1px solid #ccc; background:#f8f9fa; padding:5px 15px; border-radius:4px;">Add
+                                Technician Notes</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top:20px; font-size:12px; padding: 0 10px;">
+                <label style="display:block; margin-bottom:5px; font-weight: 600;">Order Notes</label>
+                <textarea id="order-notes"
+                    style="width:100%; height:80px; padding:8px; border:1px solid #ccc; border-radius:4px; font-family:inherit; box-sizing: border-box;"
+                    placeholder="Order Notes"></textarea>
+            </div>
+
+            <div class="btn-actions">
+                <button class="btn-outline" style="color:#ef4444; border-color:#ef4444;" onclick="deleteOrder()"><i
+                        class="fas fa-trash"></i> Delete Order</button>
+                <button class="btn-outline" style="color:#d63384;" onclick="location.href='orders.html'"><i
+                        class="fas fa-undo"></i> Cancel</button>
+                <button class="btn-pink" onclick="submitOrder()">Save Changes</button>
+                                                style="width:90%; padding:2px; font-size:10px; border:1px solid #ccc; border-radius:3px;">
+                                        </td>
+                                        <td style="font-weight:700;"><span
+                                                style="color:red; font-size:14px; cursor:pointer;">&times;</span> In
+                                            Process</td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid #eee;">
+                                        <td style="padding:5px 0;">2 Metal/Coping Trial</td>
+                                        <td><input type="date" id="tryin-metal-date"
+                                                style="width:90%; padding:2px; font-size:10px; border:1px solid #ccc; border-radius:3px;">
+                                        </td>
+                                        <td style="font-weight:700;"><span
+                                                style="color:red; font-size:14px; cursor:pointer;">&times;</span>
+                                            Waiting</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:5px 0;">3 Bisque Trial</td>
+                                        <td><input type="date" id="tryin-bisque-date"
+                                                style="width:90%; padding:2px; font-size:10px; border:1px solid #ccc; border-radius:3px;">
+                                        </td>
+                                        <td style="font-weight:700;"><span
+                                                style="color:red; font-size:14px; cursor:pointer;">&times;</span>
+                                            Waiting</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div
+                        style="display:grid; grid-template-columns: 2fr 1fr 1.5fr; gap:10px; margin-bottom:10px; font-size:12px; margin-top:10px;">
+                        <div class="form-group"><label>Patient Name</label><input type="text" id="patient-name-detail"
+                                style="width:100%; padding:4px;" placeholder="Patient Name"></div>
+                        <div class="form-group"><label>Delivery Method</label><select id="delivery-method"
+                                style="width:100%; padding:4px;">
+                                <option value=""></option>
+                                <option>LOGISTICS TEAM</option>
+                                <option>Courier</option>
+                                <option>Delivery Boy</option>
+                                <option>Doctors Pickup</option>
+                                <option>Mail</option>
+                            </select></div>
+                        <div class="form-group">
+                            <label>Status</label>
+                            <div style="display:flex; gap:5px; align-items:center;">
+                                <select id="order-status" style="flex:1; padding:4px;" onchange="handleStatusChange()">
+                                    <option>New</option>
+                                    <option>In Production</option>
+                                    <option>Complete</option>
+                                    <option>On Hold</option>
+                                    <option>Try In</option>
+                                    <option>Cancelled</option>
+                                </select>
+                                <span style="font-size:11px; color:#666;">on</span>
+                                <input type="date" id="status-date"
+                                    style="width:110px; padding:2px; font-size:10px; border:1px solid #ccc; border-radius:3px;">
+                            </div>
+                            <div id="hold-reason-area" style="display:none; margin-top:10px;">
+                                <label id="reason-label" style="display:block; margin-bottom:5px;">Hold Reason</label>
+                                <select id="hold-reason" style="width:100%; padding:4px;"><option value=""></option></select>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap:10px; margin-bottom:10px; font-size:12px;">
+                        <div class="form-group"><label>Pan/Tray #</label><input type="text" id="pan-tray"
+                                style="width:100%; padding:4px;"></div>
+                        <div class="form-group"><label>Assign To</label><select id="assign-to"
+                                style="width:100%; padding:4px;" onchange="handleStaffChange(this)">
+                                <option></option>
+                            </select></div>
+                        <div class="form-group"><label>Manufacturer</label><select id="manufacturer"
+                                style="width:100%; padding:4px;">
+                                <option>In house Lab</option>
+                            </select></div>
+                        <div class="form-group" style="display:flex; align-items:flex-end;"><a href="javascript:void(0)"
+                                style="color:#0056b3; text-decoration:none;" onclick="openEnclosuresModal()">Add
+                                Enclosures</a> <span id="enclosures-summary"
+                                style="font-size:10px; margin-left:10px; color:#666;"></span></div>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap:10px; font-size:12px;">
+                        <div class="form-group"><label>Department</label><select id="department"
+                                style="width:100%; padding:4px;">
+                                <option value=""></option>
+                                <option>Acrylic</option>
+                                <option>Admin</option>
+                                <option>Metal</option>
+                                <option>Mould and Die</option>
+                                <option>Orthodontic</option>
+                                <option>OUTBOX</option>
+                                <option>Porcelain</option>
+                                <option>Quality</option>
+                                <option>Wax</option>
+                            </select></div>
+
+                        <div class="form-group"><label>Work Type</label>
+                            <div id="work-type-options" style="display:flex; gap:5px; align-items:center;">
+                                <label><input type="radio" name="workType" value="New" checked> New</label>
+                                <label><input type="radio" name="workType" value="Repeat"> Repeat</label>
+                                <label><input type="radio" name="workType" value="Repair"> Repair</label>
+                            </div>
+                        </div>
+                        <div class="form-group"><label>Sub Doctor</label>
+                            <select id="sub-doctor" style="width:100%; padding:4px;"
+                                onchange="handleDoctorChange(this)">
+                                <option value="">Primary Doctor</option>
+                                <option value="__add_new__" style="font-weight:bold; color:#3b82f6;">+ Add New Doctor...
+                                </option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label>Drop Location</label><input type="text" id="drop-location"
+                                placeholder="Primary Address" style="width:100%; padding:4px;"></div>
+                    </div>
+                </div><!-- End tab-detail-content -->
+
+                <div id="tab-images-content" style="display:none;">
+                    <div style="border:1px solid #999; margin-top:10px;">
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; background:#f9fafb; padding:5px 15px; border-bottom:1px solid #999;">
+                            <h3 style="font-size:16px; margin:0; font-weight:700; color:#333;">Documents</h3>
+                            <div style="display:flex; gap:5px;">
+                                <button type="button" class="btn-outline"
+                                    style="font-size:11px; padding:4px 10px; color:#0056b3; background:#f8f9fa; border:1px solid #ccc; border-radius:4px;"
+                                    onclick="showTab('detail')"><i class="fas fa-reply"></i> Return to Order
+                                    Details</button>
+                                <input type="file" id="order-image-input" style="display:none;" multiple
+                                    accept="image/*">
+                                <button type="button" class="btn-outline"
+                                    style="font-size:11px; padding:4px 10px; color:#0056b3; background:#f8f9fa; border:1px solid #ccc; border-radius:4px;"
+                                    onclick="document.getElementById('order-image-input').click()"><i
+                                        class="fas fa-image"></i> Add Image</button>
+                                <button type="button" class="btn-outline"
+                                    style="font-size:11px; padding:4px 10px; color:#0056b3; background:#f8f9fa; border:1px solid #ccc; border-radius:4px;"><i
+                                        class="fas fa-camera"></i> WebCam</button>
+                            </div>
+                        </div>
+                        <div style="padding:60px 20px; text-align:center; background:#fff;">
+                            <div style="border:1px solid #333; display:inline-block; padding:20px 40px;">
+                                <p style="font-weight:700; margin:0; font-size:18px; color:#333;">It's easy</p>
+                                <p style="margin:8px 0 0 0; font-size:14px; color:#333;">Add, Edit and Organize
+                                    documents</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-log-content" style="display:none;">
+                    <div style="border:1px solid #999; margin-top:10px;">
+                        <div
+                            style="background:#e5e7eb; padding:5px 15px; border-bottom:1px solid #999; text-align:center;">
+                            <h3 style="font-size:16px; margin:0; font-weight:700; color:#333;">Order Log</h3>
+                        </div>
+                        <div style="display:flex; justify-content:flex-end; padding:10px 15px;">
+                            <button type="button" class="btn-outline"
+                                style="font-size:11px; padding:4px 10px; color:#0056b3; background:#f8f9fa; border:1px solid #ccc; border-radius:4px;"
+                                onclick="showTab('detail')"><i class="fas fa-reply"></i> Return to Order
+                                Details</button>
+                        </div>
+                        <div style="padding:40px 20px; text-align:center;">
+                            <p style="font-size:18px; color:#333; margin:20px 0;">No Order Logs found</p>
+                        </div>
+                        <div style="display:flex; justify-content:center; gap:10px; padding:20px;">
+                            <button type="button" class="btn-outline"
+                                style="font-size:12px; color:#0056b3; border:1px solid #ccc; background:#f8f9fa; padding:5px 15px; border-radius:4px;">Add
+                                Client Notes</button>
+                            <button type="button" class="btn-outline"
+                                style="font-size:12px; color:#0056b3; border:1px solid #ccc; background:#f8f9fa; padding:5px 15px; border-radius:4px;">Add
+                                Technician Notes</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top:20px; font-size:12px; padding: 0 10px;">
+                <label style="display:block; margin-bottom:5px; font-weight: 600;">Order Notes</label>
+                <textarea id="order-notes"
+                    style="width:100%; height:80px; padding:8px; border:1px solid #ccc; border-radius:4px; font-family:inherit; box-sizing: border-box;"
+                    placeholder="Order Notes"></textarea>
+            </div>
+
+            <div style="margin-top:10px; padding: 0 10px;">
+                <button type="button" class="btn-outline" style="font-weight: bold; color: #ec4899; border-color: #ec4899;" onclick="handleAddProductFromBottom()">+ Add Another Product</button>
+            </div>
+
+            <div class="btn-actions">
+                <button class="btn-outline" style="color:#ef4444; border-color:#ef4444;" onclick="deleteOrder()"><i
+                        class="fas fa-trash"></i> Delete Order</button>
+                <button class="btn-outline" style="color:#d63384;" onclick="location.href='orders.html'"><i
+                        class="fas fa-undo"></i> Cancel</button>
+                <button class="btn-pink" onclick="submitOrder()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.toString()
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const API_BASE = (window.location.protocol === 'file:' || isLocalhost) ? 'http://localhost:5000/api' : window.location.origin + '/api';
+        const JOB_COLORS = ['#ec4899', '#9f1239', '#10b981', '#f59e0b', '#3b82f6', '#8b5cf6', '#14b8a6', '#f97316'];
+        let allClients = [];
+        let selectedClientId = null;
+        let selectedProduct = null;
+        let currentOrderId = null;
+        let selectedTeeth = [];
+        let selectedProductType = 'General';
+        let productTypesList = [];
+
+        function renderDynamicProductOptions(p, savedValues = null) {
+            const container = document.getElementById('dynamic-product-options');
+            if (!container) return;
+            container.innerHTML = '';
+            
+            const tryinsTbody = document.getElementById('tryins-table-body');
+            if (tryinsTbody) {
+                tryinsTbody.innerHTML = '';
+            }
+
+            let tryinsConfig = null;
+            let optionsConfig = null;
+            
+            if (p.tryins) {
+                try { tryinsConfig = JSON.parse(p.tryins); } catch(e) {}
+            }
+            if (p.options) {
+                try { optionsConfig = JSON.parse(p.options); } catch(e) {}
+            }
+
+            if (!tryinsConfig || !optionsConfig) {
+                const typeObj = productTypesList.find(t => t.name === (p.type || p.productType));
+                if (typeObj) {
+                    if (!tryinsConfig && typeObj.tryins) {
+                        try { tryinsConfig = JSON.parse(typeObj.tryins); } catch(e) {}
+                    }
+                    if (!optionsConfig && typeObj.options) {
+                        try { optionsConfig = JSON.parse(typeObj.options); } catch(e) {}
+                    }
+                }
+            }
+
+            let tryinsList = ["Wax Trial", "Metal/Coping Trial", "Bisque Trial"];
+            if (tryinsConfig) {
+                if (tryinsConfig.useDefault) {
+                    tryinsList = ["Try-In", "Special Tray", "Wax Test", "Setting Trial"];
+                } else if (Array.isArray(tryinsConfig.list) && tryinsConfig.list.length > 0) {
+                    tryinsList = tryinsConfig.list;
+                }
+            }
+
+            if (tryinsTbody) {
+                tryinsList.forEach((t, idx) => {
+                    const num = idx + 1;
+                    const inputId = `tryin-${t.toLowerCase().replace(/[^a-z0-9]/g, '-')}-date`;
+                    
+                    const dObj = new Date();
+                    let valDate = `${dObj.getFullYear()}-${String(dObj.getMonth() + 1).padStart(2, '0')}-${String(dObj.getDate()).padStart(2, '0')}`;
+                    if (savedValues && savedValues.tryinDates && savedValues.tryinDates[t]) {
+                        valDate = savedValues.tryinDates[t];
+                    }
+
+                    tryinsTbody.innerHTML += `
+                        <tr style="border-bottom:1px solid #eee;">
+                            <td style="padding:5px 0;">${num} ${escapeHtml(t)}</td>
+                            <td><input type="date" id="${inputId}" class="tryin-date-input" data-name="${escapeHtml(t)}" value="${valDate}" style="width:90%; padding:2px; font-size:10px; border:1px solid #ccc; border-radius:3px;"></td>
+                            <td style="font-weight:700;"><span style="color:red; font-size:14px; cursor:pointer;" onclick="this.parentElement.parentElement.remove()">&times;</span> In Process</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            if (optionsConfig && Array.isArray(optionsConfig)) {
+                optionsConfig.forEach(opt => {
+                    if (opt.status === 'Show' || opt.status === 'Optional') {
+                        const label = opt.name;
+                        const reqAttr = opt.status === 'Show' ? 'required' : '';
+                        const reqStar = opt.status === 'Show' ? '<span style="color:red;">*</span>' : '';
+                        
+                        let currentVal = opt.defaultValue || '';
+                        if (savedValues && savedValues.customOpts && savedValues.customOpts[label] !== undefined) {
+                            currentVal = savedValues.customOpts[label];
+                        }
+
+                        let inputHtml = '';
+                        if (label === 'Restoration Type') {
+                            const opts = ['Crown', 'Inlay', 'Onlay', 'Bridge', 'Veneer', 'Overlay'];
+                            inputHtml = `<select class="custom-prod-opt" data-name="${escapeHtml(label)}" ${reqAttr} style="width:100%; padding:4px;">
+                                ${opts.map(o => `<option value="${o}" ${currentVal === o ? 'selected' : ''}>${o}</option>`).join('')}
+                            </select>`;
+                        } else if (label === 'Margins') {
+                            const opts = ['Chamfer', 'Shoulder', 'Feather edge', 'Knife edge'];
+                            inputHtml = `<select class="custom-prod-opt" data-name="${escapeHtml(label)}" ${reqAttr} style="width:100%; padding:4px;">
+                                ${opts.map(o => `<option value="${o}" ${currentVal === o ? 'selected' : ''}>${o}</option>`).join('')}
+                            </select>`;
+                        } else if (label === 'Occlusal Clearance') {
+                            const opts = ['0.5mm', '1.0mm', '1.5mm', '2.0mm', 'Reduction coping needed'];
+                            inputHtml = `<select class="custom-prod-opt" data-name="${escapeHtml(label)}" ${reqAttr} style="width:100%; padding:4px;">
+                                ${opts.map(o => `<option value="${o}" ${currentVal === o ? 'selected' : ''}>${o}</option>`).join('')}
+                            </select>`;
+                        } else if (label === 'Translucency') {
+                            const opts = ['High', 'Medium', 'Low', 'Extra High', 'Opaque'];
+                            inputHtml = `<select class="custom-prod-opt" data-name="${escapeHtml(label)}" ${reqAttr} style="width:100%; padding:4px;">
+                                ${opts.map(o => `<option value="${o}" ${currentVal === o ? 'selected' : ''}>${o}</option>`).join('')}
+                            </select>`;
+                        } else if (label === 'No Coping clearance') {
+                            const opts = ['No', 'Yes'];
+                            inputHtml = `<select class="custom-prod-opt" data-name="${escapeHtml(label)}" ${reqAttr} style="width:100%; padding:4px;">
+                                ${opts.map(o => `<option value="${o}" ${currentVal === o ? 'selected' : ''}>${o}</option>`).join('')}
+                            </select>`;
+                        } else if (label === 'Pontic Design') {
+                            const opts = ['Modified ridge lap', 'Ridge lap', 'Sanitary', 'Ovate', 'Bullet'];
+                            inputHtml = `<select class="custom-prod-opt" data-name="${escapeHtml(label)}" ${reqAttr} style="width:100%; padding:4px;">
+                                ${opts.map(o => `<option value="${o}" ${currentVal === o ? 'selected' : ''}>${o}</option>`).join('')}
+                            </select>`;
+                        } else if (label === 'Collar and Metal Design') {
+                            const opts = ['No collar', 'Full metal collar', 'Lingual collar', 'Buccal collar'];
+                            inputHtml = `<select class="custom-prod-opt" data-name="${escapeHtml(label)}" ${reqAttr} style="width:100%; padding:4px;">
+                                ${opts.map(o => `<option value="${o}" ${currentVal === o ? 'selected' : ''}>${o}</option>`).join('')}
+                            </select>`;
+                        } else if (label === 'Proximal contacts') {
+                            const opts = ['Normal', 'Tight', 'Light'];
+                            inputHtml = `<select class="custom-prod-opt" data-name="${escapeHtml(label)}" ${reqAttr} style="width:100%; padding:4px;">
+                                ${opts.map(o => `<option value="${o}" ${currentVal === o ? 'selected' : ''}>${o}</option>`).join('')}
+                            </select>`;
+                        } else if (label === 'Anterior Margin' || label === 'Posterior Margin') {
+                            const opts = ['', 'Chamfer', 'Shoulder', 'Feather edge', 'Knife edge', 'Subgingival', 'Supragingival', 'Equigingival'];
+                            inputHtml = `<select class="custom-prod-opt" data-name="${escapeHtml(label)}" ${reqAttr} style="width:100%; padding:4px;">
+                                ${opts.map(o => `<option value="${o}" ${currentVal === o ? 'selected' : ''}>${o}</option>`).join('')}
+                            </select>`;
+                        } else if (label === 'Buccal Margin') {
+                            const opts = ['', 'Porcelain butt', 'Metal collar', 'Disappearing margin', 'Subgingival', 'Supragingival'];
+                            inputHtml = `<select class="custom-prod-opt" data-name="${escapeHtml(label)}" ${reqAttr} style="width:100%; padding:4px;">
+                                ${opts.map(o => `<option value="${o}" ${currentVal === o ? 'selected' : ''}>${o}</option>`).join('')}
+                            </select>`;
+                        } else if (label === 'Gingival warming') {
+                            const opts = ['', 'Yes', 'No', 'Light', 'Medium', 'Heavy'];
+                            inputHtml = `<select class="custom-prod-opt" data-name="${escapeHtml(label)}" ${reqAttr} style="width:100%; padding:4px;">
+                                ${opts.map(o => `<option value="${o}" ${currentVal === o ? 'selected' : ''}>${o}</option>`).join('')}
+                            </select>`;
+                        } else if (label === 'Surface texture') {
+                            const opts = ['', 'Smooth', 'Medium', 'Heavy', 'Natural', 'High shine'];
+                            inputHtml = `<select class="custom-prod-opt" data-name="${escapeHtml(label)}" ${reqAttr} style="width:100%; padding:4px;">
+                                ${opts.map(o => `<option value="${o}" ${currentVal === o ? 'selected' : ''}>${o}</option>`).join('')}
+                            </select>`;
+                        } else if (label === 'Crown Contour') {
+                            const opts = ['', 'Anatomical', 'Flat', 'Under-contoured', 'Over-contoured', 'Normal'];
+                            inputHtml = `<select class="custom-prod-opt" data-name="${escapeHtml(label)}" ${reqAttr} style="width:100%; padding:4px;">
+                                ${opts.map(o => `<option value="${o}" ${currentVal === o ? 'selected' : ''}>${o}</option>`).join('')}
+                            </select>`;
+                        } else {
+                            inputHtml = `<input type="text" class="custom-prod-opt" data-name="${escapeHtml(label)}" value="${escapeHtml(currentVal)}" ${reqAttr} style="width:100%; padding:4px;">`;
+                        }
+
+                        container.innerHTML += `
+                            <div class="form-group">
+                                <label>${escapeHtml(label)} ${reqStar}</label>
+                                ${inputHtml}
+                            </div>
+                        `;
+                    }
+                });
+            }
+        }
+
+
+        async function loadClients() {
+            const tbody = document.getElementById('client-table-body');
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 20px; color: #666; font-weight: 500;"><i class="fas fa-spinner fa-spin" style="margin-right: 8px; color: #ec4899;"></i>Loading clients... (Connecting to server, please wait up to 1 minute on first load of the day)</td></tr>`;
+            }
+            try {
+                const res = await fetch(`${API_BASE}/clients` + ( `clients`.includes('?') ? '&' : '?' ) + '_t=' + Date.now());
+                allClients = await res.json();
+                renderClients(allClients);
+                populateDoctors();
+            } catch (err) { 
+                console.error(err); 
+                if (tbody) {
+                    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 20px; color: #dc2626; font-weight: 500;"><i class="fas fa-exclamation-triangle" style="margin-right: 8px;"></i>Failed to load clients. Server is offline or not responding. Please retry.</td></tr>`;
+                }
+            }
+        }
+
+        function populateDoctors() {
+            const select = document.getElementById('sub-doctor');
+            if (!select) return;
+            const uniqueDoctors = [...new Set(allClients.map(c => c.doctorName).filter(d => d))];
+            
+            const currentValue = select.value;
+            const defaultOptions = `
+                <option value="">Primary Doctor</option>
+                <option value="__add_new__" style="font-weight:bold; color:#3b82f6;">+ Add New Doctor...</option>
+            `;
+            select.innerHTML = defaultOptions;
+            
+            if (currentValue && currentValue !== '__add_new__' && !uniqueDoctors.includes(currentValue)) {
+                uniqueDoctors.push(currentValue);
+            }
+            
+            uniqueDoctors.forEach(doc => {
+                const opt = document.createElement('option');
+                opt.value = doc;
+                opt.textContent = doc;
+                select.insertBefore(opt, select.querySelector('option[value="__add_new__"]'));
+            });
+            if (currentValue) select.value = currentValue;
+        }
+        function renderClients(clients) {
+            const tbody = document.getElementById('client-table-body');
+            tbody.innerHTML = '';
+            clients.forEach((c, idx) => {
+                const row = document.createElement('tr');
+                row.onclick = () => selectClient(c);
+                row.innerHTML = `<td>${idx + 1}</td><td style="color:#0056b3; font-weight:700;">${c.name}</td><td>${String(c.id).padStart(5, '0')}</td><td>Regular</td><td>Self</td><td><i class="fas fa-info-circle" style="color:#007bff;"></i></td>`;
+                tbody.appendChild(row);
+            });
+        }
+
+        let currentSelectedClient = null;
+        function toggleClientInfoPanel() {
+            const panel = document.getElementById('client-info-panel');
+            if (!panel) return;
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function populateClientInfoPanel(client) {
+            const panel = document.getElementById('client-info-panel');
+            if (panel) {
+                panel.innerHTML = `
+                    <div style="font-weight:700; margin-bottom:5px; border-bottom:1px solid #ccc; padding-bottom:3px; color:#1f2937;">Client Information</div>
+                    <strong>Phone:</strong> ${client.phone || client.cellPhone || 'N/A'}<br/>
+                    <strong>Email:</strong> ${client.email || 'N/A'}<br/>
+                    <strong>Address:</strong> ${client.address || 'N/A'}<br/>
+                    <strong>Payment Terms:</strong> ${client.paymentTermsDays || 0} Days<br/>
+                    <strong>Price Band:</strong> ${client.priceBand || 'Standard'}<br/>
+                    <strong>TRN:</strong> ${client.trn || 'N/A'}
+                `;
+            }
+        }
+
+        async function fetchClientBalance(clientId) {
+            try {
+                const summaryRes = await fetch(`${API_BASE}/clients/${clientId}/financial-summary`);
+                if (summaryRes.ok) {
+                    const summary = await summaryRes.json();
+                    const balanceEl = document.querySelector('.balance-box');
+                    if (balanceEl) balanceEl.textContent = parseFloat(summary.balance || 0).toFixed(3);
+                }
+            } catch (e) {
+                console.error("Error fetching client balance:", e);
+            }
+        }
+
+        async function selectClient(client) {
+            selectedClientId = client.id;
+            currentSelectedClient = client;
+            document.getElementById('display-client-name').textContent = client.name;
+            populateClientInfoPanel(client);
+            await fetchClientBalance(client.id);
+            
+            // Fetch last saved details of this client
+            try {
+                const res = await fetch(`${API_BASE}/orders?clientId=${client.id}&limit=1`);
+                if (res.ok) {
+                    const orders = await res.json();
+                    if (orders && orders.length > 0) {
+                        const lastOrder = orders[0];
+                        if (lastOrder.doctorName && document.getElementById('sub-doctor')) {
+                            document.getElementById('sub-doctor').value = lastOrder.doctorName;
+                        }
+                        if (lastOrder.notes && document.getElementById('order-notes')) {
+                            document.getElementById('order-notes').value = lastOrder.notes;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Error fetching client's last order:", e);
+            }
+            
+            showStep(2);
+            loadProducts();
+        }
+
+        function showStep(s) {
+            // Edit order is always step 2
+            document.getElementById('step-1').style.display = 'none';
+            document.getElementById('step-2').style.display = 'block';
+        }
+
+        // Auto-load order if ID is present
+        window.onload = async () => {
+            // Load dynamic dropdowns first
+            try {
+                await Promise.all([
+                    window.populateDropdown('order_status', 'order-status', 'New'),
+                    window.populateRadioButtons('order_type', 'work-type-options', 'workType', 'New'),
+                    window.populateDropdown('shipment_partner', 'delivery-method', null, true),
+                    window.populateDropdown('order_priority', 'priority', null, true),
+                    window.populateDropdown('hold_reason', 'hold-reason', null, true)
+                ]);
+            } catch (err) {
+                console.error("Error populating dropdowns:", err);
+            }
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const orderId = urlParams.get('id');
+            if (orderId) {
+                await loadOrderData(orderId);
+            }
+            await loadClients();
+            await loadStaff();
+        };
+
+        async function loadOrderData(id) {
+            currentOrderId = id;
+            try {
+                const res = await fetch(`${API_BASE}/orders/${id}` + ( `orders/${id}`.includes('?') ? '&' : '?' ) + '_t=' + Date.now());
+                const order = await res.json();
+
+                // Populate client and step
+                selectedClientId = order.clientId;
+                if (order.client) {
+                    document.getElementById('display-client-name').textContent = order.client.name;
+                    document.getElementById('patient-name-detail').value = order.patientName;
+                    populateClientInfoPanel(order.client);
+                    fetchClientBalance(order.clientId);
+                }
+                showStep(2);
+                document.getElementById('order-details-area').style.display = 'block';
+
+                // Populate fields
+                document.getElementById('order-date-input').value = order.receivedDate ? order.receivedDate.split('T')[0] : '';
+                document.getElementById('due-date-input').value = order.dueDate ? order.dueDate.split('T')[0] : '';
+                document.getElementById('order-status').value = order.status;
+                document.getElementById('order-notes').value = order.notes || '';
+                if (order.doctorName) document.getElementById('sub-doctor').value = order.doctorName;
+                if (order.orderType) {
+                    const rb = document.querySelector(`input[name="workType"][value="${order.orderType}"]`);
+                    if (rb) rb.checked = true;
+                }
+                if (order.deliveryMethod && document.getElementById('delivery-method')) {
+                    document.getElementById('delivery-method').value = order.deliveryMethod;
+                }
+
+                // Populate Invoice and Shipment Info
+                if (order.invoice) {
+                    document.getElementById('display-invoice-num').textContent = order.invoice.invoiceNumber || order.invoice.id;
+                }
+                if (order.shipmentNote) {
+                    document.getElementById('display-shipment-num').textContent = order.shipmentNote.noteNumber || order.shipmentNote.id;
+                }
+
+                // Load products and set selected
+                await loadProducts();
+
+                // If order has multiple items/jobs, load them into orderJobs and display them in the jobs list
+                if (order.jobs && order.jobs.length > 0) {
+                    orderJobs = order.jobs.map(j => ({
+                        product: j.productName,
+                        productType: j.productType || 'General',
+                        teeth: j.teethSelection ? j.teethSelection.split(',').map(t => {
+                            const parsed = parseInt(t.trim());
+                            return isNaN(parsed) ? t.trim() : parsed;
+                        }).filter(t => t !== '') : [],
+                        units: j.units,
+                        rate: j.price,
+                        total: j.totalAmount || (j.units * j.price),
+                        options: j.options,
+                        slab1Rate: j.slab1Rate,
+                        slab2Rate: j.slab2Rate,
+                        slab1Units: j.slab1Units,
+                        slab2Units: j.slab2Units
+                    }));
+                    renderJobsList();
+                    // Keep product selection visible and teeth selection hidden
+                    document.getElementById('product-selection-area').style.display = 'block';
+                    document.getElementById('teeth-selection-area').style.display = 'none';
+                } else {
+                    // Use saved unitRate first (the correct per-unit price), then fallback to jobs[0].price, avoid dividing total by units
+                    const derivedUnitRate = (order.unitRate !== undefined && order.unitRate !== null) ? order.unitRate : ((order.jobs && order.jobs.length > 0) ? order.jobs[0].price : 0);
+                    if (order.productName) {
+                        document.getElementById('selected-product-name').textContent = order.productName;
+                        selectedProduct = { name: order.productName, type: order.productType || 'General', charge: derivedUnitRate, options: order.options };
+                        selectedProductType = order.productType || 'General';
+                    }
+
+                    const slabsContainer = document.getElementById('slabs-container');
+                    const slabProducts = ['RPD', 'FLEXIBLE RPD', 'CAST PARTIAL', 'RPD REPAIR AND ADD TEETH'];
+                    const productName = (order.productName || '').toUpperCase();
+                    const isSlabProduct = slabProducts.includes(productName);
+                    if (slabsContainer) {
+                        slabsContainer.style.display = isSlabProduct ? 'block' : 'none';
+                    }
+                    const stdRate = (order.slab1Rate !== null && order.slab1Rate !== undefined) ? order.slab1Rate : (order.unitRate || 17);
+                    const s1 = document.getElementById('slab1-rate');
+                    if (s1) s1.value = stdRate;
+
+                    const s2 = document.getElementById('slab2-rate');
+                    if (s2) s2.value = (order.slab2Rate !== null && order.slab2Rate !== undefined) ? order.slab2Rate : 2;
+
+                    if (order.teethSelection) {
+                        selectedTeeth = order.teethSelection.split(',').map(t => parseInt(t.trim())).filter(t => !isNaN(t));
+                        // Highlight selected teeth in the UI
+                        document.querySelectorAll('.tooth-num').forEach(t => {
+                            const toothNum = parseInt(t.getAttribute('data-tooth'));
+                            if (selectedTeeth.includes(toothNum)) {
+                                t.classList.add('selected');
+                            } else {
+                                t.classList.remove('selected');
+                            }
+                        });
+                    } else {
+                        selectedTeeth = [];
+                        document.querySelectorAll('.tooth-num').forEach(t => t.classList.remove('selected'));
+                    }
+
+                    // Populate unit rate from job price (the actual unit rate) or derive from order total
+                    const unitRateInput = document.getElementById('unit-rate');
+                    if (unitRateInput) {
+                        unitRateInput.value = derivedUnitRate;
+                    }
+                    
+                    let savedValues = null;
+                    if (order.options) {
+                        try { savedValues = JSON.parse(order.options); } catch(e) {}
+                    }
+                    renderDynamicProductOptions(selectedProduct, savedValues);
+                    updateTeethUI();
+
+                    // Hide product selection and show teeth selection
+                    document.getElementById('product-selection-area').style.display = 'none';
+                    document.getElementById('teeth-selection-area').style.display = 'block';
+                }
+
+                // Update title
+                document.querySelector('h1').textContent = 'Edit Order #' + id;
+            } catch (err) { console.error(err); }
+        }
+
+        // FALLBACK DATA (Categorized for better filtering)
+        const FALLBACK_TYPES = ["ACRYLIC", "ACRYLIC COMPLETE DENTURE", "ACRYLIC FACING", "BILATERAL DENTURE FRAME", "BITE RIMS", "BITE SPLINT", "BLEACHING TRAY", "CEMENT RETAIN PFM", "CERAMIC", "COLD CURE REPAIR", "DUPLICATION OF CASTS", "DURACETAL PARTIAL DENTURE", "DURAFLEX PARTIAL DENTURE", "EMAX VENEER", "FLEXIBLE", "FLEXIBLE RPD BITE RIM U/L", "FLEXIBLE RPD REPAIR", "FULL METAL", "FULL PALATAL COVERAGE FRAME", "HABIT BREAKER", "HAWLEY'S APPLIANCE", "HAWLEY'S APPLIANCE WITH EXPANSION SCREW", "HYBRID DENTURE", "IN LAY", "MATERIALS", "METAL", "METAL TRAIL", "MONILITHIUM", "ORTHO", "ORTHO RETRACTER", "PFM", "PFM FACING", "SCAN", "SOLDERED TPA MOLAR TUBE", "SPACE MAINTAINER REPAIR", "SPACE MAINTAINER WITH RPD", "STUDY MODEL", "ZIRCON CORE CUTBACK", "ZIRCON REPAIR", "ZIRCONIUM"];
+
+        const rawProducts = ["2D EXPANSION SCREW", "AAA", "ACRYLIC BRIDGE", "ACRYLIC CROWN", "ACRYLIC CROWN HEAT CURE", "ACRYLISATION", "ADDING TOOTH", "ADDING TOOTH WITH CLASP", "AGAR AGAR DUPLICATION", "ANTERIOR BITE PLANE", "ANTERIOR FIXED BITE PLANE WITH MOLAR TUBES", "ANTERIOR REPOSITIONING SPLINT", "BANDED HYRAX RME", "BANDED HYRAX RME WITH MOLAR TUBE", "BEGGS RETAINER LOWER", "BEGGS RETAINER UPPER", "BITE PLANE", "BITE RIM LOWER", "BITE RIM U/L", "BITE RIM UPPER", "BLEACHING TRAY", "BLEACHING TRAY BOX", "BONDED HYRAX RME", "BONDED HYRAX RME WITH FACE MASK", "BPS PROBASE", "CAST PARTIAL [CC PLATE]", "CAST PARTIAL BITE RIM", "CAST PARTIAL RPD TRIAL", "CATLAN'S APPLIANCE LOWER", "CD TRIAL U/L", "CERAMIC", "CERAMIC REPAIR", "CLEAR ALIGNER LOWER", "CLEAR ALIGNER SCAN", "CLEAR ALIGNER UPPER", "CLEAR ALIGNER UPPER AND LOWER", "CLEAR RETAINER CUTTING", "CLEAR RETAINER LOWER", "CLEAR RETAINER U/L", "CLEAR RETAINER UPPER", "CLEAR RETAINER WITH BITE PLANE", "COLD CURED BITE SPLINT", "COMPLETE DENTURE", "DENTURE BITE RIM", "DENTURE CORRECTION", "DENTURE CRACK REPAIR", "DENTURE GRINDING", "DENTURE LOWER TRIAL", "DENTURE POLISHING", "DENTURE POLISHING & SMOOTHING", "DENTURE REPAIR", "DENTURE REPAIR - LOWER", "DENTURE REPAIR - UPPER", "DENTURE REPAIR AND POLISHING", "DENTURE UPPER TRIAL", "E MAX", "EMAX", "EMAX VENEER", "EXPANSION SCREW", "EXPANSION SCREW ADDITION", "FIXED LABIAL BOW WITH HOOKS", "FIXED LINGUAL ARCH", "FIXED TWIN BLOCK WTH HYRAX", "FLEXIBLE CD RELINING", "FLEXIBLE DENTURE ACRYLIZATION", "FLEXIBLE DENTURE BITE L", "FLEXIBLE DENTURE BITE U", "FLEXIBLE DENTURE LOWER", "FLEXIBLE DENTURE SPL TRAY & BITE UL", "FLEXIBLE DENTURE TRIAL L", "FLEXIBLE DENTURE TRIAL U", "FLEXIBLE DENTURE TRIAL U/L", "FLEXIBLE DENTURE U/L", "FLEXIBLE DENTURE UPPER", "FLEXIBLE L/DENTURE RELINING", "FLEXIBLE RELINING", "FLEXIBLE RPD", "FLEXIBLE RPD BITE", "FLEXIBLE RPD REPAIR", "FLEXIBLE RPD TRIAL", "FLEXIBLE TEETH ADDING", "FLEXIBLE U/DENTURE RELINING", "HABIT BREAKER FIXED", "HABIT BREAKER REMOVABLE", "HARD SPLINT LOWER", "HARD SPLINT U/L", "HARD SPLINT UPPER", "HAWLEY'S APPLIANCE WITH EXPANSION SCREW", "HAWLEY'S APPLIANCE", "HAWLEY'S APPLIANCE CLEANING", "HAWLEY'S APPLIANCE L", "HAWLEY'S APPLIANCE U", "HAWLEY'S APPLIANCE U/L", "HAWLEY'S APPLIANCE WITH ONE TEETH", "HAWLEY'S APPLIANCE WITH SOLDERED ADAMS", "HAWLEY'S APPLIANCE WITH Z SPRING", "HAWLEY'S APPLIANCE WITH Z SPRING & POSTERIOR BITE PLANE", "HAWLEY'S REPAIR", "HAWLEY'S WITH EXPANSION SCREW & TONGUE GRIP", "HAWLEY'S WITH TONGUE GUARD", "HAWLEY'S APPLIANCE WITH ANTERIOR BITEPLANE", "HEAD GEAR TUBE SPLINT", "IMPLANT PFM", "IMPRESSION TRAY", "IN LAY", "JACK SCREW WITH LABIAL BOW", "LABIALBOW CLASP", "LINGUAL ARCH", "LINGUAL ARCH WITH MOLAR TUBES", "LINGUAL ARCH WITH RPD", "LINGUAL METAL LOOPS", "LIP BUMPER WITH MOLAR TUBES", "LIP PUMBER LOWER ARCH", "LOWER DENTURE", "LOWER DENTURE TRIAL", "MARYLAND", "METAL BAR FOR IMPLANT DENTURE LOWER", "METAL BAR FOR IMPLANT DENTURE U/L", "METAL BAR FOR IMPLANT DENTURE UPPER", "METAL COPING", "METAL CROWN", "METAL TRIAL", "METAL TRIAL IMPLANT", "MICHIGAN SPLINT", "MODEL PRINT LOWER", "MODEL PRINT U/L", "MODEL PRINT UPPER", "MODEL PRINTING", "MOLAR TUBE", "MONILITHIUM", "MONOBLOCK LABIAL BOW", "MONOLITHIUM", "MORDEN DESING", "MSE EXPANTION SCREW SOLDERED", "NANCE APPLIANCE", "NANCE APPLIANCE WITH MOLAR TUBES", "NIGHT GUARD LOWER", "NIGHT GUARD U/L", "NIGHT GUARD UPPER", "ON LAY", "ORTHO FACE MASK", "ORTHO RETRACTOR", "ORTHO WIRE MESH", "PENDULUM APPLIANCE", "PFM", "PFM (PRECIOUS)", "PFM BISQUE TRIAL", "PICKUP CHARGES", "PMMA", "PNDULUM APPLIANCE", "POST CORE", "POSTERIOR BITE PLANE", "POSTERIOR BITE PLANE WITH 2D EXPANSION SCREW", "POSTERIOR BITE PLANE WITH FACE MASK", "PROBASE", "QUAD HELIX WITH BUCCAL TUBES AND BANDS", "RE TRIAL", "RELINING", "RELINING & POLISHING", "RPD", "RPD BITE RIM LOWER", "RPD BITE RIM UPPER", "RPD BITE RIM UPPER AND LOWER", "RPD LOWER", "RPD RELINING", "RPD REPAIR", "RPD REPAIR - LOWER", "RPD REPAIR - UPPER", "RPD REPAIR AND ADD TEETH", "RPD REPAIR AND POLISHING", "RPD REPAIR WITH CERAMIC TEETH", "RPD TRIAL L", "RPD TRIAL U", "RPD TRIAL U/L", "RPD UPPER", "RPD WITH CLEAR RETAINER", "RPD WITH MOLAR BANDS AND LINGUAL ARCH", "RPD WITH SAPCE MAINTAINER", "SILICON BITE SPLINT", "SILICON DUPLICATION", "SNAP ON SMILE", "SNAP ON SMILE L", "SNAP ON SMILE U", "SNAP ON SMILE U/L", "SOFT DENTURE U/L", "SOFT SPLINT LOWER", "SOFT SPLINT U/L", "SOFT SPLINT UPPER", "SOLDERED TPA MOLAR TUBE", "SOLDERING", "SPACE MAINTAINER", "SPACE MAINTAINER LOWER", "SPACE MAINTAINER REPAIR", "SPACE REGENERATOR", "SPECIAL TRAY", "SPECIAL TRAY AND BITE L", "SPECIAL TRAY AND BITE U", "SPECIAL TRAY AND BITE U/L", "SPECIAL TRAY L", "SPECIAL TRAY LOWER", "SPECIAL TRAY U", "SPECIAL TRAY U/L", "STL", "STL FILE", "STL FILE U/L", "STUDY MODEL", "TEMPORARY BRIDGE", "TEMPORARY CROWN", "TEMPORARY MARYLAND", "TONGUE GUARD", "TONGUE GUARD WITH MOLAR TUBE", "TRIAL", "TRIPLEX POURABLE", "TWIN BLOCK LOWER", "TWIN BLOCK POLISHING", "TWIN BLOCK REPAIR", "TWIN BLOCK U/L", "TWIN BLOCK UPPER", "TWIN BLOCK WITH EXPANSION SCREW", "TWIN BLOCK WITH HEAD GEAR", "TWIN BLOCK WITH Z SPRING", "TWO WAY EXPANSION SCREW", "UPPER DENTURE", "UPPER DENTURE TRIAL", "VENEER", "VENEER TRIAL", "WAXUP", "Z SPRING WITH POSTERIOR BITE PLANE", "ZIG TRIAL", "ZIRCON", "ZIRCON BISQUE TRIAL", "ZIRCON CORE", "ZIRCON CORE CUTBACK", "ZIRCON CORE TRIAL", "ZIRCON FULL CROWN", "ZIRCON IMPLANT", "ZIRCON MARYLAND", "ZIRCON POST", "ZIRCON REPAIR", "ZIRCON VENEER", "ZIRCON VENEER CORE TRIAL", "ZIRCON VENEER TRIAL"];
+
+        const FALLBACK_PRODUCTS = rawProducts.map(n => {
+            let type = "OTHER";
+            if (n.includes("ZIRCON")) type = "ZIRCONIUM";
+            else if (n.includes("ACRYLIC")) type = "ACRYLIC";
+            else if (n.includes("PFM")) type = "PFM";
+            else if (n.includes("EMAX") || n.includes("E MAX")) type = "EMAX VENEER";
+            else if (n.includes("ORTHO") || n.includes("HYRAX") || n.includes("RETAINER")) type = "ORTHO";
+            else if (n.includes("FLEXIBLE")) type = "FLEXIBLE";
+            else if (n.includes("DENTURE")) type = "ACRYLIC COMPLETE DENTURE";
+            else if (n.includes("RPD")) type = "FLEXIBLE RPD";
+            else if (n.includes("BITE")) type = "BITE SPLINT";
+            return { name: n, type: type, charge: 0 };
+        });
+
+        async function loadStaff() {
+            try {
+                const res = await fetch(`${API_BASE}/staff` + ( `staff`.includes('?') ? '&' : '?' ) + '_t=' + Date.now());
+                const staff = await res.json();
+                const select = document.getElementById('assign-to');
+                if (select) {
+                    const currentValue = select.value;
+                    select.innerHTML = '<option></option>';
+                    staff.forEach(s => {
+                        const opt = document.createElement('option');
+                        opt.value = s.name;
+                        opt.textContent = s.name;
+                        select.appendChild(opt);
+                    });
+                    
+                    // Add "Add New" option
+                    const addNewOpt = document.createElement('option');
+                    addNewOpt.value = "__add_new__";
+                    addNewOpt.textContent = "+ Add New Staff...";
+                    addNewOpt.style.fontWeight = "bold";
+                    addNewOpt.style.color = "#3b82f6";
+                    select.appendChild(addNewOpt);
+                    
+                    if (currentValue) select.value = currentValue;
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        async function loadProducts() {
+            try {
+                // Load Product Types for dropdown
+                const typesRes = await fetch(`${API_BASE}/product-types` + ( `product-types`.includes('?') ? '&' : '?' ) + '_t=' + Date.now());
+                productTypesList = [];
+                if (typesRes.ok) {
+                    productTypesList = await typesRes.json();
+                } else {
+                    productTypesList = FALLBACK_TYPES.map(n => ({ name: n }));
+                }
+                const types = productTypesList;
+
+                const typeSelect = document.getElementById('product-type-filter');
+                if (typeSelect) {
+                    typeSelect.innerHTML = '<option>All Product Types</option>';
+                    types.forEach(t => {
+                        const opt = document.createElement('option');
+                        opt.value = t.name;
+                        opt.textContent = t.name;
+                        typeSelect.appendChild(opt);
+                    });
+                }
+
+                // Load Products
+                await refreshProducts();
+            } catch (err) {
+                console.warn("Backend error, using fallbacks");
+                const typeSelect = document.getElementById('product-type-filter');
+                if (typeSelect) {
+                    typeSelect.innerHTML = '<option>All Product Types</option>';
+                    FALLBACK_TYPES.forEach(t => {
+                        const opt = document.createElement('option');
+                        opt.value = t;
+                        opt.textContent = t;
+                        typeSelect.appendChild(opt);
+                    });
+                }
+                await refreshProducts();
+            }
+        }
+
+        async function refreshProducts() {
+            const searchInput = document.getElementById('product-search');
+            const search = searchInput ? searchInput.value : '';
+            const type = 'All Product Types';
+
+            let url = `${API_BASE}/products?`;
+            if (search) url += `search=${encodeURIComponent(search)}&`;
+            if (type && type !== 'All Product Types') url += `type=${encodeURIComponent(type)}`;
+
+            let products = [];
+            try {
+                const res = await fetch(url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now());
+                if (!res.ok) throw new Error('API Error');
+                products = await res.json();
+            } catch (err) {
+                console.warn("Backend not responding, using local fallback...");
+                products = [...FALLBACK_PRODUCTS];
+
+                if (type && type !== 'All Product Types') {
+                    products = products.filter(p => p.type === type);
+                }
+
+                if (search) {
+                    products = products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
+                }
+            }
+
+            const tbody = document.getElementById('product-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            products.forEach((p, idx) => {
+                const row = document.createElement('tr');
+                row.onclick = () => selectProduct(p);
+                row.innerHTML = `<td>${idx + 1}</td><td>${p.name}</td><td>${p.type || ''}</td><td>${p.charge || 0}</td>`;
+                tbody.appendChild(row);
+            });
+        }
+
+        async function fetchCustomRate(clientId, productName) {
+            if (!clientId || !productName) return;
+            try {
+                const res = await fetch(`${API_BASE}/client-product-rate?clientId=${clientId}&productName=${encodeURIComponent(productName)}`);
+                if (!res.ok) return;
+                const data = await res.json();
+                if (data && data.rate !== null && data.rate !== undefined && data.rate > 0) {
+                    console.log("Found custom rate for client:", data.rate);
+                    
+                    const slabsContainer = document.getElementById('slabs-container');
+                    const isSlabProduct = slabsContainer && slabsContainer.style.display === 'block';
+                    
+                    if (isSlabProduct) {
+                        const s1 = document.getElementById('slab1-rate');
+                        if (s1) s1.value = data.rate;
+                    } else {
+                        const rateInput = document.getElementById('unit-rate');
+                        if (rateInput) rateInput.value = data.rate;
+                    }
+                    updateTeethUI(true);
+                }
+            } catch (e) {
+                console.error("Error fetching custom rate:", e);
+            }
+        }
+
+        function toggleQuickSelectMenu(event) {
+            if (event) event.stopPropagation();
+            const menu = document.getElementById('quick-select-dropdown');
+            if (!menu) return;
+            menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+        }
+
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('quick-select-dropdown');
+            if (menu && !e.target.closest('#quick-select-dropdown') && !e.target.closest('a[onclick*="toggleQuickSelectMenu"]')) {
+                menu.style.display = 'none';
+            }
+        });
+
+        function selectProduct(p) {
+            console.log("Selected Product:", p);
+            selectedProduct = p;
+            selectedProductType = p.type || 'General';
+
+            const productArea = document.getElementById('product-selection-area');
+            const teethArea = document.getElementById('teeth-selection-area');
+            const slabsContainer = document.getElementById('slabs-container');
+
+            if (productArea) productArea.style.display = 'none';
+            if (teethArea) teethArea.style.display = 'block';
+
+            // Update Badges
+            const catBadge = document.getElementById('selected-product-category-badge');
+            const typeBadge = document.getElementById('selected-product-type-badge');
+            const catFilter = document.getElementById('product-category-filter');
+            const activeCategory = (catFilter && catFilter.value !== 'All Product Categories') ? catFilter.value : (p.category || getProductCategory(p.name, p.type));
+            if (catBadge) catBadge.textContent = activeCategory;
+            if (typeBadge) typeBadge.textContent = p.type || activeCategory;
+
+            const slabProducts = ['RPD', 'FLEXIBLE RPD', 'CAST PARTIAL', 'RPD REPAIR AND ADD TEETH'];
+            const productName = (p.name || '').toUpperCase();
+            const isSlabProduct = slabProducts.includes(productName);
+            const isSpecialRpd = productName === 'RPD' || productName.includes('FLEXIBLE RPD') || productName.includes('PARTIAL RPD');
+
+            if (slabsContainer) {
+                slabsContainer.style.display = isSlabProduct ? 'block' : 'none';
+            }
+            
+            let initialRate = (p.charge !== undefined && p.charge !== null) ? Number(p.charge) : 0;
+            if (currentOrderData && currentOrderData.client && currentOrderData.client.priceBand && p.priceBands) {
+                try {
+                    const bands = typeof p.priceBands === 'string' ? JSON.parse(p.priceBands) : p.priceBands;
+                    if (bands && bands[currentOrderData.client.priceBand] !== undefined && bands[currentOrderData.client.priceBand] !== null) {
+                        initialRate = Number(bands[currentOrderData.client.priceBand]);
+                    }
+                } catch(e) {}
+            }
+
+            if (isSlabProduct) {
+                const s1 = document.getElementById('slab1-rate');
+                if (s1) {
+                    s1.value = isSpecialRpd ? 17 : (initialRate || 17);
+                }
+                const s2 = document.getElementById('slab2-rate');
+                if (s2) s2.value = 2;
+            }
+
+            const nameDisplay = document.getElementById('selected-product-name');
+            const rateInput = document.getElementById('unit-rate');
+            const footerRateContainer = document.getElementById('footer-unit-rate-container');
+
+            if (nameDisplay) nameDisplay.textContent = p.name;
+            if (rateInput) rateInput.value = initialRate;
+            if (footerRateContainer) {
+                footerRateContainer.style.display = isSpecialRpd ? 'none' : 'block';
+            }
+
+            renderDynamicProductOptions(p);
+            toggleDiscountSection(false);
+            selectedTeeth = [];
+            const teethListInput = document.getElementById('selected-teeth-list');
+            if (teethListInput) teethListInput.value = '';
+            
+            const unitCountInput = document.getElementById('unit-count');
+            if (unitCountInput) unitCountInput.value = 1;
+
+            updateTeethUI();
+
+            const cId = currentOrderData?.clientId || currentOrderData?.client?.id;
+            if (cId) {
+                fetchCustomRate(cId, p.name);
+            }
+
+            // Scroll to top of area
+            window.scrollTo(0, 0);
+        }
+
+        function toggleTooth(el, num) {
+            const idx = selectedTeeth.indexOf(num);
+            if (idx > -1) {
+                selectedTeeth.splice(idx, 1);
+                el.classList.remove('selected');
+            } else {
+                selectedTeeth.push(num);
+                el.classList.add('selected');
+            }
+            updateTeethUI();
+        }
+
+        function selectArch(arch) {
+            const ids = arch === 'upper' ? ['upper-left', 'upper-right'] : ['lower-left', 'lower-right'];
+            ids.forEach(id => {
+                const quadrant = document.getElementById(id);
+                if (quadrant) {
+                    quadrant.querySelectorAll('.tooth-num').forEach(t => {
+                        if (!t.classList.contains('selected')) {
+                            t.click();
+                        }
+                    });
+                }
+            });
+        }
+
+        function clearTeeth() {
+            selectedTeeth = [];
+            document.querySelectorAll('.tooth-num.selected').forEach(el => el.classList.remove('selected'));
+            updateTeethUI();
+        }
+
+        let isDiscountActive = false;
+
+        function toggleDiscountSection(forceShow = null) {
+            if (forceShow !== null) {
+                isDiscountActive = forceShow;
+            } else {
+                isDiscountActive = !isDiscountActive;
+            }
+            const box = document.getElementById('discount-box');
+            const link = document.getElementById('discount-link-btn');
+            const totalOrGrossLabel = document.getElementById('total-or-gross-label');
+            
+            if (box) box.style.display = isDiscountActive ? 'block' : 'none';
+            if (link) link.style.display = isDiscountActive ? 'none' : 'block';
+            if (totalOrGrossLabel) totalOrGrossLabel.textContent = isDiscountActive ? 'Gross Amt' : 'Total';
+            
+            if (!isDiscountActive) {
+                if (document.getElementById('disc-percent')) document.getElementById('disc-percent').value = '';
+                if (document.getElementById('disc-amt')) document.getElementById('disc-amt').value = '';
+            }
+            
+            updateTeethUI();
+        }
+
+        function calculateDiscount(source = 'percent') {
+            const grossDisplay = document.getElementById('gross-amount-display');
+            const gross = parseFloat(grossDisplay ? grossDisplay.textContent : document.getElementById('total-price')?.value) || 0;
+            const type = document.getElementById('disc-type')?.value || 'Percent';
+            const percentInput = document.getElementById('disc-percent');
+            const amtInput = document.getElementById('disc-amt');
+            const netTotalDisplay = document.getElementById('net-total-display');
+            const totalPriceInput = document.getElementById('total-price');
+            
+            let discAmt = 0;
+            let discPct = 0;
+            
+            if (type === 'Percent') {
+                if (source === 'percent' || source === 'type') {
+                    discPct = parseFloat(percentInput?.value) || 0;
+                    discAmt = (gross * (discPct / 100));
+                    if (amtInput && percentInput && percentInput.value !== '') {
+                        amtInput.value = discAmt ? parseFloat(discAmt.toFixed(3)) : '';
+                    }
+                } else if (source === 'amount') {
+                    discAmt = parseFloat(amtInput?.value) || 0;
+                    discPct = gross > 0 ? ((discAmt / gross) * 100) : 0;
+                    if (percentInput && amtInput && amtInput.value !== '') {
+                        percentInput.value = discPct ? parseFloat(discPct.toFixed(2)) : '';
+                    }
+                }
+            } else { // Amount
+                discAmt = parseFloat(amtInput?.value) || 0;
+                if (percentInput) percentInput.value = '';
+            }
+            
+            const netTotal = Math.max(0, gross - discAmt);
+            const formattedTotal = (netTotal % 1 === 0) ? netTotal : parseFloat(netTotal.toFixed(3));
+            if (netTotalDisplay) netTotalDisplay.textContent = formattedTotal;
+            if (totalPriceInput) totalPriceInput.value = (parseFloat(netTotal) || 0).toFixed(3);
+        }
+
+        function updateTeethUI(fromRateInput = false, fromManualTeeth = false, fromManualUnit = false) {
+            let unitCount;
+            const unitInput = document.getElementById('unit-count');
+            if (fromManualUnit) {
+                unitCount = parseInt(unitInput ? unitInput.value : 1) || 0;
+            } else if (fromRateInput) {
+                unitCount = parseInt(unitInput ? unitInput.value : 1) || (selectedTeeth.length > 0 ? selectedTeeth.length : 1);
+            } else if (fromManualTeeth) {
+                unitCount = selectedTeeth.length > 0 ? selectedTeeth.length : 1;
+                if (unitInput) unitInput.value = unitCount;
+            } else {
+                unitCount = selectedTeeth.length > 0 ? selectedTeeth.length : (parseInt(unitInput ? unitInput.value : 1) || 1);
+                if (unitInput) unitInput.value = unitCount;
+            }
+            if(document.getElementById('slab-total-units')) document.getElementById('slab-total-units').value = unitCount;
+            
+            if (!fromManualTeeth) {
+                const teethInput = document.getElementById('selected-teeth-list');
+                if (teethInput) {
+                    teethInput.value = selectedTeeth.every(t => !isNaN(t)) ? [...selectedTeeth].sort((a,b) => a - b).join(', ') : selectedTeeth.join(', ');
+                }
+            }
+            
+            const rateInput = document.getElementById('unit-rate');
+            const slab1RateInput = document.getElementById('slab1-rate');
+            const slab2RateInput = document.getElementById('slab2-rate');
+            const totalText = document.getElementById('total-price');
+            const grossDisplay = document.getElementById('gross-amount-display');
+
+            let gross = 0;
+            const slabsContainer = document.getElementById('slabs-container');
+            const isSlabActive = slabsContainer && slabsContainer.style.display === 'block';
+
+            if (isSlabActive) {
+                const s1r = parseFloat(slab1RateInput ? slab1RateInput.value : 0) || 0;
+                const s2r = parseFloat(slab2RateInput ? slab2RateInput.value : 0) || 0;
+                const s1Units = Math.min(unitCount, 1);
+                const s2Units = Math.max(0, unitCount - 1);
+                gross = s1Units * s1r + s2Units * s2r;
+                
+                if (document.getElementById('slab1-units-display')) {
+                    document.getElementById('slab1-units-display').textContent = `${s1Units} / 1`;
+                }
+                if (document.getElementById('slab2-units-display')) {
+                    document.getElementById('slab2-units-display').textContent = s2Units;
+                }
+                if (document.getElementById('slab-total-display')) {
+                    document.getElementById('slab-total-display').textContent = (gross % 1 === 0) ? gross : gross.toFixed(3);
+                }
+                if (rateInput) rateInput.value = s1r;
+            } else {
+                const rate = parseFloat(rateInput ? rateInput.value : 0) || 0;
+                gross = unitCount * rate;
+            }
+            
+            if (grossDisplay) {
+                const num = parseFloat(gross) || 0;
+                grossDisplay.textContent = (num % 1 === 0) ? num : num.toFixed(3);
+            }
+
+            if (isDiscountActive) {
+                calculateDiscount();
+            } else {
+                if (totalText) totalText.value = (parseFloat(gross) || 0).toFixed(3);
+                const netTotalDisplay = document.getElementById('net-total-display');
+                if (netTotalDisplay) {
+                    const num = parseFloat(gross) || 0;
+                    netTotalDisplay.textContent = (num % 1 === 0) ? num : num.toFixed(3);
+                }
+            }
+            
+            let activeColor = '#ec4899';
+            if (typeof editingJobIndex !== 'undefined' && editingJobIndex >= 0 && orderJobs[editingJobIndex]) {
+                activeColor = orderJobs[editingJobIndex].color || activeColor;
+            } else if (typeof orderJobs !== 'undefined') {
+                activeColor = JOB_COLORS[orderJobs.length % JOB_COLORS.length] || activeColor;
+            }
+
+            // Apply visual colors
+            document.querySelectorAll('#teeth-selection-area .tooth-num').forEach(el => {
+                el.style.border = '';
+                el.style.color = '';
+                el.style.background = '';
+                el.style.backgroundColor = '';
+                el.classList.remove('selected');
+                
+                // Parse correct tNum from onclick attribute!
+                const onclickAttr = el.getAttribute('onclick');
+                if (!onclickAttr) return;
+                const match = onclickAttr.match(/toggleTooth\(this,\s*(\d+)\)/);
+                if (!match) return;
+                const tNum = parseInt(match[1]);
+                
+                let circleColors = [];
+                if (typeof orderJobs !== 'undefined') {
+                    orderJobs.forEach((job, idx) => {
+                        if (typeof editingJobIndex !== 'undefined' && editingJobIndex === idx) return;
+                        if (job.teeth && (job.teeth.includes(tNum.toString()) || job.teeth.includes(tNum))) {
+                            let c = job.color || JOB_COLORS[idx % JOB_COLORS.length] || '#ec4899';
+                            if (!circleColors.includes(c)) circleColors.push(c);
+                        }
+                    });
+                }
+                
+                let isSelected = selectedTeeth.includes(tNum) || selectedTeeth.includes(tNum.toString());
+                if (isSelected) {
+                    el.classList.add('selected');
+                }
+                
+                let innerBg = isSelected ? activeColor : 'white';
+                let textColor = isSelected ? 'white' : (circleColors.length > 0 ? circleColors[0] : '');
+
+                if (circleColors.length === 0) {
+                    if (isSelected) {
+                        el.style.backgroundColor = activeColor;
+                        el.style.color = textColor;
+                        el.style.border = '2px solid ' + activeColor;
+                        el.style.borderRadius = '50%';
+                    }
+                } else if (circleColors.length === 1) {
+                    el.style.border = '2px solid ' + circleColors[0];
+                    el.style.backgroundColor = innerBg;
+                    el.style.color = textColor;
+                    el.style.borderRadius = '50%';
+                } else {
+                    let stops = [];
+                    let step = 100 / circleColors.length;
+                    circleColors.forEach((c, i) => {
+                        stops.push(c + ' ' + (i * step) + '% ' + ((i + 1) * step) + '%');
+                    });
+                    el.style.border = '2px solid transparent';
+                    el.style.background = 'linear-gradient(' + innerBg + ',' + innerBg + ') padding-box, conic-gradient(' + stops.join(', ') + ') border-box';
+                    el.style.color = textColor;
+                    el.style.borderRadius = '50%';
+                }
+            });
+
+            if (selectedTeeth.length > 0 || unitCount > 0) {
+                const teethGridCont = document.getElementById('teeth-grid-container');
+                if (teethGridCont) teethGridCont.style.display = 'block';
+            }
+        }
+
+        function confirmTeeth() {
+            // Save or update active product/job if selected
+            if (selectedProduct) {
+                const slabsContainer = document.getElementById('slabs-container');
+                const isSlabActive = slabsContainer && slabsContainer.style.display === 'block';
+
+                const customUnitContainer = document.getElementById('custom-unit-text-container');
+                let customTeethText = '';
+                if (customUnitContainer && customUnitContainer.style.display === 'block') {
+                    customTeethText = document.getElementById('custom-unit-text').value;
+                }
+
+                const slab1Val = isSlabActive ? parseFloat(document.getElementById('slab1-rate').value) : null;
+                const unitVal = parseInt(document.getElementById('unit-count').value) || (selectedTeeth.length > 0 ? selectedTeeth.length : 1);
+                const rateVal = isSlabActive ? (parseFloat(document.getElementById('slab1-rate').value) || 0) : (parseFloat(document.getElementById('unit-rate').value) || 0);
+                const totalVal = parseFloat(document.getElementById('total-price').value) || (unitVal * rateVal);
+
+                const job = {
+                    product: selectedProduct.name,
+                    productType: selectedProductType || 'General',
+                    teeth: customTeethText ? [customTeethText] : [...selectedTeeth],
+                    units: unitVal,
+                    rate: rateVal,
+                    total: totalVal,
+                    slab1Rate: slab1Val,
+                    slab2Rate: isSlabActive ? parseFloat(document.getElementById('slab2-rate').value) : null,
+                    slab1Units: isSlabActive ? Math.min(unitVal, 1) : null,
+                    slab2Units: isSlabActive ? Math.max(0, unitVal - 1) : null
+                };
+
+                if (editingJobIndex >= 0 && editingJobIndex < orderJobs.length) {
+                    job.color = orderJobs[editingJobIndex].color || JOB_COLORS[editingJobIndex % JOB_COLORS.length];
+                    orderJobs[editingJobIndex] = job;
+                    editingJobIndex = -1;
+                } else {
+                    job.color = JOB_COLORS[orderJobs.length % JOB_COLORS.length];
+                    orderJobs.push(job);
+                }
+
+                selectedProduct = null;
+                selectedTeeth = [];
+                document.querySelectorAll('.tooth-num.selected').forEach(el => el.classList.remove('selected'));
+                if (customUnitContainer) document.getElementById('custom-unit-text').value = '';
+            }
+
+            // Render jobs list and update charge display
+            renderJobsList();
+
+            // Hide teeth selection and show product selection + order details
+            const teethArea = document.getElementById('teeth-selection-area');
+            if (teethArea) teethArea.style.display = 'none';
+
+            const prodArea = document.getElementById('product-selection-area');
+            if (prodArea) prodArea.style.display = 'block';
+
+            const detailsArea = document.getElementById('order-details-area');
+            if (detailsArea) detailsArea.style.display = 'block';
+
+            // Auto-fill patient name safely if entered in top box
+            const topPatientName = document.getElementById('patient-name');
+            const detailPatientName = document.getElementById('patient-name-detail');
+            if (topPatientName && detailPatientName && topPatientName.value && !detailPatientName.value) {
+                detailPatientName.value = topPatientName.value;
+            }
+        }
+
+        let orderJobs = [];
+        let editingJobIndex = -1;
+
+        function handleAddProductFromBottom() {
+            if (selectedProduct) {
+                saveAndAddNewJob();
+                document.getElementById('step-2').scrollIntoView({ behavior: 'smooth' });
+            } else {
+                document.getElementById('step-2').scrollIntoView({ behavior: 'smooth' });
+                alert('Please select a product from the list to add.');
+            }
+        }
+
+        function saveAndAddNewJob() {
+            if (!selectedProduct) {
+                alert('Please select a product first.');
+                return;
+            }
+            
+            const slabsContainer = document.getElementById('slabs-container');
+            const isSlabActive = slabsContainer && slabsContainer.style.display === 'block';
+
+            const customUnitContainer = document.getElementById('custom-unit-text-container');
+            let customTeethText = '';
+            if (customUnitContainer && customUnitContainer.style.display === 'block') {
+                customTeethText = document.getElementById('custom-unit-text').value;
+            }
+
+            const slab1Val = isSlabActive ? parseFloat(document.getElementById('slab1-rate').value) : null;
+            const unitVal = parseInt(document.getElementById('unit-count').value) || (selectedTeeth.length > 0 ? selectedTeeth.length : 1);
+            const rateVal = isSlabActive ? (parseFloat(document.getElementById('slab1-rate').value) || 0) : (parseFloat(document.getElementById('unit-rate').value) || 0);
+            const totalVal = parseFloat(document.getElementById('total-price').value) || (unitVal * rateVal);
+
+            const job = {
+                product: selectedProduct.name,
+                productType: selectedProductType || 'General',
+                teeth: customTeethText ? [customTeethText] : [...selectedTeeth],
+                units: unitVal,
+                rate: rateVal,
+                total: totalVal,
+                slab1Rate: slab1Val,
+                slab2Rate: isSlabActive ? parseFloat(document.getElementById('slab2-rate').value) : null,
+                slab1Units: isSlabActive ? Math.min(unitVal, 1) : null,
+                slab2Units: isSlabActive ? Math.max(0, unitVal - 1) : null
+            };
+
+            if (editingJobIndex >= 0 && editingJobIndex < orderJobs.length) {
+                job.color = orderJobs[editingJobIndex].color || JOB_COLORS[editingJobIndex % JOB_COLORS.length];
+                orderJobs[editingJobIndex] = job;
+                editingJobIndex = -1;
+            } else {
+                job.color = JOB_COLORS[orderJobs.length % JOB_COLORS.length];
+                orderJobs.push(job);
+            }
+            
+            // Show jobs list
+            renderJobsList();
+            
+            // Clear selection
+            selectedProduct = null;
+            selectedTeeth = [];
+            document.querySelectorAll('.tooth-num.selected').forEach(el => el.classList.remove('selected'));
+            updateTeethUI();
+            if (customUnitContainer) document.getElementById('custom-unit-text').value = '';
+            
+            // Back to product selection
+            cancelTeethSelection();
+            
+            // Ensure order details area is visible
+            const detailsArea = document.getElementById('order-details-area');
+            if (detailsArea) detailsArea.style.display = 'block';
+        }
+
+        function removeJob(index) {
+            orderJobs.splice(index, 1);
+            if (editingJobIndex === index) {
+                editingJobIndex = -1;
+                selectedProduct = null;
+                selectedTeeth = [];
+                document.querySelectorAll('.tooth-num.selected').forEach(el => el.classList.remove('selected'));
+                updateTeethUI();
+                cancelTeethSelection();
+            } else if (editingJobIndex > index) {
+                editingJobIndex--;
+            }
+            renderJobsList();
+        }
+
+        function editJobInList(idx) {
+            if (idx < 0 || idx >= orderJobs.length) return;
+            editingJobIndex = idx;
+            const j = orderJobs[idx];
+            
+            // Set active selection
+            const nameElem = document.getElementById('selected-product-name');
+            if (nameElem) nameElem.textContent = j.product;
+            
+            const rateElem = document.getElementById('unit-rate');
+            if (rateElem) rateElem.value = j.rate;
+            
+            const countElem = document.getElementById('unit-count');
+            if (countElem) countElem.value = j.units;
+            
+            const totalElem = document.getElementById('total-price');
+            if (totalElem) totalElem.value = j.total;
+            
+            selectedProduct = { name: j.product, charge: j.rate, type: j.productType || 'General' };
+            selectedProductType = j.productType || 'General';
+            
+            selectedTeeth = j.teeth ? [...j.teeth].map(t => isNaN(Number(t)) ? t : Number(t)) : [];
+            
+            const slabsContainer = document.getElementById('slabs-container');
+            const slabProducts = ['RPD', 'FLEXIBLE RPD', 'CAST PARTIAL', 'RPD REPAIR AND ADD TEETH'];
+            const productNameUpper = (j.product || '').toUpperCase();
+            const isSlabProduct = slabProducts.includes(productNameUpper);
+            const isSpecialRpd = productNameUpper === 'RPD' || productNameUpper.includes('FLEXIBLE RPD') || productNameUpper.includes('PARTIAL RPD');
+            
+            if (slabsContainer) {
+                slabsContainer.style.display = isSlabProduct ? 'block' : 'none';
+            }
+            const footerRateContainer = document.getElementById('footer-unit-rate-container');
+            if (footerRateContainer) {
+                footerRateContainer.style.display = isSpecialRpd ? 'none' : 'block';
+            }
+            
+            const customUnitContainer = document.getElementById('custom-unit-text-container');
+            if (customUnitContainer) {
+                customUnitContainer.style.display = isSlabProduct ? 'block' : 'none';
+            }
+            if (isSlabProduct && customUnitContainer) {
+                if (j.teeth && j.teeth.length === 1 && isNaN(j.teeth[0])) {
+                    document.getElementById('custom-unit-text').value = j.teeth[0];
+                } else {
+                    document.getElementById('custom-unit-text').value = '';
+                }
+            }
+            
+            const s1 = document.getElementById('slab1-rate');
+            if (s1) s1.value = (j.slab1Rate !== null && j.slab1Rate !== undefined) ? j.slab1Rate : (isSpecialRpd ? 17 : j.rate);
+            const s2 = document.getElementById('slab2-rate');
+            if (s2) s2.value = (j.slab2Rate !== null && j.slab2Rate !== undefined) ? j.slab2Rate : 2;
+            
+            updateTeethUI();
+            
+            const prodArea = document.getElementById('product-selection-area');
+            if (prodArea) prodArea.style.display = 'none';
+            
+            const teethArea = document.getElementById('teeth-selection-area');
+            if (teethArea) {
+                teethArea.style.display = 'block';
+                teethArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        
+        function generateQuadrantHTML(teeth, isLeft) {
+            let html = '<div style="display:flex; gap:6px;">';
+            teeth.forEach(t => {
+                let circleColors = [];
+                if (typeof orderJobs !== 'undefined') {
+                    orderJobs.forEach((j, idx) => {
+                        let c = j.color || JOB_COLORS[idx % JOB_COLORS.length] || '#ec4899';
+                        if (j.teeth && (j.teeth.includes(t.toString()) || j.teeth.includes(parseInt(t)))) {
+                            if (!circleColors.includes(c)) circleColors.push(c);
+                        }
+                    });
+                }
+                
+                let style = 'width:22px; height:22px; text-align:center; font-weight:600; color:#444; display:flex; justify-content:center; align-items:center; box-sizing:border-box; border-radius:50%; ';
+                
+                if (circleColors.length === 1) {
+                    style += 'border: 2px solid ' + circleColors[0] + '; color: ' + circleColors[0] + ';';
+                } else if (circleColors.length > 1) {
+                    let stops = [];
+                    let step = 100 / circleColors.length;
+                    circleColors.forEach((c, i) => {
+                        stops.push(c + ' ' + (i * step) + '% ' + ((i + 1) * step) + '%');
+                    });
+                    style += 'border: 2px solid transparent; color: ' + circleColors[0] + '; ';
+                    style += 'background: linear-gradient(white, white) padding-box, conic-gradient(' + stops.join(', ') + ') border-box;';
+                }
+                
+                let displayNum = (t % 10);
+                html += '<div style="' + style + '">' + displayNum + '</div>';
+            });
+            html += '</div>';
+            return html;
+        }
+
+        function generateGlobalTeethGridHTML() {
+            if (typeof orderJobs === 'undefined' || orderJobs.length === 0) return '';
+            let html = '<div style="display:flex; justify-content:center; margin-bottom: 20px; user-select:none; font-size:18px;">';
+            html += '<div style="display:flex; flex-direction:column; align-items:center; gap:0;">';
+            html += '<div style="display:flex; gap:12px; align-items:center; border-bottom: 1px solid #444; padding-bottom:6px;">';
+            html += generateQuadrantHTML([18,17,16,15,14,13,12,11], true) + '<div style="width:1px; height:25px; background:#444;"></div>' + generateQuadrantHTML([21,22,23,24,25,26,27,28], false);
+            html += '</div>';
+            html += '<div style="display:flex; gap:12px; align-items:center; padding-top:6px;">';
+            html += generateQuadrantHTML([48,47,46,45,44,43,42,41], true) + '<div style="width:1px; height:25px; background:#444;"></div>' + generateQuadrantHTML([31,32,33,34,35,36,37,38], false);
+            html += '</div>';
+            html += '</div></div>';
+            return html;
+        }
+
+        function renderJobsList() {
+            const container = document.getElementById('jobs-container');
+            const wrapper = document.getElementById('added-jobs-list');
+
+            // Recalculate total charge for order header
+            let grandTotal = 0;
+            if (orderJobs && orderJobs.length > 0) {
+                orderJobs.forEach(j => {
+                    grandTotal += parseFloat(j.total) || 0;
+                });
+            }
+            const chargeDisplay = document.getElementById('display-order-charge');
+            if (chargeDisplay) {
+                chargeDisplay.textContent = grandTotal.toFixed(3);
+            }
+
+            if (orderJobs.length > 0) {
+                if (wrapper) wrapper.style.display = 'block';
+                let html = generateGlobalTeethGridHTML();
+                html += '<div style="display:flex; flex-direction:column; gap:10px;">';
+                orderJobs.forEach((j, idx) => {
+                    const color = j.color || '#ec4899';
+                    const teethStr = j.teeth && j.teeth.length > 0 && j.teeth.every(t => !isNaN(t)) ? [...j.teeth].sort((a,b) => a - b).join(',') : (j.teeth ? j.teeth.join(', ') : '');
+                    const productType = j.productType || 'General';
+                    html += '<div style="border-bottom:1px solid #ddd; padding-bottom:10px; font-size:13px; position:relative;">';
+                    html += '    <div style="display:flex; align-items:center; gap:10px; margin-bottom:4px;">';
+                    html += '        <div style="width:14px; height:14px; background:' + color + '; border:1px solid #ccc;"></div>';
+                    html += '        <div style="border:1px solid #ccc; padding:2px 6px; font-size:11px; color:#555; background:#f9f9f9; border-radius:3px;">' + productType + '</div>';
+                    html += '        <div style="border:1px solid ' + color + '; padding:2px 6px; font-size:11px; color:' + color + '; text-transform:uppercase; border-radius:3px; font-weight:600;">' + productType + '</div>';
+                    html += '    </div>';
+                    html += '    <div style="display:flex; align-items:center; gap:10px; font-weight:bold; font-size:14px; color:#0056b3;">';
+                    html += '        <div>' + j.product + '</div>';
+                    html += '        <div style="color:#333;">' + teethStr + '</div>';
+                    html += '    </div>';
+                    const displayRate = (j.slab1Rate !== null && j.slab1Rate !== undefined && j.slab1Rate > 0) ? j.slab1Rate : j.rate;
+                    html += '    <div style="display:flex; align-items:center; gap:20px; margin-top:4px; color:#555;">';
+                    html += '        <div>' + j.units + ' Units @' + displayRate + '</div>';
+                    html += '        <div>Total charge: <span style="font-weight:bold; color:#111;">' + parseFloat(j.total).toFixed(3) + '</span></div>';
+                    html += '    </div>';
+                    html += '    <div style="position:absolute; right:0; bottom:10px; display:flex; gap:10px;">';
+                    html += '        <button type="button" onclick="editJobInList(' + idx + ')" style="padding:4px 8px; border:1px solid #ccc; background:#fff; cursor:pointer; color:#0056b3; border-radius:3px;" title="Edit Job"><i class="fas fa-edit"></i></button>';
+                    html += '        <button type="button" onclick="removeJob(' + idx + ')" style="padding:4px 8px; border:1px solid #ec4899; background:#fff; cursor:pointer; color:#ec4899; border-radius:3px;" title="Delete Job"><i class="fas fa-trash"></i></button>';
+                    html += '    </div>';
+                    html += '</div>';
+                });
+                html += '</div>';
+                if (container) container.innerHTML = html;
+            } else {
+                if (wrapper) wrapper.style.display = 'none';
+                if (container) container.innerHTML = '';
+            }
+        }
+
+        function handleStatusChange() {
+            const statusEl = document.getElementById('order-status');
+            const status = statusEl ? (statusEl.value || '').trim() : '';
+            const area = document.getElementById('hold-reason-area');
+            const label = document.getElementById('reason-label');
+            if (!area) return;
+            
+            const isHold = status === 'Hold' || status === 'On Hold' || status === 'In Hold' || status.toLowerCase().includes('hold');
+            const isCancelled = status === 'Cancelled' || status.toLowerCase().includes('cancel');
+
+            if (isHold || isCancelled) {
+                area.style.display = 'block';
+                if (label) label.textContent = isHold ? 'Hold Reason' : 'Cancel Reason';
+            } else {
+                area.style.display = 'none';
+            }
+        }
+
+        function cancelTeethSelection() {
+            editingJobIndex = -1;
+            selectedProduct = null;
+            selectedTeeth = [];
+            document.querySelectorAll('.tooth-num.selected').forEach(el => el.classList.remove('selected'));
+            updateTeethUI();
+            
+            const prodArea = document.getElementById('product-selection-area');
+            if (prodArea) prodArea.style.display = 'block';
+            
+            const teethArea = document.getElementById('teeth-selection-area');
+            if (teethArea) teethArea.style.display = 'none';
+        }
+
+        function handleStaffChange(select) {
+            if (select.value === '__add_new__') {
+                const newStaff = prompt("Enter new staff name:");
+                if (newStaff && newStaff.trim() !== "") {
+                    const opt = document.createElement('option');
+                    opt.value = newStaff.trim();
+                    opt.textContent = newStaff.trim();
+                    select.insertBefore(opt, select.querySelector('option[value="__add_new__"]'));
+                    select.value = newStaff.trim();
+                } else {
+                    select.value = "";
+                }
+            }
+        }
+
+        function handleDoctorChange(select) {
+            if (select.value === '__add_new__') {
+                const newDoctor = prompt("Enter new doctor name:");
+                if (newDoctor && newDoctor.trim() !== "") {
+                    const opt = document.createElement('option');
+                    opt.value = newDoctor.trim();
+                    opt.textContent = newDoctor.trim();
+                    select.insertBefore(opt, select.querySelector('option[value="__add_new__"]'));
+                    select.value = newDoctor.trim();
+                } else {
+                    select.value = "";
+                }
+            }
+        }
+
+        async function deleteOrder() {
+            if (!currentOrderId) {
+                alert("No order loaded to delete.");
+                return;
+            }
+            if (!confirm("Are you sure you want to delete this order? This cannot be undone.")) {
+                return;
+            }
+            try {
+                const res = await fetch(`${API_BASE}/orders/${currentOrderId}`, {
+                    method: 'DELETE'
+                });
+                if (res.ok) {
+                    alert("Order deleted successfully.");
+                    window.location.href = 'orders.html';
+                } else {
+                    const err = await res.json();
+                    alert("Error deleting order: " + err.error);
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Error deleting order.");
+            }
+        }
+        let isEditOrderSubmitting = false;
+
+        async function submitOrder() {
+            if (isEditOrderSubmitting) return;
+
+            if (!selectedClientId) {
+                alert("Please select a client first!");
+                return;
+            }
+            const patientNameInputDetail = document.getElementById('patient-name-detail');
+            const patientNameInput = document.getElementById('patient-name');
+            const patientName = (patientNameInputDetail && patientNameInputDetail.value) || (patientNameInput && patientNameInput.value) || '';
+            
+            const slabsContainer = document.getElementById('slabs-container');
+            const isSlabActive = slabsContainer && slabsContainer.style.display === 'block';
+
+            const customUnitContainer = document.getElementById('custom-unit-text-container');
+            let customTeethText = '';
+            if (customUnitContainer && customUnitContainer.style.display === 'block') {
+                const customInput = document.getElementById('custom-unit-text');
+                if (customInput) customTeethText = customInput.value;
+            }
+
+            // Collect dynamic custom options
+            const customOpts = {};
+            document.querySelectorAll('.custom-prod-opt').forEach(el => {
+                customOpts[el.dataset.name] = el.value;
+            });
+            
+            // Also collect try-ins dates
+            const tryinDates = {};
+            document.querySelectorAll('.tryin-date-input').forEach(el => {
+                tryinDates[el.dataset.name] = el.value;
+            });
+            
+            const serializedOptions = JSON.stringify({ customOpts, tryinDates });
+
+            if (selectedProduct) {
+                const slab1RateVal = isSlabActive ? parseFloat(document.getElementById('slab1-rate').value) : null;
+                const job = {
+                    product: selectedProduct.name,
+                    productType: selectedProductType || 'General',
+                    teeth: customTeethText ? [customTeethText] : [...selectedTeeth],
+                    units: document.getElementById('unit-count') ? document.getElementById('unit-count').value : '1',
+                    rate: slab1RateVal !== null ? slab1RateVal : (document.getElementById('unit-rate') ? document.getElementById('unit-rate').value : '0'),
+                    total: document.getElementById('total-price') ? document.getElementById('total-price').value : '0',
+                    options: serializedOptions,
+                    slab1Rate: slab1RateVal,
+                    slab2Rate: isSlabActive ? parseFloat(document.getElementById('slab2-rate').value) : null,
+                    slab1Units: isSlabActive ? Math.min(parseInt(document.getElementById('unit-count').value)||0, 1) : null,
+                    slab2Units: isSlabActive ? Math.max(0, (parseInt(document.getElementById('unit-count').value)||0) - 1) : null
+                };
+                if (editingJobIndex >= 0) {
+                    orderJobs[editingJobIndex] = job;
+                } else {
+                    orderJobs.push(job);
+                }
+                selectedProduct = null;
+                editingJobIndex = -1;
+            }
+
+            let grandTotal = 0;
+            if (orderJobs && orderJobs.length > 0) {
+                orderJobs.forEach(j => {
+                    grandTotal += parseFloat(j.total) || 0;
+                });
+            }
+
+            const data = {
+                clientId: selectedClientId,
+                patientName: patientName,
+                orderNumber: document.getElementById('order-number-display') && document.getElementById('order-number-display').value ? String(parseInt(document.getElementById('order-number-display').value, 10)) : null,
+                productName: document.getElementById('selected-product-name') ? document.getElementById('selected-product-name').textContent : '',
+                productType: selectedProductType,
+                teethSelection: customTeethText ? customTeethText : (document.getElementById('selected-teeth-list') ? document.getElementById('selected-teeth-list').value : ''),
+                units: parseInt(document.getElementById('unit-count') ? document.getElementById('unit-count').value : 1) || 1,
+                price: grandTotal || parseFloat(document.getElementById('total-price') ? document.getElementById('total-price').value : 0) || 0,
+                unitRate: isSlabActive ? (parseFloat(document.getElementById('slab1-rate').value) || 0) : (parseFloat(document.getElementById('unit-rate') ? document.getElementById('unit-rate').value : 0) || 0),
+                status: document.getElementById('order-status') ? document.getElementById('order-status').value : 'New',
+                receivedDate: document.getElementById('order-date-input') && document.getElementById('order-date-input').value ? new Date(document.getElementById('order-date-input').value).toISOString() : new Date().toISOString(),
+                dueDate: document.getElementById('due-date-input') && document.getElementById('due-date-input').value ? new Date(document.getElementById('due-date-input').value).toISOString() : null,
+                shade1: document.getElementById('shade1') ? document.getElementById('shade1').value : null,
+                shade2: document.getElementById('shade2') ? document.getElementById('shade2').value : null,
+                shade3: document.getElementById('shade3') ? document.getElementById('shade3').value : null,
+                shadeNotes: document.getElementById('shade-notes') ? document.getElementById('shade-notes').value : null,
+                priority: document.getElementById('priority') ? document.getElementById('priority').value : 'Normal',
+                doctorName: document.getElementById('sub-doctor') ? document.getElementById('sub-doctor').value : null,
+                notes: document.getElementById('order-notes') ? document.getElementById('order-notes').value : null,
+                articulatorTag: document.getElementById('articulator-tag') ? document.getElementById('articulator-tag').value : null,
+                orderType: document.querySelector('input[name="workType"]:checked') ? document.querySelector('input[name="workType"]:checked').value : 'New',
+                department: document.getElementById('department') ? document.getElementById('department').value : null,
+                modelNumber: document.getElementById('model-number-input') ? document.getElementById('model-number-input').value : null,
+                assignTo: document.getElementById('assign-to') ? document.getElementById('assign-to').value : null,
+                deliveryMethod: document.getElementById('delivery-method') ? document.getElementById('delivery-method').value : null,
+                dropLocation: document.getElementById('drop-location') ? document.getElementById('drop-location').value : null,
+                panTray: document.getElementById('pan-tray') ? document.getElementById('pan-tray').value : null,
+                holdReason: (document.getElementById('order-status')?.value === 'Hold' || document.getElementById('order-status')?.value === 'On Hold' || document.getElementById('order-status')?.value?.toLowerCase().includes('hold') || document.getElementById('order-status')?.value === 'Cancelled') ? (document.getElementById('hold-reason')?.value || null) : null,
+                statusDate: document.getElementById('status-date') ? document.getElementById('status-date').value : null,
+                
+                // Slabs data
+                slab1Rate: isSlabActive ? parseFloat(document.getElementById('slab1-rate').value) : null,
+                slab2Rate: isSlabActive ? parseFloat(document.getElementById('slab2-rate').value) : null,
+                slab1Units: isSlabActive ? Math.min(parseInt(document.getElementById('unit-count').value)||0, 1) : null,
+                slab2Units: isSlabActive ? Math.max(0, (parseInt(document.getElementById('unit-count').value)||0) - 1) : null
+            };
+
+            if (orderJobs && orderJobs.length > 0) {
+                data.jobs = orderJobs.map(j => ({
+                    productName: j.product,
+                    productType: j.productType,
+                    teethSelection: j.teeth ? j.teeth.join(', ') : '',
+                    units: j.units,
+                    price: j.rate,
+                    totalAmount: j.total,
+                    options: j.options,
+                    slab1Rate: j.slab1Rate,
+                    slab2Rate: j.slab2Rate,
+                    slab1Units: j.slab1Units,
+                    slab2Units: j.slab2Units
+                }));
+            }
+
+            const submitBtns = document.querySelectorAll('.btn-pink');
+            isEditOrderSubmitting = true;
+            submitBtns.forEach(btn => {
+                btn.disabled = true;
+                btn.dataset.origText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:6px;"></i> Saving...';
+                btn.style.opacity = '0.7';
+                btn.style.cursor = 'not-allowed';
+            });
+
+            try {
+                let url = `${API_BASE}/orders`;
+                let method = 'POST';
+                if (currentOrderId) {
+                    url = `${API_BASE}/orders/${currentOrderId}`;
+                    method = 'PUT';
+                }
+
+                const res = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    alert(currentOrderId ? "Order Updated Successfully!" : "Order Created Successfully!");
+                    window.location.href = 'orders.html';
+                } else {
+                    const err = await res.json();
+                    alert("Error: " + err.error);
+                    isEditOrderSubmitting = false;
+                    submitBtns.forEach(btn => {
+                        btn.disabled = false;
+                        btn.innerHTML = btn.dataset.origText || 'Save Changes';
+                        btn.style.opacity = '1';
+                        btn.style.cursor = 'pointer';
+                    });
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Server not responding. Please make sure the backend is running.");
+                isEditOrderSubmitting = false;
+                submitBtns.forEach(btn => {
+                    btn.disabled = false;
+                    btn.innerHTML = btn.dataset.origText || 'Save Changes';
+                    btn.style.opacity = '1';
+                    btn.style.cursor = 'pointer';
+                });
+            }
+        }
+
+        async function openQuickProductModal() {
+            document.getElementById('quick-product-modal').style.display = 'flex';
+        }
+
+        function closeQuickProductModal() {
+            document.getElementById('quick-product-modal').style.display = 'none';
+        }
+
+        function openEnclosuresModal(event, btnEl) {
+            if (event) event.stopPropagation();
+            const modal = document.getElementById('enclosures-modal');
+            if (!modal) return;
+
+            modal.style.display = 'block';
+            modal.style.position = 'fixed';
+            modal.style.inset = '0';
+            modal.style.background = 'rgba(0,0,0,0.2)';
+            modal.style.zIndex = '99999';
+
+            const content = modal.querySelector('.modal-content') || modal.firstElementChild;
+            if (content) {
+                content.style.position = 'absolute';
+                content.style.margin = '0';
+                content.style.width = '300px';
+                content.style.background = '#fff';
+                content.style.boxShadow = '0 4px 16px rgba(0,0,0,0.3)';
+                content.style.borderRadius = '3px';
+                content.style.border = '1px solid #777';
+                content.style.padding = '12px 14px';
+                content.style.zIndex = '100000';
+
+                const ref = btnEl || event?.target;
+                if (ref && ref.getBoundingClientRect) {
+                    const rect = ref.getBoundingClientRect();
+                    const modalWidth = 300;
+                    const modalHeight = 360;
+
+                    let top = rect.bottom + 4;
+                    let left = rect.left - 130;
+
+                    if (left + modalWidth > window.innerWidth - 15) {
+                        left = window.innerWidth - modalWidth - 15;
+                    }
+                    if (left < 15) left = 15;
+
+                    if (top + modalHeight > window.innerHeight - 10) {
+                        top = Math.max(10, rect.top - modalHeight - 4);
+                    }
+
+                    content.style.top = `${top}px`;
+                    content.style.left = `${left}px`;
+                }
+            }
+        }
+        function closeEnclosuresModal() {
+            const modal = document.getElementById('enclosures-modal');
+            if (modal) modal.style.display = 'none';
+        }
+        function saveEnclosures() {
+            const checked = [];
+            document.querySelectorAll('input[name="enclosure"]:checked').forEach(cb => {
+                checked.push(cb.value);
+            });
+            document.getElementById('enclosures-summary').textContent = checked.join(', ');
+            closeEnclosuresModal();
+        }
+
+        async function saveQuickProduct() {
+            const name = document.getElementById('qp-name').value;
+            const type = document.getElementById('qp-type').value;
+            const charge = document.getElementById('qp-charge').value;
+            const code = document.getElementById('qp-code').value;
+
+            if (!name || !type) { alert("Please enter name and type!"); return; }
+
+            try {
+                const res = await fetch(`${API_BASE}/products`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, type, charge, code })
+                });
+                if (res.ok) {
+                    const newProduct = await res.json();
+                    alert("Product added!");
+                    closeQuickProductModal();
+                    await loadProducts(); // Refresh the list
+                    selectProduct(newProduct);
+                } else {
+                    const err = await res.json();
+                    alert(err.error || "Failed to add product");
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadClients();
+            const formatDateLocal = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            const today = formatDateLocal(new Date());
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const tomorrowStr = formatDateLocal(tomorrow);
+
+            if (document.getElementById('order-date-input')) document.getElementById('order-date-input').value = today;
+            if (document.getElementById('due-date-input')) document.getElementById('due-date-input').value = tomorrowStr;
+            if (document.getElementById('date-in-input')) document.getElementById('date-in-input').value = today;
+
+            if (document.getElementById('status-date')) document.getElementById('status-date').value = today;
+            if (document.getElementById('tryin-wax-date')) document.getElementById('tryin-wax-date').value = today;
+            if (document.getElementById('tryin-metal-date')) document.getElementById('tryin-metal-date').value = today;
+            if (document.getElementById('tryin-bisque-date')) document.getElementById('tryin-bisque-date').value = today;
+        });
+    </script>
+
+    <!-- Quick Product Modal -->
+    <div id="quick-product-modal" class="modal-overlay"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; justify-content:center; align-items:center;">
+        <div
+            style="background:#fff; padding:20px; border-radius:8px; width:400px; box-shadow:0 4px 6px rgba(0,0,0,0.1);">
+            <h3 style="margin-top:0;">Quick Add New Product</h3>
+            <div style="display:grid; gap:15px; margin-top:15px;">
+                <div>
+                    <label style="display:block; font-size:12px; font-weight:600; margin-bottom:4px;">Product
+                        Name</label>
+                    <input type="text" id="qp-name"
+                        style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+                </div>
+                <div>
+                    <label style="display:block; font-size:12px; font-weight:600; margin-bottom:4px;">Product
+                        Type</label>
+                    <input type="text" id="qp-type" list="qp-type-options"
+                        style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+                    <datalist id="qp-type-options">
+                        <option value="PFM">
+                        <option value="Zirconia">
+                        <option value="E-Max">
+                        <option value="Denture">
+                        <option value="Implant">
+                    </datalist>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <div>
+                        <label style="display:block; font-size:12px; font-weight:600; margin-bottom:4px;">Code</label>
+                        <input type="text" id="qp-code"
+                            style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:12px; font-weight:600; margin-bottom:4px;">Charge
+                            (?)</label>
+                        <input type="number" id="qp-charge"
+                            style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end;">
+                <button onclick="closeQuickProductModal()"
+                    style="padding:8px 16px; border:1px solid #ddd; border-radius:4px; background:#fff; cursor:pointer;">Cancel</button>
+                <button onclick="saveQuickProduct()"
+                    style="padding:8px 16px; border:none; border-radius:4px; background:#10b981; color:#fff; cursor:pointer; font-weight:700;">Save
+                    Product</button>
+            </div>
+        </div>
+    </div>
+    <datalist id="shade-list">
+        <option value="0M1">
+        <option value="1M1">
+        <option value="1M2">
+        <option value="2L1.5">
+        <option value="2L2.5">
+        <option value="2M1">
+        <option value="2M2">
+        <option value="2M3">
+        <option value="2R1.5">
+        <option value="2R2.5">
+        <option value="3L1.5">
+        <option value="3L2.5">
+        <option value="3M1">
+        <option value="3M2">
+        <option value="3M3">
+        <option value="3R1.5">
+        <option value="3R2.5">
+        <option value="4L1.5">
+        <option value="4L2.5">
+        <option value="4M1">
+        <option value="4M2">
+        <option value="4M3">
+        <option value="4R1.5">
+        <option value="4R2.5">
+        <option value="5M1">
+        <option value="5M2">
+        <option value="5M3">
+        <option value="A1">
+        <option value="A1.5">
+        <option value="A2">
+        <option value="A3">
+        <option value="A3.5">
+        <option value="A4">
+        <option value="B1">
+        <option value="B2">
+        <option value="B3">
+        <option value="B4">
+        <option value="BL1">
+        <option value="BL2">
+        <option value="BL3">
+        <option value="BL4">
+        <option value="C1">
+        <option value="C2">
+        <option value="C3">
+        <option value="C4">
+        <option value="D2">
+        <option value="D3">
+        <option value="D4">
+        <option value="OM2">
+        <option value="OM3">
+    </datalist>
+
+    <!-- Enclosures Modal -->
+    <div id="enclosures-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content" style="width:320px; padding:20px; border-radius:8px;">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
+                <h3 style="margin:0; font-size:18px; font-weight:700; color:#333;">Select Enclosures</h3>
+                <span style="cursor:pointer; font-size:24px; color:#999;"
+                    onclick="closeEnclosuresModal()">&times;</span>
+            </div>
+            <div style="max-height:300px; overflow-y:auto; margin-bottom:15px; padding-right:10px;">
+                <div style="display:flex; flex-direction:column; gap:10px; font-size:14px;">
+                    <label style="display:flex; gap:10px; align-items:center; cursor:pointer;"><input type="checkbox"
+                            name="enclosure" value="Abutments"> Abutments</label>
+                    <label style="display:flex; gap:10px; align-items:center; cursor:pointer;"><input type="checkbox"
+                            name="enclosure" value="Bite"> Bite</label>
+                    <label style="display:flex; gap:10px; align-items:center; cursor:pointer;"><input type="checkbox"
+                            name="enclosure" value="CAD CAM Files"> CAD CAM Files</label>
+                    <label style="display:flex; gap:10px; align-items:center; cursor:pointer;"><input type="checkbox"
+                            name="enclosure" value="Facebow Articulator"> Facebow Articulator</label>
+                    <label style="display:flex; gap:10px; align-items:center; cursor:pointer;"><input type="checkbox"
+                            name="enclosure" value="Imp Post"> Imp Post</label>
+                    <label style="display:flex; gap:10px; align-items:center; cursor:pointer;"><input type="checkbox"
+                            name="enclosure" value="Impression Lower"> Impression Lower</label>
+                    <label style="display:flex; gap:10px; align-items:center; cursor:pointer;"><input type="checkbox"
+                            name="enclosure" value="Impression Upper"> Impression Upper</label>
+                    <label style="display:flex; gap:10px; align-items:center; cursor:pointer;"><input type="checkbox"
+                            name="enclosure" value="Lab Analogue"> Lab Analogue</label>
+                    <label style="display:flex; gap:10px; align-items:center; cursor:pointer;"><input type="checkbox"
+                            name="enclosure" value="Model Lower"> Model Lower</label>
+                    <label style="display:flex; gap:10px; align-items:center; cursor:pointer;"><input type="checkbox"
+                            name="enclosure" value="Model Upper"> Model Upper</label>
+                    <label style="display:flex; gap:10px; align-items:center; cursor:pointer;"><input type="checkbox"
+                            name="enclosure" value="Photos"> Photos</label>
+                    <label style="display:flex; gap:10px; align-items:center; cursor:pointer;"><input type="checkbox"
+                            name="enclosure" value="RE TRIAL"> RE TRIAL</label>
+                    <label style="display:flex; gap:10px; align-items:center; cursor:pointer;"><input type="checkbox"
+                            name="enclosure" value="UPPER"> UPPER</label>
+                </div>
+            </div>
+            <div
+                style="display:flex; justify-content:space-between; gap:10px; border-top:1px solid #eee; padding-top:15px; margin-top:10px;">
+                <button type="button" class="btn-action"
+                    style="background:#fff; color:#0056b3; border:1px solid #ccc; flex:1; font-size:12px; padding:8px; border-radius:4px;"
+                    onclick="saveEnclosures()">Add Selected Enclosures</button>
+                <button type="button" class="btn-outline"
+                    style="flex:0.5; font-size:12px; padding:8px; border-radius:4px;"
+                    onclick="closeEnclosuresModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</body>
